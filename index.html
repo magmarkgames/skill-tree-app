@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#17171d" />
+  <title>Skill Tree v0.1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">SKILL TREE PROTOTYPE</div>
+      <h1>Power</h1>
+    </div>
+
+    <div class="top-actions">
+      <button id="resetButton" class="small-button">Reset</button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat">
+      <span>Best</span>
+      <strong id="bestStat">0</strong>
+    </div>
+    <div class="stat">
+      <span>Total</span>
+      <strong id="totalStat">0</strong>
+    </div>
+    <div class="stat">
+      <span>Streak</span>
+      <strong id="streakStat">0</strong>
+    </div>
+  </section>
+
+  <div class="hint">
+    Tippe auf einen verfügbaren Knoten und trage deinen Fortschritt ein.
+    Gesperrte Knoten werden automatisch freigeschaltet.
+  </div>
+
+  <main id="viewport" class="viewport">
+    <div id="tree" class="tree">
+      <svg id="connections" class="connections" aria-hidden="true"></svg>
+    </div>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <button id="closeModal" class="close-button" aria-label="Schließen">×</button>
+
+      <div id="modalType" class="eyebrow">SKILL</div>
+      <h2 id="modalTitle">Skill</h2>
+      <p id="modalDescription"></p>
+
+      <div class="progress-box">
+        <div class="progress-row">
+          <span>Fortschritt</span>
+          <strong id="modalProgressText">0 / 0</strong>
+        </div>
+        <div class="progress-track">
+          <div id="modalProgressBar" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div id="inputArea">
+        <label id="inputLabel" for="progressInput">Neuen Wert eintragen</label>
+        <input id="progressInput" type="number" min="0" inputmode="numeric" />
+        <button id="saveProgress" class="primary-button">Speichern</button>
+      </div>
+
+      <div id="completedMessage" class="completed-message hidden">
+        ✓ Geschafft
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
