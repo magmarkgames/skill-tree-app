@@ -1,387 +1,565 @@
-const STORAGE_KEY = "skillTreePrototypeV02";
+const STORAGE_KEY = "skillTreeAppProgressV03";
 
-const defaultState = {
+const DEFAULT_PROGRESS = {
   pushupMax: 0,
   pushupTotal: 0,
-  streak: 0,
+  pushupStreak: 0,
   lastTrainingDate: null,
-  trainingDates: [],
-  trainings: []
+  trainingHistory: []
 };
 
-let state = loadState();
-
-const rankDefinitions = [
-  { key: "wood", label: "Holz", min: 5 },
-  { key: "stone", label: "Stein", min: 10 },
-  { key: "iron", label: "Eisen", min: 20 },
-  { key: "gold", label: "Gold", min: 30 },
-  { key: "crystal", label: "Kristall", min: 50 },
-  { key: "diamond", label: "Diamant", min: 75 },
-  { key: "master", label: "Meister", min: 100 }
+// Unsere bisherige Rangfolge + die schon geplanten nächsten Ränge.
+const RANKS = [
+  { name: "Start", target: 0 },
+  { name: "Holz", target: 5 },
+  { name: "Stein", target: 10 },
+  { name: "Eisen", target: 20 },
+  { name: "Gold", target: 30 },
+  { name: "Kristall", target: 50 },
+  { name: "Diamant", target: 75 },
+  { name: "Meister", target: 100 }
 ];
 
-const nodes = [
-  { id:"power", title:"POWER", kind:"root", x:450, y:1325, alwaysUnlocked:true, autoComplete:true },
+// Ein bewusst einfacher "hässlicher" Testbaum.
+// x/y sind Pixelpositionen im 650x650-Baum.
+const SKILL_NODES = [
+  { id: "start", type: "start", label: "Start", target: 0, x: 269, y: 530 },
 
-  { id:"max-1", title:"1 PU", metric:"max", goal:1, x:565, y:1160, parents:["power"] },
-  { id:"total-5", title:"5 PU", subtitle:"insg.", metric:"total", goal:5, x:335, y:1160, parents:["power"] },
+  { id: "wood", type: "max", label: "Holz", target: 5, x: 269, y: 410, parent: "start" },
+  { id: "stone", type: "max", label: "Stein", target: 10, x: 145, y: 300, parent: "wood" },
+  { id: "iron", type: "max", label: "Eisen", target: 20, x: 393, y: 300, parent: "wood" },
+  { id: "gold", type: "max", label: "Gold", target: 30, x: 269, y: 190, parent: "stone" },
+  { id: "crystal", type: "max", label: "Kristall", target: 50, x: 269, y: 70, parent: "gold" },
 
-  { id:"total-10", title:"10 PU", subtitle:"insg.", metric:"total", goal:10, x:220, y:990, parents:["total-5"] },
-  { id:"streak-1", title:"1 Tag", subtitle:"Streak", metric:"streak", goal:1, x:450, y:990, parents:["power"] },
-  { id:"max-3", title:"3 PU", metric:"max", goal:3, x:680, y:990, parents:["max-1"] },
+  { id: "total50", type: "total", label: "Gesamt", target: 50, x: 22, y: 190, parent: "stone" },
+  { id: "total100", type: "total", label: "Gesamt", target: 100, x: 22, y: 70, parent: "total50" },
 
-  { id:"total-50", title:"50 PU", subtitle:"insg.", metric:"total", goal:50, x:335, y:820, parents:["total-10"] },
-  { id:"max-5", title:"5 PU", metric:"max", goal:5, x:565, y:820, parents:["max-3"], rank:"wood" },
-
-  { id:"total-100", title:"100 PU", subtitle:"insg.", metric:"total", goal:100, x:220, y:650, parents:["total-50"] },
-  { id:"streak-3", title:"3 Tage", subtitle:"Streak", metric:"streak", goal:3, x:450, y:650, parents:["streak-1"] },
-  { id:"max-10", title:"10 PU", metric:"max", goal:10, x:680, y:650, parents:["max-5"], rank:"stone" },
-
-  { id:"total-500", title:"500 PU", subtitle:"insg.", metric:"total", goal:500, x:335, y:480, parents:["total-100"] },
-  { id:"streak-7", title:"7 Tage", subtitle:"Streak", metric:"streak", goal:7, x:565, y:480, parents:["streak-3"] },
-  { id:"max-20", title:"20 PU", metric:"max", goal:20, x:795, y:480, parents:["max-10"], rank:"iron" },
-
-  { id:"total-1000", title:"1.000 PU", subtitle:"insg.", metric:"total", goal:1000, x:220, y:310, parents:["total-500"] },
-  { id:"streak-30", title:"30 Tage", subtitle:"Streak", metric:"streak", goal:30, x:450, y:310, parents:["streak-7"] },
-  { id:"max-30", title:"30 PU", metric:"max", goal:30, x:680, y:310, parents:["max-20"], rank:"gold" }
+  { id: "streak2", type: "streak", label: "Serie", target: 2, x: 516, y: 190, parent: "iron" },
+  { id: "streak3", type: "streak", label: "Serie", target: 3, x: 516, y: 70, parent: "streak2" }
 ];
 
-const nodeMap = new Map(nodes.map(node => [node.id, node]));
-const tree = document.getElementById("tree");
-const svg = document.getElementById("connections");
-const modalBackdrop = document.getElementById("modalBackdrop");
+let progress = loadProgress();
+let cameraStream = null;
+let workoutStartedAt = null;
+let timerInterval = null;
+let elapsedSeconds = 0;
+let cameraWasStarted = false;
+
+// ---------- DOM ----------
+const skillTree = document.getElementById("skillTree");
+const maxStat = document.getElementById("maxStat");
+const totalStat = document.getElementById("totalStat");
+const streakStat = document.getElementById("streakStat");
+const rankStat = document.getElementById("rankStat");
+
 const trainingModal = document.getElementById("trainingModal");
-const resultModal = document.getElementById("resultModal");
-const nodeModal = document.getElementById("nodeModal");
+const exerciseStep = document.getElementById("exerciseStep");
+const cameraStep = document.getElementById("cameraStep");
+const resultStep = document.getElementById("resultStep");
+const successStep = document.getElementById("successStep");
+const trainingTitle = document.getElementById("trainingTitle");
+const backBtn = document.getElementById("backBtn");
 
-function loadState() {
+const cameraVideo = document.getElementById("cameraVideo");
+const cameraPlaceholder = document.getElementById("cameraPlaceholder");
+const cameraStatus = document.getElementById("cameraStatus");
+const timerOverlay = document.getElementById("timerOverlay");
+const timerDisplay = document.getElementById("timerDisplay");
+const finalTime = document.getElementById("finalTime");
+const repInput = document.getElementById("repInput");
+const successDetails = document.getElementById("successDetails");
+
+const startCameraBtn = document.getElementById("startCameraBtn");
+const continueWithoutCameraBtn = document.getElementById("continueWithoutCameraBtn");
+const startWorkoutBtn = document.getElementById("startWorkoutBtn");
+const finishWorkoutBtn = document.getElementById("finishWorkoutBtn");
+
+// ---------- Daten ----------
+function loadProgress() {
+  const saved = safeReadJson(STORAGE_KEY);
+  if (saved) return normalizeProgress(saved);
+
+  // Migration: v0.2 hatte bereits pushupMax / pushupTotal / pushupStreak.
+  // Falls der genaue alte Key anders hieß, suchen wir einmal nach einem passenden Objekt.
+  const possibleKeys = ["skillTreeProgress", "skillTreeAppProgress", "progress"];
+
+  for (const key of possibleKeys) {
+    const candidate = safeReadJson(key);
+    if (looksLikeOldProgress(candidate)) {
+      const migrated = normalizeProgress(candidate);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  }
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || key === STORAGE_KEY) continue;
+
+    const candidate = safeReadJson(key);
+    if (looksLikeOldProgress(candidate)) {
+      const migrated = normalizeProgress(candidate);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  }
+
+  return { ...DEFAULT_PROGRESS, trainingHistory: [] };
+}
+
+function safeReadJson(key) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return { ...defaultState, ...(saved || {}) };
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
   } catch {
-    return { ...defaultState };
+    return null;
   }
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function looksLikeOldProgress(value) {
+  return !!value &&
+    typeof value === "object" &&
+    (
+      "pushupMax" in value ||
+      "pushupTotal" in value ||
+      "pushupStreak" in value ||
+      "lastTrainingDate" in value
+    );
 }
 
-function metricValue(node) {
-  if (node.metric === "max") return state.pushupMax;
-  if (node.metric === "total") return state.pushupTotal;
-  if (node.metric === "streak") return state.streak;
-  return 0;
+function normalizeProgress(value) {
+  return {
+    pushupMax: Math.max(0, Number(value?.pushupMax) || 0),
+    pushupTotal: Math.max(0, Number(value?.pushupTotal) || 0),
+    pushupStreak: Math.max(0, Number(value?.pushupStreak) || 0),
+    lastTrainingDate: value?.lastTrainingDate || null,
+    trainingHistory: Array.isArray(value?.trainingHistory) ? value.trainingHistory : []
+  };
 }
 
-function isComplete(node) {
-  if (node.autoComplete) return true;
-  if (!node.metric) return false;
-  return metricValue(node) >= node.goal;
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
-function isUnlocked(node) {
-  if (node.alwaysUnlocked) return true;
-  if (!node.parents || !node.parents.length) return true;
-  return node.parents.every(parentId => {
-    const parent = nodeMap.get(parentId);
-    return parent && isComplete(parent);
-  });
+// ---------- UI / Tree ----------
+function render() {
+  maxStat.textContent = progress.pushupMax;
+  totalStat.textContent = progress.pushupTotal;
+  streakStat.textContent = progress.pushupStreak;
+  rankStat.textContent = getRank(progress.pushupMax).name;
+  renderTree();
 }
 
-function nodeState(node) {
-  if (isComplete(node)) return "complete";
-  if (isUnlocked(node)) return "available";
-  return "locked";
+function getRank(maxReps) {
+  return RANKS.reduce((current, rank) => {
+    return maxReps >= rank.target ? rank : current;
+  }, RANKS[0]);
 }
 
-function currentRank(max = state.pushupMax) {
-  let result = null;
-  for (const rank of rankDefinitions) {
-    if (max >= rank.min) result = rank;
-  }
-  return result;
+function nodeValue(node) {
+  if (node.type === "max") return progress.pushupMax;
+  if (node.type === "total") return progress.pushupTotal;
+  if (node.type === "streak") return progress.pushupStreak;
+  return Infinity;
 }
 
-function rankByKey(key) {
-  return rankDefinitions.find(rank => rank.key === key);
+function isNodeDone(node) {
+  if (node.type === "start") return true;
+  return nodeValue(node) >= node.target;
+}
+
+function isNodeAvailable(node) {
+  if (!node.parent) return true;
+  const parent = SKILL_NODES.find(n => n.id === node.parent);
+  return parent ? isNodeDone(parent) : true;
 }
 
 function renderTree() {
-  tree.querySelectorAll(".hex-node").forEach(el => el.remove());
-  svg.innerHTML = "";
+  skillTree.innerHTML = "";
 
-  for (const node of nodes) {
-    const button = document.createElement("button");
-    const status = nodeState(node);
-    button.className = `hex-node ${status} ${node.kind || ""}`;
-    button.style.left = `${node.x}px`;
-    button.style.top = `${node.y}px`;
+  // Linien zuerst
+  SKILL_NODES.forEach(node => {
+    if (!node.parent) return;
+    const parent = SKILL_NODES.find(n => n.id === node.parent);
+    if (!parent) return;
 
-    const value = metricValue(node);
-    let sub = node.subtitle || "";
-    if (node.metric && !node.subtitle) {
-      if (status === "complete") sub = "geschafft";
-      else if (status === "available") sub = `${Math.min(value, node.goal)} / ${node.goal}`;
-      else sub = "gesperrt";
+    const line = createConnector(parent, node);
+    if (isNodeDone(parent) && isNodeDone(node)) {
+      line.classList.add("done");
     }
+    skillTree.appendChild(line);
+  });
 
-    let icon = "";
-    if (node.kind === "root") icon = "💪";
-    else if (status === "complete") icon = "✓";
-    else if (status === "locked") icon = "🔒";
-    else icon = "•";
+  // Dann Hexagons
+  SKILL_NODES.forEach(node => {
+    const element = document.createElement("button");
+    element.type = "button";
+    element.className = "skill-node";
+    element.style.left = `${node.x}px`;
+    element.style.top = `${node.y}px`;
 
-    button.innerHTML = `
-      <div class="hex-content">
-        <div class="hex-icon">${icon}</div>
-        <div class="hex-title">${node.title}</div>
-        ${sub ? `<div class="hex-sub">${sub}</div>` : ""}
-      </div>`;
+    const done = isNodeDone(node);
+    const available = isNodeAvailable(node);
 
-    if (node.rank) {
-      const rank = rankByKey(node.rank);
-      const chip = document.createElement("div");
-      chip.className = `rank-chip ${node.rank}`;
-      chip.textContent = rank ? rank.label : node.rank;
-      button.appendChild(chip);
-    }
+    if (done) element.classList.add("done");
+    else if (available) element.classList.add("next");
+    else element.classList.add("locked");
 
-    button.addEventListener("click", () => {
-      if (nodeState(node) === "locked") return;
-      openNodeInfo(node);
+    const unit =
+      node.type === "total" ? "gesamt" :
+      node.type === "streak" ? "Tage" :
+      node.type === "start" ? "" :
+      "am Stück";
+
+    element.innerHTML = `
+      <span class="node-rank">${node.label}</span>
+      <span class="node-target">${node.type === "start" ? "✓" : node.target}</span>
+      <span class="node-label">${unit}</span>
+    `;
+
+    element.addEventListener("click", () => {
+      const current =
+        node.type === "max" ? progress.pushupMax :
+        node.type === "total" ? progress.pushupTotal :
+        node.type === "streak" ? progress.pushupStreak :
+        0;
+
+      if (node.type === "start") {
+        alert("Startpunkt deines Push-up Skill Trees.");
+      } else {
+        alert(`${node.label}: Ziel ${node.target} ${unit}.\nAktuell: ${current}.`);
+      }
     });
 
-    tree.appendChild(button);
+    skillTree.appendChild(element);
+  });
+}
+
+function createConnector(from, to) {
+  const line = document.createElement("div");
+  line.className = "connector";
+
+  const nodeW = 112;
+  const nodeH = 98;
+
+  const x1 = from.x + nodeW / 2;
+  const y1 = from.y + nodeH / 2;
+  const x2 = to.x + nodeW / 2;
+  const y2 = to.y + nodeH / 2;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+  line.style.left = `${x1}px`;
+  line.style.top = `${y1}px`;
+  line.style.width = `${length}px`;
+  line.style.transform = `rotate(${angle}deg)`;
+
+  return line;
+}
+
+// ---------- Modal / Steps ----------
+function showStep(stepName) {
+  [exerciseStep, cameraStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
+
+  if (stepName === "exercise") {
+    exerciseStep.classList.remove("hidden");
+    trainingTitle.textContent = "Übung auswählen";
+    backBtn.classList.add("hidden");
   }
 
-  drawConnections();
-  updateOverview();
-}
+  if (stepName === "camera") {
+    cameraStep.classList.remove("hidden");
+    trainingTitle.textContent = "Push-up Training";
+    backBtn.classList.remove("hidden");
+  }
 
-function drawConnections() {
-  for (const node of nodes) {
-    if (!node.parents) continue;
-    for (const parentId of node.parents) {
-      const parent = nodeMap.get(parentId);
-      if (!parent) continue;
+  if (stepName === "result") {
+    resultStep.classList.remove("hidden");
+    trainingTitle.textContent = "Training eintragen";
+    backBtn.classList.remove("hidden");
+  }
 
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      const startX = parent.x;
-      const startY = parent.y - 45;
-      const endX = node.x;
-      const endY = node.y + 45;
-      const middleY = (startY + endY) / 2;
-
-      path.setAttribute("d", `M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`);
-      path.setAttribute("class", `connection ${nodeState(node) === "locked" ? "locked" : ""}`);
-      svg.appendChild(path);
-    }
+  if (stepName === "success") {
+    successStep.classList.remove("hidden");
+    trainingTitle.textContent = "Fertig";
+    backBtn.classList.add("hidden");
   }
 }
 
-function updateOverview() {
-  document.getElementById("bestStat").textContent = state.pushupMax;
-  document.getElementById("totalStat").textContent = state.pushupTotal.toLocaleString("de-DE");
-  document.getElementById("streakStat").textContent = state.streak;
-  const rank = currentRank();
-  document.getElementById("rankStat").textContent = rank ? rank.label : "–";
+function openTraining() {
+  resetTrainingSession();
+  trainingModal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  showStep("exercise");
 }
 
-function openOnly(sheet) {
+function closeTraining() {
+  stopCamera();
+  stopTimer();
   trainingModal.classList.add("hidden");
-  resultModal.classList.add("hidden");
-  nodeModal.classList.add("hidden");
-  sheet.classList.remove("hidden");
-  modalBackdrop.classList.remove("hidden");
+  document.body.style.overflow = "";
 }
 
-function closeModal() {
-  modalBackdrop.classList.add("hidden");
-  trainingModal.classList.add("hidden");
-  resultModal.classList.add("hidden");
-  nodeModal.classList.add("hidden");
+function resetTrainingSession() {
+  stopCamera();
+  stopTimer();
+  workoutStartedAt = null;
+  elapsedSeconds = 0;
+  cameraWasStarted = false;
+  repInput.value = "";
+  timerDisplay.textContent = "00:00";
+  finalTime.textContent = "00:00";
+  cameraPlaceholder.classList.remove("hidden");
+  timerOverlay.classList.add("hidden");
+  startCameraBtn.classList.remove("hidden");
+  continueWithoutCameraBtn.classList.remove("hidden");
+  startWorkoutBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.add("hidden");
+  cameraStatus.textContent = "Starte zuerst die Kamera. Danach kannst du das Training beginnen.";
 }
 
-document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", closeModal));
-modalBackdrop.addEventListener("click", event => { if (event.target === modalBackdrop) closeModal(); });
+// ---------- Kamera ----------
+async function startCamera() {
+  cameraStatus.textContent = "Kamera wird geöffnet …";
 
-document.getElementById("trainingButton").addEventListener("click", () => {
-  document.getElementById("sessionBest").value = "";
-  document.getElementById("sessionTotal").value = "";
-  document.getElementById("trainingError").classList.add("hidden");
-  openOnly(trainingModal);
-});
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraStatus.textContent = "Dieser Browser unterstützt den Kamerazugriff hier nicht. Du kannst trotzdem ohne Kamera trainieren.";
+    return;
+  }
 
-function openNodeInfo(node) {
-  document.getElementById("nodeModalType").textContent =
-    node.metric === "max" ? "MAX AM STÜCK" :
-    node.metric === "total" ? "GESAMTVOLUMEN" :
-    node.metric === "streak" ? "STREAK" : "KATEGORIE";
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 720 },
+        height: { ideal: 1280 }
+      },
+      audio: false
+    });
 
-  document.getElementById("nodeModalTitle").textContent = node.title;
+    cameraVideo.srcObject = cameraStream;
+    await cameraVideo.play();
 
-  let text = "Der Startpunkt dieses Skill Trees.";
-  if (node.metric === "max") text = `Schaffe mindestens ${node.goal} Push-up${node.goal === 1 ? "" : "s"} am Stück.`;
-  if (node.metric === "total") text = `Erreiche insgesamt ${node.goal.toLocaleString("de-DE")} Push-ups.`;
-  if (node.metric === "streak") text = `Trainiere an ${node.goal} aufeinanderfolgenden Tag${node.goal === 1 ? "" : "en"}.`;
-  document.getElementById("nodeModalText").textContent = text;
-
-  const value = node.metric ? metricValue(node) : 1;
-  const goal = node.metric ? node.goal : 1;
-  const percent = Math.min(100, Math.max(0, (value / goal) * 100));
-  document.getElementById("nodeModalProgress").textContent = node.metric ? `${Math.min(value, goal)} / ${goal}` : "Start";
-  document.getElementById("nodeModalBar").style.width = `${percent}%`;
-
-  const status = nodeState(node);
-  const stateBox = document.getElementById("nodeModalState");
-  if (status === "complete") stateBox.textContent = "✓ Dieser Skill ist geschafft.";
-  else if (status === "available") stateBox.textContent = "Dieser Skill ist erreichbar. Trage ein Training ein, um Fortschritt zu machen.";
-  else stateBox.textContent = "Dieser Skill ist noch gesperrt.";
-
-  openOnly(nodeModal);
+    cameraWasStarted = true;
+    cameraPlaceholder.classList.add("hidden");
+    startCameraBtn.classList.add("hidden");
+    continueWithoutCameraBtn.classList.add("hidden");
+    startWorkoutBtn.classList.remove("hidden");
+    cameraStatus.textContent = "Kamera läuft. Stelle das Handy so auf, dass dein Körper später möglichst vollständig zu sehen ist.";
+  } catch (error) {
+    console.error("Kamera konnte nicht gestartet werden:", error);
+    cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder ist nicht verfügbar. Du kannst ohne Kamera weitermachen.";
+  }
 }
 
-function localDateString(date = new Date()) {
+function continueWithoutCamera() {
+  stopCamera();
+  cameraWasStarted = false;
+  startCameraBtn.classList.add("hidden");
+  continueWithoutCameraBtn.classList.add("hidden");
+  startWorkoutBtn.classList.remove("hidden");
+  cameraStatus.textContent = "Manueller Modus. Starte das Training und trage die Wiederholungen anschließend selbst ein.";
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+  }
+  cameraStream = null;
+  cameraVideo.srcObject = null;
+}
+
+// ---------- Timer ----------
+function startWorkout() {
+  workoutStartedAt = Date.now();
+  elapsedSeconds = 0;
+
+  startWorkoutBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.remove("hidden");
+  timerOverlay.classList.remove("hidden");
+  cameraStatus.textContent = "Training läuft. In v0.3 zählt die App die Wiederholungen noch nicht automatisch.";
+
+  updateTimer();
+  timerInterval = window.setInterval(updateTimer, 250);
+}
+
+function updateTimer() {
+  if (!workoutStartedAt) return;
+  elapsedSeconds = Math.floor((Date.now() - workoutStartedAt) / 1000);
+  timerDisplay.textContent = formatTime(elapsedSeconds);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function finishWorkout() {
+  updateTimer();
+  stopTimer();
+  stopCamera();
+
+  finalTime.textContent = formatTime(elapsedSeconds);
+  showStep("result");
+
+  setTimeout(() => repInput.focus(), 50);
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const secs = (seconds % 60).toString().padStart(2, "0");
+  return `${mins}:${secs}`;
+}
+
+// ---------- Training speichern ----------
+function saveTrainingResult() {
+  const reps = Math.floor(Number(repInput.value));
+
+  if (!Number.isFinite(reps) || reps < 0) {
+    alert("Bitte gib eine gültige Wiederholungszahl ein.");
+    return;
+  }
+
+  if (reps === 0) {
+    const confirmZero = confirm("0 Wiederholungen speichern?");
+    if (!confirmZero) return;
+  }
+
+  const oldMax = progress.pushupMax;
+  const oldRank = getRank(oldMax);
+  const oldStreak = progress.pushupStreak;
+
+  const today = localDateString(new Date());
+  const newStreak = calculateStreak(progress.lastTrainingDate, today, progress.pushupStreak);
+
+  progress.pushupMax = Math.max(progress.pushupMax, reps);
+  progress.pushupTotal += reps;
+  progress.pushupStreak = newStreak;
+  progress.lastTrainingDate = today;
+
+  progress.trainingHistory.unshift({
+    exercise: "pushups",
+    reps,
+    durationSeconds: elapsedSeconds,
+    date: new Date().toISOString(),
+    usedCamera: cameraWasStarted
+  });
+
+  // Damit localStorage nicht irgendwann unendlich wächst.
+  progress.trainingHistory = progress.trainingHistory.slice(0, 200);
+
+  saveProgress();
+  render();
+
+  const newRank = getRank(progress.pushupMax);
+  const isNewRecord = reps > oldMax;
+  const rankUp = newRank.name !== oldRank.name;
+
+  successDetails.innerHTML = "";
+
+  addSuccessLine(`${reps} Push-ups gespeichert`);
+  addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
+
+  if (isNewRecord) {
+    addSuccessLine(`🏆 Neuer Rekord: ${progress.pushupMax}`, true);
+  } else {
+    addSuccessLine(`Rekord bleibt bei ${progress.pushupMax}`);
+  }
+
+  if (rankUp) {
+    addSuccessLine(`⬆️ Neuer Rang: ${newRank.name}`, true);
+  } else {
+    addSuccessLine(`Rang: ${newRank.name}`);
+  }
+
+  if (newStreak > oldStreak) {
+    addSuccessLine(`🔥 Trainingsserie: ${newStreak} Tage`, true);
+  } else {
+    addSuccessLine(`Trainingsserie: ${newStreak} Tage`);
+  }
+
+  showStep("success");
+}
+
+function addSuccessLine(text, good = false) {
+  const line = document.createElement("div");
+  line.className = `success-line${good ? " good" : ""}`;
+  line.textContent = text;
+  successDetails.appendChild(line);
+}
+
+function calculateStreak(lastDate, today, currentStreak) {
+  if (!lastDate) return 1;
+  if (lastDate === today) return Math.max(1, currentStreak);
+
+  const last = parseLocalDate(lastDate);
+  const now = parseLocalDate(today);
+  const diffDays = Math.round((now - last) / 86400000);
+
+  if (diffDays === 1) return Math.max(1, currentStreak) + 1;
+  return 1;
+}
+
+function localDateString(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
-function dateFromLocalString(value) {
+function parseLocalDate(value) {
   const [y, m, d] = value.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
-function dayDifference(from, to) {
-  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
-  return Math.round((b - a) / 86400000);
-}
+// ---------- Events ----------
+document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
+document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
 
-function calculateNewStreak(todayString) {
-  if (!state.lastTrainingDate) return 1;
-  if (state.lastTrainingDate === todayString) return state.streak;
-  const diff = dayDifference(dateFromLocalString(state.lastTrainingDate), dateFromLocalString(todayString));
-  return diff === 1 ? state.streak + 1 : 1;
-}
+document.querySelector('[data-exercise="pushups"]').addEventListener("click", () => {
+  showStep("camera");
+});
 
-function completedIds() {
-  return new Set(nodes.filter(isComplete).map(node => node.id));
-}
-
-document.getElementById("saveTraining").addEventListener("click", () => {
-  const bestInput = Number(document.getElementById("sessionBest").value);
-  const totalInput = Number(document.getElementById("sessionTotal").value);
-
-  if (!Number.isFinite(totalInput) || totalInput <= 0) {
-    showTrainingError("Bitte trage ein, wie viele Push-ups du insgesamt gemacht hast.");
+backBtn.addEventListener("click", () => {
+  if (!resultStep.classList.contains("hidden")) {
+    showStep("camera");
     return;
   }
 
-  const sessionBest = Number.isFinite(bestInput) && bestInput >= 0 ? Math.floor(bestInput) : 0;
-  const sessionTotal = Math.floor(totalInput);
-
-  if (sessionBest > sessionTotal) {
-    showTrainingError("Die Bestleistung am Stück kann nicht größer als die Gesamtzahl des Trainings sein.");
-    return;
-  }
-
-  document.getElementById("trainingError").classList.add("hidden");
-
-  const beforeCompleted = completedIds();
-  const beforeRank = currentRank();
-  const oldBest = state.pushupMax;
-  const today = localDateString();
-
-  state.pushupMax = Math.max(state.pushupMax, sessionBest);
-  state.pushupTotal += sessionTotal;
-
-  const alreadyTrainedToday = state.trainingDates.includes(today);
-  if (!alreadyTrainedToday) {
-    state.streak = calculateNewStreak(today);
-    state.trainingDates.push(today);
-    state.lastTrainingDate = today;
-  }
-
-  state.trainings.push({ date: today, best: sessionBest, total: sessionTotal });
-  saveState();
-
-  const afterCompleted = completedIds();
-  const afterRank = currentRank();
-  const newlyCompleted = nodes.filter(node => afterCompleted.has(node.id) && !beforeCompleted.has(node.id) && node.id !== "power");
-  const newRecord = state.pushupMax > oldBest;
-
-  renderTree();
-  showResult({ newRecord, oldBest, newlyCompleted, beforeRank, afterRank, alreadyTrainedToday });
+  stopCamera();
+  stopTimer();
+  showStep("exercise");
 });
 
-function showTrainingError(message) {
-  const error = document.getElementById("trainingError");
-  error.textContent = message;
-  error.classList.remove("hidden");
-}
+startCameraBtn.addEventListener("click", startCamera);
+continueWithoutCameraBtn.addEventListener("click", continueWithoutCamera);
+startWorkoutBtn.addEventListener("click", startWorkout);
+finishWorkoutBtn.addEventListener("click", finishWorkout);
+document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
 
-function showResult(data) {
-  document.getElementById("resultBest").textContent = state.pushupMax;
-  document.getElementById("resultTotal").textContent = state.pushupTotal.toLocaleString("de-DE");
-  document.getElementById("resultStreak").textContent = `${state.streak}d`;
-  document.getElementById("resultHeadline").textContent = data.newRecord ? "Neuer Rekord!" : "Fortschritt aktualisiert";
-
-  const record = document.getElementById("resultRecord");
-  if (data.newRecord) {
-    record.textContent = data.oldBest > 0
-      ? `🏆 Neuer Max-Rekord: ${data.oldBest} → ${state.pushupMax} Push-ups`
-      : `🏆 Deine erste Bestleistung: ${state.pushupMax} Push-ups`;
-    record.classList.remove("hidden");
-  } else if (data.alreadyTrainedToday) {
-    record.textContent = "Training hinzugefügt. Deine Streak wurde heute bereits gezählt.";
-    record.classList.remove("hidden");
-  } else {
-    record.classList.add("hidden");
-  }
-
-  const unlockSection = document.getElementById("unlockSection");
-  const unlockList = document.getElementById("unlockList");
-  unlockList.innerHTML = "";
-
-  if (data.newlyCompleted.length) {
-    data.newlyCompleted.forEach(node => {
-      const item = document.createElement("div");
-      item.className = "unlock-item";
-      item.textContent = `✓ ${node.title}${node.subtitle ? ` ${node.subtitle}` : ""}`;
-      unlockList.appendChild(item);
-    });
-    unlockSection.classList.remove("hidden");
-  } else {
-    unlockSection.classList.add("hidden");
-  }
-
-  const rankSection = document.getElementById("rankSection");
-  const rankReveal = document.getElementById("rankReveal");
-  if (data.afterRank && (!data.beforeRank || data.afterRank.key !== data.beforeRank.key)) {
-    rankReveal.textContent = `${data.afterRank.label.toUpperCase()} – ab ${data.afterRank.min} Push-ups am Stück`;
-    rankReveal.style.borderColor = `var(--${data.afterRank.key})`;
-    rankSection.classList.remove("hidden");
-  } else {
-    rankSection.classList.add("hidden");
-  }
-
-  openOnly(resultModal);
-}
-
-document.getElementById("resetButton").addEventListener("click", () => {
-  if (!confirm("Wirklich den gesamten Test-Fortschritt löschen?")) return;
-  state = { ...defaultState, trainingDates: [], trainings: [] };
-  saveState();
-  renderTree();
+document.getElementById("doneBtn").addEventListener("click", () => {
+  closeTraining();
 });
 
-renderTree();
-window.addEventListener("load", () => {
-  const viewport = document.getElementById("viewport");
-  viewport.scrollLeft = Math.max(0, (900 - window.innerWidth) / 2);
-  viewport.scrollTop = 980;
+document.getElementById("resetBtn").addEventListener("click", () => {
+  const ok = confirm("Wirklich alle Testdaten dieser v0.3 löschen?");
+  if (!ok) return;
+
+  localStorage.removeItem(STORAGE_KEY);
+  progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
+  render();
 });
+
+// Falls die Seite im Hintergrund landet, Kamera freigeben.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && cameraStream && !workoutStartedAt) {
+    stopCamera();
+  }
+});
+
+render();

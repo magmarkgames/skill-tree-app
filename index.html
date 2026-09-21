@@ -3,98 +3,150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#17171d" />
-  <title>Skill Tree v0.2</title>
+  <meta name="theme-color" content="#111827" />
+  <title>Skill Tree – v0.3</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <div class="eyebrow">SKILL TREE • v0.2</div>
-      <h1>Push-ups</h1>
-    </div>
-    <button id="resetButton" class="ghost-button">Reset</button>
-  </header>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">SKILL TREE</p>
+        <h1>Push-ups</h1>
+      </div>
+      <button id="resetBtn" class="ghost-btn" type="button">Testdaten löschen</button>
+    </header>
 
-  <section class="overview">
-    <div class="metric"><span>Best</span><strong id="bestStat">0</strong></div>
-    <div class="metric"><span>Total</span><strong id="totalStat">0</strong></div>
-    <div class="metric"><span>Streak</span><strong><span id="streakStat">0</span>d</strong></div>
-    <div class="metric rank-metric"><span>Rang</span><strong id="rankStat">–</strong></div>
-  </section>
+    <section class="stats" aria-label="Fortschritt">
+      <article>
+        <span>Rekord</span>
+        <strong id="maxStat">0</strong>
+      </article>
+      <article>
+        <span>Gesamt</span>
+        <strong id="totalStat">0</strong>
+      </article>
+      <article>
+        <span>Streak</span>
+        <strong><span id="streakStat">0</span> Tage</strong>
+      </article>
+      <article>
+        <span>Rang</span>
+        <strong id="rankStat">Start</strong>
+      </article>
+    </section>
 
-  <section class="legend">
-    <span><i class="legend-dot complete"></i> geschafft</span>
-    <span><i class="legend-dot available"></i> erreichbar</span>
-    <span><i class="legend-dot locked"></i> gesperrt</span>
-  </section>
+    <section class="tree-wrap">
+      <div class="tree" id="skillTree" aria-label="Push-up Skill Tree"></div>
+    </section>
 
-  <main id="viewport" class="viewport">
-    <div id="tree" class="tree">
-      <svg id="connections" class="connections" aria-hidden="true"></svg>
-    </div>
+    <button id="openTrainingBtn" class="training-main-btn" type="button">
+      + Training
+    </button>
   </main>
 
-  <button id="trainingButton" class="training-button">+ Training eintragen</button>
-
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <section id="trainingModal" class="sheet hidden">
-      <div class="sheet-handle"></div>
-      <button class="close-button" data-close>×</button>
-      <div class="eyebrow">NEUES TRAINING</div>
-      <h2>Push-ups eintragen</h2>
-      <p class="sheet-copy">Trage dein Training einmal ein. Der Skill Tree prüft danach automatisch Rekord, Gesamtzahl, Streak und neue Freischaltungen.</p>
-
-      <label for="sessionBest">Maximal am Stück in diesem Training</label>
-      <input id="sessionBest" type="number" min="0" inputmode="numeric" placeholder="z. B. 12" />
-
-      <label for="sessionTotal">Push-ups insgesamt in diesem Training</label>
-      <input id="sessionTotal" type="number" min="1" inputmode="numeric" placeholder="z. B. 34" />
-
-      <div id="trainingError" class="error hidden"></div>
-      <button id="saveTraining" class="primary-button">Training speichern</button>
-    </section>
-
-    <section id="resultModal" class="sheet hidden">
-      <div class="sheet-handle"></div>
-      <button class="close-button" data-close>×</button>
-      <div class="eyebrow">TRAINING GESPEICHERT</div>
-      <h2 id="resultHeadline">Fortschritt aktualisiert</h2>
-
-      <div class="result-grid">
-        <div><span>Best</span><strong id="resultBest">0</strong></div>
-        <div><span>Total</span><strong id="resultTotal">0</strong></div>
-        <div><span>Streak</span><strong id="resultStreak">0d</strong></div>
+  <!-- Trainingsflow -->
+  <div id="trainingModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="trainingTitle">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <button id="backBtn" class="icon-btn hidden" type="button" aria-label="Zurück">←</button>
+        <div>
+          <p class="eyebrow">TRAINING</p>
+          <h2 id="trainingTitle">Übung auswählen</h2>
+        </div>
+        <button id="closeTrainingBtn" class="icon-btn" type="button" aria-label="Schließen">✕</button>
       </div>
 
-      <div id="resultRecord" class="notice hidden"></div>
+      <!-- Schritt 1 -->
+      <section id="exerciseStep" class="step">
+        <button class="exercise-card active" data-exercise="pushups" type="button">
+          <span class="exercise-icon">💪</span>
+          <span>
+            <strong>Push-ups</strong>
+            <small>Kamera + Timer + Wiederholungen</small>
+          </span>
+          <span>›</span>
+        </button>
 
-      <div id="unlockSection" class="unlock-section hidden">
-        <div class="section-label">NEU FREIGESCHALTET</div>
-        <div id="unlockList" class="unlock-list"></div>
-      </div>
+        <button class="exercise-card" type="button" disabled>
+          <span class="exercise-icon">🦵</span>
+          <span>
+            <strong>Squats</strong>
+            <small>Kommt als Nächstes</small>
+          </span>
+          <span>🔒</span>
+        </button>
 
-      <div id="rankSection" class="rank-section hidden">
-        <div class="section-label">NEUER RANG</div>
-        <div id="rankReveal" class="rank-reveal"></div>
-      </div>
+        <button class="exercise-card" type="button" disabled>
+          <span class="exercise-icon">🔥</span>
+          <span>
+            <strong>Sit-ups</strong>
+            <small>Noch nicht aktiv</small>
+          </span>
+          <span>🔒</span>
+        </button>
 
-      <button class="primary-button" data-close>Weiter</button>
-    </section>
+        <button class="exercise-card" type="button" disabled>
+          <span class="exercise-icon">⏱️</span>
+          <span>
+            <strong>Plank</strong>
+            <small>Noch nicht aktiv</small>
+          </span>
+          <span>🔒</span>
+        </button>
+      </section>
 
-    <section id="nodeModal" class="sheet hidden">
-      <div class="sheet-handle"></div>
-      <button class="close-button" data-close>×</button>
-      <div id="nodeModalType" class="eyebrow">SKILL</div>
-      <h2 id="nodeModalTitle">Skill</h2>
-      <p id="nodeModalText" class="sheet-copy"></p>
+      <!-- Schritt 2 -->
+      <section id="cameraStep" class="step hidden">
+        <div class="camera-box">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <div id="cameraPlaceholder" class="camera-placeholder">
+            <span>📷</span>
+            <strong>Kamera noch nicht gestartet</strong>
+            <small>Das Video wird nicht hochgeladen.</small>
+          </div>
 
-      <div class="node-progress">
-        <div><span>Fortschritt</span><strong id="nodeModalProgress">0 / 0</strong></div>
-        <div class="bar"><div id="nodeModalBar"></div></div>
-      </div>
-      <div id="nodeModalState" class="notice"></div>
-    </section>
+          <div id="timerOverlay" class="timer-overlay hidden">
+            <span>Training läuft</span>
+            <strong id="timerDisplay">00:00</strong>
+          </div>
+        </div>
+
+        <p id="cameraStatus" class="status-text">
+          Starte zuerst die Kamera. Danach kannst du das Training beginnen.
+        </p>
+
+        <div class="button-stack">
+          <button id="startCameraBtn" class="primary-btn" type="button">Kamera starten</button>
+          <button id="continueWithoutCameraBtn" class="secondary-btn" type="button">Ohne Kamera weitermachen</button>
+          <button id="startWorkoutBtn" class="primary-btn hidden" type="button">Training starten</button>
+          <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
+        </div>
+      </section>
+
+      <!-- Schritt 3 -->
+      <section id="resultStep" class="step hidden">
+        <div class="result-summary">
+          <span>Trainingszeit</span>
+          <strong id="finalTime">00:00</strong>
+        </div>
+
+        <label class="rep-input-wrap" for="repInput">
+          <span>Wie viele Push-ups hast du geschafft?</span>
+          <input id="repInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="z. B. 24" />
+        </label>
+
+        <button id="saveTrainingBtn" class="primary-btn" type="button">Training speichern</button>
+      </section>
+
+      <!-- Schritt 4 -->
+      <section id="successStep" class="step hidden">
+        <div class="success-mark">✓</div>
+        <h3>Training gespeichert</h3>
+        <div id="successDetails" class="success-details"></div>
+        <button id="doneBtn" class="primary-btn" type="button">Zum Skill Tree</button>
+      </section>
+    </div>
   </div>
 
   <script src="app.js"></script>
