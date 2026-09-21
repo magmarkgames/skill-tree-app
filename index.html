@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
-  <title>Skill Tree – v0.3</title>
+  <title>Skill Tree – v0.4</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -18,34 +18,19 @@
     </header>
 
     <section class="stats" aria-label="Fortschritt">
-      <article>
-        <span>Rekord</span>
-        <strong id="maxStat">0</strong>
-      </article>
-      <article>
-        <span>Gesamt</span>
-        <strong id="totalStat">0</strong>
-      </article>
-      <article>
-        <span>Streak</span>
-        <strong><span id="streakStat">0</span> Tage</strong>
-      </article>
-      <article>
-        <span>Rang</span>
-        <strong id="rankStat">Start</strong>
-      </article>
+      <article><span>Rekord</span><strong id="maxStat">0</strong></article>
+      <article><span>Gesamt</span><strong id="totalStat">0</strong></article>
+      <article><span>Streak</span><strong><span id="streakStat">0</span> Tage</strong></article>
+      <article><span>Rang</span><strong id="rankStat">Start</strong></article>
     </section>
 
     <section class="tree-wrap">
       <div class="tree" id="skillTree" aria-label="Push-up Skill Tree"></div>
     </section>
 
-    <button id="openTrainingBtn" class="training-main-btn" type="button">
-      + Training
-    </button>
+    <button id="openTrainingBtn" class="training-main-btn" type="button">+ Training</button>
   </main>
 
-  <!-- Trainingsflow -->
   <div id="trainingModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="trainingTitle">
     <div class="modal-panel">
       <div class="modal-head">
@@ -57,89 +42,79 @@
         <button id="closeTrainingBtn" class="icon-btn" type="button" aria-label="Schließen">✕</button>
       </div>
 
-      <!-- Schritt 1 -->
       <section id="exerciseStep" class="step">
         <button class="exercise-card active" data-exercise="pushups" type="button">
           <span class="exercise-icon">💪</span>
-          <span>
-            <strong>Push-ups</strong>
-            <small>Kamera + Timer + Wiederholungen</small>
-          </span>
+          <span><strong>Push-ups</strong><small>Automatische Kamera-Erkennung (Beta)</small></span>
           <span>›</span>
         </button>
-
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">🦵</span>
-          <span>
-            <strong>Squats</strong>
-            <small>Kommt als Nächstes</small>
-          </span>
-          <span>🔒</span>
+          <span class="exercise-icon">🦵</span><span><strong>Squats</strong><small>Kommt als Nächstes</small></span><span>🔒</span>
         </button>
-
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">🔥</span>
-          <span>
-            <strong>Sit-ups</strong>
-            <small>Noch nicht aktiv</small>
-          </span>
-          <span>🔒</span>
+          <span class="exercise-icon">🔥</span><span><strong>Sit-ups</strong><small>Noch nicht aktiv</small></span><span>🔒</span>
         </button>
-
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">⏱️</span>
-          <span>
-            <strong>Plank</strong>
-            <small>Noch nicht aktiv</small>
-          </span>
-          <span>🔒</span>
+          <span class="exercise-icon">⏱️</span><span><strong>Plank</strong><small>Noch nicht aktiv</small></span><span>🔒</span>
         </button>
       </section>
 
-      <!-- Schritt 2 -->
       <section id="cameraStep" class="step hidden">
+        <div class="setup-tip">
+          <strong>So stellst du das Handy auf:</strong>
+          <span>Seitliche Ansicht · Oberkörper + Arme vollständig sichtbar · etwas Abstand zur Kamera.</span>
+        </div>
+
         <div class="camera-box">
           <video id="cameraVideo" autoplay muted playsinline></video>
+          <canvas id="poseCanvas"></canvas>
+
           <div id="cameraPlaceholder" class="camera-placeholder">
             <span>📷</span>
             <strong>Kamera noch nicht gestartet</strong>
-            <small>Das Video wird nicht hochgeladen.</small>
+            <small>Das Kamerabild wird nicht als Video gespeichert.</small>
           </div>
 
+          <div id="counterOverlay" class="counter-overlay hidden">
+            <span>PUSH-UPS</span><strong id="liveRepCount">0</strong>
+          </div>
           <div id="timerOverlay" class="timer-overlay hidden">
-            <span>Training läuft</span>
-            <strong id="timerDisplay">00:00</strong>
+            <span>ZEIT</span><strong id="timerDisplay">00:00</strong>
+          </div>
+          <div id="formOverlay" class="form-overlay hidden">
+            <strong id="formCue">Position finden …</strong><span id="angleDisplay">–°</span>
           </div>
         </div>
 
-        <p id="cameraStatus" class="status-text">
-          Starte zuerst die Kamera. Danach kannst du das Training beginnen.
-        </p>
+        <div id="poseQuality" class="pose-quality neutral">
+          <span class="quality-dot"></span><strong id="poseQualityText">Kamera noch nicht aktiv</strong>
+        </div>
+
+        <p id="cameraStatus" class="status-text">Starte die Kamera. Beim ersten Mal fragt dein Browser nach der Berechtigung.</p>
 
         <div class="button-stack">
-          <button id="startCameraBtn" class="primary-btn" type="button">Kamera starten</button>
+          <button id="startCameraBtn" class="primary-btn" type="button">Kamera + Erkennung starten</button>
           <button id="continueWithoutCameraBtn" class="secondary-btn" type="button">Ohne Kamera weitermachen</button>
           <button id="startWorkoutBtn" class="primary-btn hidden" type="button">Training starten</button>
           <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
         </div>
       </section>
 
-      <!-- Schritt 3 -->
       <section id="resultStep" class="step hidden">
-        <div class="result-summary">
-          <span>Trainingszeit</span>
-          <strong id="finalTime">00:00</strong>
+        <div class="result-grid">
+          <div class="result-summary"><span>Trainingszeit</span><strong id="finalTime">00:00</strong></div>
+          <div class="result-summary"><span>Automatisch erkannt</span><strong id="detectedResult">–</strong></div>
         </div>
 
         <label class="rep-input-wrap" for="repInput">
-          <span>Wie viele Push-ups hast du geschafft?</span>
+          <span>Wiederholungen zum Speichern</span>
           <input id="repInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="z. B. 24" />
+          <small>Du kannst die automatische Erkennung hier korrigieren.</small>
         </label>
 
         <button id="saveTrainingBtn" class="primary-btn" type="button">Training speichern</button>
       </section>
 
-      <!-- Schritt 4 -->
       <section id="successStep" class="step hidden">
         <div class="success-mark">✓</div>
         <h3>Training gespeichert</h3>
@@ -149,6 +124,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

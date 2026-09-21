@@ -1,4 +1,19 @@
-const STORAGE_KEY = "skillTreeAppProgressV03";
+import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
+
+const STORAGE_KEY = "skillTreeAppProgressV04";
+const OLD_STORAGE_KEYS = ["skillTreeAppProgressV03", "skillTreeProgress", "skillTreeAppProgress", "progress"];
+const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
+const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+
+const PUSHUP_CONFIG = {
+  upAngle: 155,
+  downAngle: 95,
+  minVisibility: 0.55,
+  maxBodyAngleFromHorizontal: 55,
+  stableFrames: 3,
+  minTransitionMs: 220,
+  smoothing: 0.35
+};
 
 const DEFAULT_PROGRESS = {
   pushupMax: 0,
@@ -8,7 +23,6 @@ const DEFAULT_PROGRESS = {
   trainingHistory: []
 };
 
-// Unsere bisherige Rangfolge + die schon geplanten nächsten Ränge.
 const RANKS = [
   { name: "Start", target: 0 },
   { name: "Holz", target: 5 },
@@ -20,38 +34,43 @@ const RANKS = [
   { name: "Meister", target: 100 }
 ];
 
-// Ein bewusst einfacher "hässlicher" Testbaum.
-// x/y sind Pixelpositionen im 650x650-Baum.
 const SKILL_NODES = [
   { id: "start", type: "start", label: "Start", target: 0, x: 269, y: 530 },
-
   { id: "wood", type: "max", label: "Holz", target: 5, x: 269, y: 410, parent: "start" },
   { id: "stone", type: "max", label: "Stein", target: 10, x: 145, y: 300, parent: "wood" },
   { id: "iron", type: "max", label: "Eisen", target: 20, x: 393, y: 300, parent: "wood" },
   { id: "gold", type: "max", label: "Gold", target: 30, x: 269, y: 190, parent: "stone" },
   { id: "crystal", type: "max", label: "Kristall", target: 50, x: 269, y: 70, parent: "gold" },
-
   { id: "total50", type: "total", label: "Gesamt", target: 50, x: 22, y: 190, parent: "stone" },
   { id: "total100", type: "total", label: "Gesamt", target: 100, x: 22, y: 70, parent: "total50" },
-
   { id: "streak2", type: "streak", label: "Serie", target: 2, x: 516, y: 190, parent: "iron" },
   { id: "streak3", type: "streak", label: "Serie", target: 3, x: 516, y: 70, parent: "streak2" }
 ];
 
 let progress = loadProgress();
 let cameraStream = null;
+let poseLandmarker = null;
+let poseLoadingPromise = null;
+let detectionFrameId = null;
+let lastVideoTime = -1;
 let workoutStartedAt = null;
 let timerInterval = null;
 let elapsedSeconds = 0;
 let cameraWasStarted = false;
+let autoDetectionAvailable = false;
+let workoutActive = false;
+let repCount = 0;
+let pushupPhase = "unknown";
+let smoothedElbowAngle = null;
+let upFrames = 0;
+let downFrames = 0;
+let lastTransitionAt = 0;
 
-// ---------- DOM ----------
 const skillTree = document.getElementById("skillTree");
 const maxStat = document.getElementById("maxStat");
 const totalStat = document.getElementById("totalStat");
 const streakStat = document.getElementById("streakStat");
 const rankStat = document.getElementById("rankStat");
-
 const trainingModal = document.getElementById("trainingModal");
 const exerciseStep = document.getElementById("exerciseStep");
 const cameraStep = document.getElementById("cameraStep");
@@ -59,43 +78,34 @@ const resultStep = document.getElementById("resultStep");
 const successStep = document.getElementById("successStep");
 const trainingTitle = document.getElementById("trainingTitle");
 const backBtn = document.getElementById("backBtn");
-
 const cameraVideo = document.getElementById("cameraVideo");
+const poseCanvas = document.getElementById("poseCanvas");
+const poseCtx = poseCanvas.getContext("2d");
 const cameraPlaceholder = document.getElementById("cameraPlaceholder");
 const cameraStatus = document.getElementById("cameraStatus");
 const timerOverlay = document.getElementById("timerOverlay");
 const timerDisplay = document.getElementById("timerDisplay");
+const counterOverlay = document.getElementById("counterOverlay");
+const liveRepCount = document.getElementById("liveRepCount");
+const formOverlay = document.getElementById("formOverlay");
+const formCue = document.getElementById("formCue");
+const angleDisplay = document.getElementById("angleDisplay");
+const poseQuality = document.getElementById("poseQuality");
+const poseQualityText = document.getElementById("poseQualityText");
 const finalTime = document.getElementById("finalTime");
+const detectedResult = document.getElementById("detectedResult");
 const repInput = document.getElementById("repInput");
 const successDetails = document.getElementById("successDetails");
-
 const startCameraBtn = document.getElementById("startCameraBtn");
 const continueWithoutCameraBtn = document.getElementById("continueWithoutCameraBtn");
 const startWorkoutBtn = document.getElementById("startWorkoutBtn");
 const finishWorkoutBtn = document.getElementById("finishWorkoutBtn");
 
-// ---------- Daten ----------
 function loadProgress() {
-  const saved = safeReadJson(STORAGE_KEY);
-  if (saved) return normalizeProgress(saved);
+  const current = safeReadJson(STORAGE_KEY);
+  if (current) return normalizeProgress(current);
 
-  // Migration: v0.2 hatte bereits pushupMax / pushupTotal / pushupStreak.
-  // Falls der genaue alte Key anders hieß, suchen wir einmal nach einem passenden Objekt.
-  const possibleKeys = ["skillTreeProgress", "skillTreeAppProgress", "progress"];
-
-  for (const key of possibleKeys) {
-    const candidate = safeReadJson(key);
-    if (looksLikeOldProgress(candidate)) {
-      const migrated = normalizeProgress(candidate);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-  }
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key || key === STORAGE_KEY) continue;
-
+  for (const key of OLD_STORAGE_KEYS) {
     const candidate = safeReadJson(key);
     if (looksLikeOldProgress(candidate)) {
       const migrated = normalizeProgress(candidate);
@@ -117,14 +127,9 @@ function safeReadJson(key) {
 }
 
 function looksLikeOldProgress(value) {
-  return !!value &&
-    typeof value === "object" &&
-    (
-      "pushupMax" in value ||
-      "pushupTotal" in value ||
-      "pushupStreak" in value ||
-      "lastTrainingDate" in value
-    );
+  return !!value && typeof value === "object" && (
+    "pushupMax" in value || "pushupTotal" in value || "pushupStreak" in value || "lastTrainingDate" in value
+  );
 }
 
 function normalizeProgress(value) {
@@ -141,7 +146,6 @@ function saveProgress() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
-// ---------- UI / Tree ----------
 function render() {
   maxStat.textContent = progress.pushupMax;
   totalStat.textContent = progress.pushupTotal;
@@ -151,9 +155,7 @@ function render() {
 }
 
 function getRank(maxReps) {
-  return RANKS.reduce((current, rank) => {
-    return maxReps >= rank.target ? rank : current;
-  }, RANKS[0]);
+  return RANKS.reduce((current, rank) => maxReps >= rank.target ? rank : current, RANKS[0]);
 }
 
 function nodeValue(node) {
@@ -164,8 +166,7 @@ function nodeValue(node) {
 }
 
 function isNodeDone(node) {
-  if (node.type === "start") return true;
-  return nodeValue(node) >= node.target;
+  return node.type === "start" || nodeValue(node) >= node.target;
 }
 
 function isNodeAvailable(node) {
@@ -177,20 +178,15 @@ function isNodeAvailable(node) {
 function renderTree() {
   skillTree.innerHTML = "";
 
-  // Linien zuerst
   SKILL_NODES.forEach(node => {
     if (!node.parent) return;
     const parent = SKILL_NODES.find(n => n.id === node.parent);
     if (!parent) return;
-
     const line = createConnector(parent, node);
-    if (isNodeDone(parent) && isNodeDone(node)) {
-      line.classList.add("done");
-    }
+    if (isNodeDone(parent) && isNodeDone(node)) line.classList.add("done");
     skillTree.appendChild(line);
   });
 
-  // Dann Hexagons
   SKILL_NODES.forEach(node => {
     const element = document.createElement("button");
     element.type = "button";
@@ -200,37 +196,12 @@ function renderTree() {
 
     const done = isNodeDone(node);
     const available = isNodeAvailable(node);
-
     if (done) element.classList.add("done");
     else if (available) element.classList.add("next");
     else element.classList.add("locked");
 
-    const unit =
-      node.type === "total" ? "gesamt" :
-      node.type === "streak" ? "Tage" :
-      node.type === "start" ? "" :
-      "am Stück";
-
-    element.innerHTML = `
-      <span class="node-rank">${node.label}</span>
-      <span class="node-target">${node.type === "start" ? "✓" : node.target}</span>
-      <span class="node-label">${unit}</span>
-    `;
-
-    element.addEventListener("click", () => {
-      const current =
-        node.type === "max" ? progress.pushupMax :
-        node.type === "total" ? progress.pushupTotal :
-        node.type === "streak" ? progress.pushupStreak :
-        0;
-
-      if (node.type === "start") {
-        alert("Startpunkt deines Push-up Skill Trees.");
-      } else {
-        alert(`${node.label}: Ziel ${node.target} ${unit}.\nAktuell: ${current}.`);
-      }
-    });
-
+    const unit = node.type === "total" ? "gesamt" : node.type === "streak" ? "Tage" : node.type === "start" ? "" : "am Stück";
+    element.innerHTML = `<span class="node-rank">${node.label}</span><span class="node-target">${node.type === "start" ? "✓" : node.target}</span><span class="node-label">${unit}</span>`;
     skillTree.appendChild(element);
   });
 }
@@ -238,54 +209,25 @@ function renderTree() {
 function createConnector(from, to) {
   const line = document.createElement("div");
   line.className = "connector";
-
-  const nodeW = 112;
-  const nodeH = 98;
-
-  const x1 = from.x + nodeW / 2;
-  const y1 = from.y + nodeH / 2;
-  const x2 = to.x + nodeW / 2;
-  const y2 = to.y + nodeH / 2;
-
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
+  const x1 = from.x + 56, y1 = from.y + 49, x2 = to.x + 56, y2 = to.y + 49;
+  const dx = x2 - x1, dy = y2 - y1;
   line.style.left = `${x1}px`;
   line.style.top = `${y1}px`;
-  line.style.width = `${length}px`;
-  line.style.transform = `rotate(${angle}deg)`;
-
+  line.style.width = `${Math.hypot(dx, dy)}px`;
+  line.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
   return line;
 }
 
-// ---------- Modal / Steps ----------
 function showStep(stepName) {
   [exerciseStep, cameraStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
-
   if (stepName === "exercise") {
-    exerciseStep.classList.remove("hidden");
-    trainingTitle.textContent = "Übung auswählen";
-    backBtn.classList.add("hidden");
-  }
-
-  if (stepName === "camera") {
-    cameraStep.classList.remove("hidden");
-    trainingTitle.textContent = "Push-up Training";
-    backBtn.classList.remove("hidden");
-  }
-
-  if (stepName === "result") {
-    resultStep.classList.remove("hidden");
-    trainingTitle.textContent = "Training eintragen";
-    backBtn.classList.remove("hidden");
-  }
-
-  if (stepName === "success") {
-    successStep.classList.remove("hidden");
-    trainingTitle.textContent = "Fertig";
-    backBtn.classList.add("hidden");
+    exerciseStep.classList.remove("hidden"); trainingTitle.textContent = "Übung auswählen"; backBtn.classList.add("hidden");
+  } else if (stepName === "camera") {
+    cameraStep.classList.remove("hidden"); trainingTitle.textContent = "Push-up Training"; backBtn.classList.remove("hidden");
+  } else if (stepName === "result") {
+    resultStep.classList.remove("hidden"); trainingTitle.textContent = "Training prüfen"; backBtn.classList.remove("hidden");
+  } else if (stepName === "success") {
+    successStep.classList.remove("hidden"); trainingTitle.textContent = "Fertig"; backBtn.classList.add("hidden");
   }
 }
 
@@ -297,93 +239,318 @@ function openTraining() {
 }
 
 function closeTraining() {
+  workoutActive = false;
   stopCamera();
   stopTimer();
+  stopDetectionLoop();
   trainingModal.classList.add("hidden");
   document.body.style.overflow = "";
 }
 
 function resetTrainingSession() {
-  stopCamera();
-  stopTimer();
-  workoutStartedAt = null;
-  elapsedSeconds = 0;
-  cameraWasStarted = false;
-  repInput.value = "";
-  timerDisplay.textContent = "00:00";
-  finalTime.textContent = "00:00";
-  cameraPlaceholder.classList.remove("hidden");
-  timerOverlay.classList.add("hidden");
-  startCameraBtn.classList.remove("hidden");
-  continueWithoutCameraBtn.classList.remove("hidden");
-  startWorkoutBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.add("hidden");
-  cameraStatus.textContent = "Starte zuerst die Kamera. Danach kannst du das Training beginnen.";
+  workoutActive = false;
+  stopCamera(); stopTimer(); stopDetectionLoop();
+  workoutStartedAt = null; elapsedSeconds = 0; cameraWasStarted = false; autoDetectionAvailable = false;
+  repCount = 0; pushupPhase = "unknown"; smoothedElbowAngle = null; upFrames = 0; downFrames = 0; lastTransitionAt = 0; lastVideoTime = -1;
+  repInput.value = ""; liveRepCount.textContent = "0"; timerDisplay.textContent = "00:00"; finalTime.textContent = "00:00"; detectedResult.textContent = "–"; angleDisplay.textContent = "–°"; formCue.textContent = "Position finden …";
+  clearPoseCanvas();
+  cameraPlaceholder.classList.remove("hidden"); timerOverlay.classList.add("hidden"); counterOverlay.classList.add("hidden"); formOverlay.classList.add("hidden");
+  startCameraBtn.classList.remove("hidden"); startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
+  continueWithoutCameraBtn.classList.remove("hidden"); startWorkoutBtn.classList.add("hidden"); finishWorkoutBtn.classList.add("hidden");
+  setPoseQuality("neutral", "Kamera noch nicht aktiv");
+  cameraStatus.textContent = "Starte die Kamera. Beim ersten Mal fragt dein Browser nach der Berechtigung.";
 }
 
-// ---------- Kamera ----------
+async function initPoseLandmarker() {
+  if (poseLandmarker) return poseLandmarker;
+  if (poseLoadingPromise) return poseLoadingPromise;
+
+  poseLoadingPromise = (async () => {
+    const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
+    const base = {
+      baseOptions: { modelAssetPath: POSE_MODEL, delegate: "GPU" },
+      runningMode: "VIDEO",
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.6,
+      minPosePresenceConfidence: 0.6,
+      minTrackingConfidence: 0.6,
+      outputSegmentationMasks: false
+    };
+
+    try {
+      poseLandmarker = await PoseLandmarker.createFromOptions(vision, base);
+    } catch (gpuError) {
+      console.warn("GPU nicht verfügbar, CPU-Fallback", gpuError);
+      poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        ...base,
+        baseOptions: { modelAssetPath: POSE_MODEL, delegate: "CPU" }
+      });
+    }
+    return poseLandmarker;
+  })();
+
+  try { return await poseLoadingPromise; }
+  finally { poseLoadingPromise = null; }
+}
+
 async function startCamera() {
   cameraStatus.textContent = "Kamera wird geöffnet …";
+  startCameraBtn.disabled = true;
+  startCameraBtn.textContent = "Wird geladen …";
 
   if (!navigator.mediaDevices?.getUserMedia) {
     cameraStatus.textContent = "Dieser Browser unterstützt den Kamerazugriff hier nicht. Du kannst trotzdem ohne Kamera trainieren.";
+    startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
     return;
   }
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 720 },
-        height: { ideal: 1280 }
-      },
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     });
 
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
-
     cameraWasStarted = true;
     cameraPlaceholder.classList.add("hidden");
+    formOverlay.classList.remove("hidden");
+    resizePoseCanvas();
+    setPoseQuality("warn", "Körpererkennung wird geladen …");
+    cameraStatus.textContent = "Pose-Modell wird geladen. Beim ersten Start braucht das kurz Internetzugriff.";
+
+    try {
+      await initPoseLandmarker();
+      autoDetectionAvailable = true;
+      setPoseQuality("warn", "Stell dich seitlich vollständig ins Bild");
+      cameraStatus.textContent = "Erkennung bereit. Schulter, Ellenbogen, Handgelenk und Hüfte sollten sichtbar sein.";
+      startDetectionLoop();
+    } catch (modelError) {
+      console.error(modelError);
+      autoDetectionAvailable = false;
+      setPoseQuality("bad", "Automatische Erkennung nicht verfügbar");
+      cameraStatus.textContent = "Die Kamera läuft, aber die Körpererkennung konnte nicht geladen werden. Du kannst trotzdem manuell trainieren.";
+    }
+
     startCameraBtn.classList.add("hidden");
     continueWithoutCameraBtn.classList.add("hidden");
     startWorkoutBtn.classList.remove("hidden");
-    cameraStatus.textContent = "Kamera läuft. Stelle das Handy so auf, dass dein Körper später möglichst vollständig zu sehen ist.";
   } catch (error) {
-    console.error("Kamera konnte nicht gestartet werden:", error);
+    console.error(error);
+    setPoseQuality("bad", "Kamerazugriff nicht verfügbar");
     cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder ist nicht verfügbar. Du kannst ohne Kamera weitermachen.";
+    startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
   }
 }
 
 function continueWithoutCamera() {
-  stopCamera();
-  cameraWasStarted = false;
-  startCameraBtn.classList.add("hidden");
-  continueWithoutCameraBtn.classList.add("hidden");
-  startWorkoutBtn.classList.remove("hidden");
-  cameraStatus.textContent = "Manueller Modus. Starte das Training und trage die Wiederholungen anschließend selbst ein.";
+  stopCamera(); stopDetectionLoop(); cameraWasStarted = false; autoDetectionAvailable = false;
+  startCameraBtn.classList.add("hidden"); continueWithoutCameraBtn.classList.add("hidden"); startWorkoutBtn.classList.remove("hidden");
+  formOverlay.classList.add("hidden"); setPoseQuality("neutral", "Manueller Modus");
+  cameraStatus.textContent = "Starte das Training und trage die Wiederholungen anschließend selbst ein.";
 }
 
 function stopCamera() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-  }
+  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
   cameraStream = null;
   cameraVideo.srcObject = null;
 }
 
-// ---------- Timer ----------
+function resizePoseCanvas() {
+  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+  poseCanvas.width = cameraVideo.videoWidth;
+  poseCanvas.height = cameraVideo.videoHeight;
+}
+
+function startDetectionLoop() {
+  stopDetectionLoop();
+  const loop = () => { detectPoseFrame(); detectionFrameId = requestAnimationFrame(loop); };
+  detectionFrameId = requestAnimationFrame(loop);
+}
+
+function stopDetectionLoop() {
+  if (detectionFrameId) cancelAnimationFrame(detectionFrameId);
+  detectionFrameId = null;
+}
+
+function detectPoseFrame() {
+  if (!poseLandmarker || !cameraStream || cameraVideo.readyState < 2) return;
+  if (cameraVideo.videoWidth !== poseCanvas.width || cameraVideo.videoHeight !== poseCanvas.height) resizePoseCanvas();
+  if (cameraVideo.currentTime === lastVideoTime) return;
+  lastVideoTime = cameraVideo.currentTime;
+
+  try {
+    const result = poseLandmarker.detectForVideo(cameraVideo, performance.now());
+    processPoseResult(result);
+  } catch (error) {
+    console.error("Pose-Erkennung:", error);
+  }
+}
+
+function processPoseResult(result) {
+  clearPoseCanvas();
+  const landmarks = result?.landmarks?.[0];
+  if (!landmarks) {
+    setPoseQuality("bad", "Kein Körper erkannt");
+    formCue.textContent = "Geh etwas weiter ins Bild";
+    angleDisplay.textContent = "–°";
+    resetStableFrames();
+    return;
+  }
+
+  const analysis = analyzePushupPose(landmarks);
+  drawRelevantPose(landmarks, analysis?.side);
+
+  if (!analysis) {
+    setPoseQuality("warn", "Arm oder Hüfte nicht gut sichtbar");
+    formCue.textContent = "Seitlich + ganzer Oberkörper";
+    angleDisplay.textContent = "–°";
+    resetStableFrames();
+    return;
+  }
+
+  if (!analysis.bodyHorizontalEnough) {
+    setPoseQuality("warn", "Dreh dich seitlicher zur Kamera");
+    formCue.textContent = "Seitliche Push-up-Position";
+    angleDisplay.textContent = `${Math.round(analysis.elbowAngle)}°`;
+    resetStableFrames();
+    return;
+  }
+
+  setPoseQuality("good", `Pose erkannt · ${analysis.side === "left" ? "linker" : "rechter"} Arm`);
+  updatePushupState(analysis.elbowAngle);
+}
+
+function analyzePushupPose(landmarks) {
+  const sides = [
+    { name: "left", shoulder: 11, elbow: 13, wrist: 15, hip: 23 },
+    { name: "right", shoulder: 12, elbow: 14, wrist: 16, hip: 24 }
+  ];
+
+  const scored = sides.map(side => {
+    const points = [landmarks[side.shoulder], landmarks[side.elbow], landmarks[side.wrist], landmarks[side.hip]];
+    const visibility = points.reduce((sum, point) => sum + (point?.visibility ?? 0), 0) / points.length;
+    return { side, visibility };
+  }).sort((a, b) => b.visibility - a.visibility);
+
+  const best = scored[0];
+  if (!best || best.visibility < PUSHUP_CONFIG.minVisibility) return null;
+
+  const s = landmarks[best.side.shoulder];
+  const e = landmarks[best.side.elbow];
+  const w = landmarks[best.side.wrist];
+  const h = landmarks[best.side.hip];
+  if ([s,e,w,h].some(p => (p?.visibility ?? 0) < PUSHUP_CONFIG.minVisibility)) return null;
+
+  const elbowAngle = calculateAngle(s, e, w);
+  const width = Math.max(1, cameraVideo.videoWidth);
+  const height = Math.max(1, cameraVideo.videoHeight);
+  const dx = (h.x - s.x) * width;
+  const dy = (h.y - s.y) * height;
+  const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+  const bodyAngle = Math.min(angle, Math.abs(180 - angle));
+
+  return {
+    side: best.side.name,
+    elbowAngle,
+    bodyHorizontalEnough: bodyAngle <= PUSHUP_CONFIG.maxBodyAngleFromHorizontal
+  };
+}
+
+function calculateAngle(a, b, c) {
+  const ab = { x: a.x - b.x, y: a.y - b.y };
+  const cb = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ab.x * cb.x + ab.y * cb.y;
+  const magAB = Math.hypot(ab.x, ab.y);
+  const magCB = Math.hypot(cb.x, cb.y);
+  if (!magAB || !magCB) return 180;
+  const cos = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
+  return Math.acos(cos) * 180 / Math.PI;
+}
+
+function updatePushupState(rawAngle) {
+  smoothedElbowAngle = smoothedElbowAngle === null ? rawAngle : smoothedElbowAngle * (1 - PUSHUP_CONFIG.smoothing) + rawAngle * PUSHUP_CONFIG.smoothing;
+  const angle = smoothedElbowAngle;
+  angleDisplay.textContent = `${Math.round(angle)}°`;
+
+  if (!workoutActive) {
+    formCue.textContent = angle >= PUSHUP_CONFIG.upAngle ? "Startposition erkannt" : angle <= PUSHUP_CONFIG.downAngle ? "Tiefe Position erkannt" : "Position erkannt";
+    return;
+  }
+
+  if (angle >= PUSHUP_CONFIG.upAngle) { upFrames += 1; downFrames = 0; }
+  else if (angle <= PUSHUP_CONFIG.downAngle) { downFrames += 1; upFrames = 0; }
+  else { resetStableFrames(); }
+
+  const now = performance.now();
+  const enoughTime = now - lastTransitionAt >= PUSHUP_CONFIG.minTransitionMs;
+
+  if (pushupPhase === "unknown") {
+    formCue.textContent = "Arme strecken → Start";
+    if (upFrames >= PUSHUP_CONFIG.stableFrames) {
+      pushupPhase = "up"; lastTransitionAt = now; formCue.textContent = "Jetzt runter"; resetStableFrames();
+    }
+    return;
+  }
+
+  if (pushupPhase === "up") {
+    formCue.textContent = "Runter";
+    if (enoughTime && downFrames >= PUSHUP_CONFIG.stableFrames) {
+      pushupPhase = "down"; lastTransitionAt = now; formCue.textContent = "Jetzt hoch"; resetStableFrames();
+    }
+    return;
+  }
+
+  if (pushupPhase === "down") {
+    formCue.textContent = "Hoch";
+    if (enoughTime && upFrames >= PUSHUP_CONFIG.stableFrames) {
+      repCount += 1;
+      liveRepCount.textContent = String(repCount);
+      pushupPhase = "up";
+      lastTransitionAt = now;
+      formCue.textContent = "✓ Gewertet · wieder runter";
+      resetStableFrames();
+      if (liveRepCount.animate) liveRepCount.animate([{transform:"scale(1)"},{transform:"scale(1.35)"},{transform:"scale(1)"}], {duration:240,easing:"ease-out"});
+    }
+  }
+}
+
+function resetStableFrames() { upFrames = 0; downFrames = 0; }
+
+function drawRelevantPose(landmarks, sideName) {
+  if (!poseCanvas.width || !poseCanvas.height || !sideName) return;
+  const ids = sideName === "right" ? [12,14,16,24] : [11,13,15,23];
+  const pts = ids.map(i => landmarks[i]);
+  poseCtx.save();
+  poseCtx.lineWidth = Math.max(4, poseCanvas.width * 0.004);
+  poseCtx.strokeStyle = "rgba(91,201,255,.95)";
+  poseCtx.fillStyle = "rgba(255,255,255,.95)";
+  poseCtx.lineCap = "round";
+  drawLine(pts[0], pts[1]); drawLine(pts[1], pts[2]); drawLine(pts[0], pts[3]);
+  pts.forEach(drawPoint);
+  poseCtx.restore();
+}
+
+function drawLine(a,b) {
+  poseCtx.beginPath(); poseCtx.moveTo(a.x*poseCanvas.width,a.y*poseCanvas.height); poseCtx.lineTo(b.x*poseCanvas.width,b.y*poseCanvas.height); poseCtx.stroke();
+}
+function drawPoint(p) {
+  poseCtx.beginPath(); poseCtx.arc(p.x*poseCanvas.width,p.y*poseCanvas.height,Math.max(5,poseCanvas.width*.006),0,Math.PI*2); poseCtx.fill();
+}
+function clearPoseCanvas() { poseCtx.clearRect(0,0,poseCanvas.width,poseCanvas.height); }
+function setPoseQuality(state,text) { poseQuality.className = `pose-quality ${state}`; poseQualityText.textContent = text; }
+
 function startWorkout() {
-  workoutStartedAt = Date.now();
-  elapsedSeconds = 0;
-
-  startWorkoutBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.remove("hidden");
-  timerOverlay.classList.remove("hidden");
-  cameraStatus.textContent = "Training läuft. In v0.3 zählt die App die Wiederholungen noch nicht automatisch.";
-
-  updateTimer();
-  timerInterval = window.setInterval(updateTimer, 250);
+  workoutStartedAt = Date.now(); elapsedSeconds = 0; workoutActive = true;
+  repCount = 0; liveRepCount.textContent = "0"; pushupPhase = "unknown"; smoothedElbowAngle = null; resetStableFrames(); lastTransitionAt = 0;
+  startWorkoutBtn.classList.add("hidden"); finishWorkoutBtn.classList.remove("hidden"); timerOverlay.classList.remove("hidden");
+  if (cameraWasStarted) {
+    counterOverlay.classList.remove("hidden"); formOverlay.classList.remove("hidden");
+    cameraStatus.textContent = autoDetectionAvailable ? "Training läuft. Gezählt wird erst bei OBEN → UNTEN → OBEN." : "Training läuft. Automatische Erkennung ist nicht verfügbar; trage die Zahl danach manuell ein.";
+  } else {
+    cameraStatus.textContent = "Manuelles Training läuft. Trage die Wiederholungen anschließend ein.";
+  }
+  updateTimer(); timerInterval = window.setInterval(updateTimer,250);
 }
 
 function updateTimer() {
@@ -391,175 +558,90 @@ function updateTimer() {
   elapsedSeconds = Math.floor((Date.now() - workoutStartedAt) / 1000);
   timerDisplay.textContent = formatTime(elapsedSeconds);
 }
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-}
+function stopTimer() { if (timerInterval) clearInterval(timerInterval); timerInterval = null; }
 
 function finishWorkout() {
-  updateTimer();
-  stopTimer();
-  stopCamera();
-
+  updateTimer(); workoutActive = false; stopTimer(); stopDetectionLoop(); stopCamera();
   finalTime.textContent = formatTime(elapsedSeconds);
-  showStep("result");
-
-  setTimeout(() => repInput.focus(), 50);
+  if (cameraWasStarted && autoDetectionAvailable) { detectedResult.textContent = String(repCount); repInput.value = String(repCount); }
+  else { detectedResult.textContent = "–"; repInput.value = ""; }
+  showStep("result"); setTimeout(() => repInput.focus(),50);
 }
 
 function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const secs = (seconds % 60).toString().padStart(2, "0");
+  const mins = Math.floor(seconds/60).toString().padStart(2,"0");
+  const secs = (seconds%60).toString().padStart(2,"0");
   return `${mins}:${secs}`;
 }
 
-// ---------- Training speichern ----------
 function saveTrainingResult() {
   const reps = Math.floor(Number(repInput.value));
-
-  if (!Number.isFinite(reps) || reps < 0) {
-    alert("Bitte gib eine gültige Wiederholungszahl ein.");
-    return;
-  }
-
-  if (reps === 0) {
-    const confirmZero = confirm("0 Wiederholungen speichern?");
-    if (!confirmZero) return;
-  }
+  if (!Number.isFinite(reps) || reps < 0) { alert("Bitte gib eine gültige Wiederholungszahl ein."); return; }
+  if (reps === 0 && !confirm("0 Wiederholungen speichern?")) return;
 
   const oldMax = progress.pushupMax;
   const oldRank = getRank(oldMax);
   const oldStreak = progress.pushupStreak;
-
   const today = localDateString(new Date());
-  const newStreak = calculateStreak(progress.lastTrainingDate, today, progress.pushupStreak);
+  const newStreak = calculateStreak(progress.lastTrainingDate,today,progress.pushupStreak);
 
-  progress.pushupMax = Math.max(progress.pushupMax, reps);
+  progress.pushupMax = Math.max(progress.pushupMax,reps);
   progress.pushupTotal += reps;
   progress.pushupStreak = newStreak;
   progress.lastTrainingDate = today;
-
   progress.trainingHistory.unshift({
-    exercise: "pushups",
-    reps,
-    durationSeconds: elapsedSeconds,
-    date: new Date().toISOString(),
-    usedCamera: cameraWasStarted
+    exercise:"pushups", reps,
+    autoDetectedReps: cameraWasStarted && autoDetectionAvailable ? repCount : null,
+    durationSeconds:elapsedSeconds, date:new Date().toISOString(), usedCamera:cameraWasStarted,
+    mode: cameraWasStarted && autoDetectionAvailable ? "camera-auto" : "manual"
   });
-
-  // Damit localStorage nicht irgendwann unendlich wächst.
-  progress.trainingHistory = progress.trainingHistory.slice(0, 200);
-
-  saveProgress();
-  render();
+  progress.trainingHistory = progress.trainingHistory.slice(0,200);
+  saveProgress(); render();
 
   const newRank = getRank(progress.pushupMax);
-  const isNewRecord = reps > oldMax;
-  const rankUp = newRank.name !== oldRank.name;
-
   successDetails.innerHTML = "";
-
   addSuccessLine(`${reps} Push-ups gespeichert`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
-
-  if (isNewRecord) {
-    addSuccessLine(`🏆 Neuer Rekord: ${progress.pushupMax}`, true);
-  } else {
-    addSuccessLine(`Rekord bleibt bei ${progress.pushupMax}`);
-  }
-
-  if (rankUp) {
-    addSuccessLine(`⬆️ Neuer Rang: ${newRank.name}`, true);
-  } else {
-    addSuccessLine(`Rang: ${newRank.name}`);
-  }
-
-  if (newStreak > oldStreak) {
-    addSuccessLine(`🔥 Trainingsserie: ${newStreak} Tage`, true);
-  } else {
-    addSuccessLine(`Trainingsserie: ${newStreak} Tage`);
-  }
-
+  if (cameraWasStarted && autoDetectionAvailable && reps !== repCount) addSuccessLine(`Kamera erkannt: ${repCount} · korrigiert auf: ${reps}`);
+  addSuccessLine(reps > oldMax ? `🏆 Neuer Rekord: ${progress.pushupMax}` : `Rekord bleibt bei ${progress.pushupMax}`, reps > oldMax);
+  addSuccessLine(newRank.name !== oldRank.name ? `⬆️ Neuer Rang: ${newRank.name}` : `Rang: ${newRank.name}`, newRank.name !== oldRank.name);
+  addSuccessLine(newStreak > oldStreak ? `🔥 Trainingsserie: ${newStreak} Tage` : `Trainingsserie: ${newStreak} Tage`, newStreak > oldStreak);
   showStep("success");
 }
 
-function addSuccessLine(text, good = false) {
-  const line = document.createElement("div");
-  line.className = `success-line${good ? " good" : ""}`;
-  line.textContent = text;
-  successDetails.appendChild(line);
+function addSuccessLine(text, good=false) {
+  const line = document.createElement("div"); line.className = `success-line${good ? " good" : ""}`; line.textContent = text; successDetails.appendChild(line);
 }
 
-function calculateStreak(lastDate, today, currentStreak) {
+function calculateStreak(lastDate,today,currentStreak) {
   if (!lastDate) return 1;
-  if (lastDate === today) return Math.max(1, currentStreak);
-
-  const last = parseLocalDate(lastDate);
-  const now = parseLocalDate(today);
-  const diffDays = Math.round((now - last) / 86400000);
-
-  if (diffDays === 1) return Math.max(1, currentStreak) + 1;
-  return 1;
+  if (lastDate === today) return Math.max(1,currentStreak);
+  const diffDays = Math.round((parseLocalDate(today)-parseLocalDate(lastDate))/86400000);
+  return diffDays === 1 ? Math.max(1,currentStreak)+1 : 1;
 }
+function localDateString(date) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`; }
+function parseLocalDate(value) { const [y,m,d] = value.split("-").map(Number); return new Date(y,m-1,d); }
 
-function localDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function parseLocalDate(value) {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-// ---------- Events ----------
-document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
-document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
-
-document.querySelector('[data-exercise="pushups"]').addEventListener("click", () => {
-  showStep("camera");
-});
-
-backBtn.addEventListener("click", () => {
-  if (!resultStep.classList.contains("hidden")) {
-    showStep("camera");
-    return;
-  }
-
-  stopCamera();
-  stopTimer();
-  showStep("exercise");
-});
-
-startCameraBtn.addEventListener("click", startCamera);
-continueWithoutCameraBtn.addEventListener("click", continueWithoutCamera);
-startWorkoutBtn.addEventListener("click", startWorkout);
-finishWorkoutBtn.addEventListener("click", finishWorkout);
-document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
-
-document.getElementById("doneBtn").addEventListener("click", () => {
-  closeTraining();
-});
-
-document.getElementById("resetBtn").addEventListener("click", () => {
-  const ok = confirm("Wirklich alle Testdaten dieser v0.3 löschen?");
-  if (!ok) return;
-
-  localStorage.removeItem(STORAGE_KEY);
-  progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
-  render();
-});
-
-// Falls die Seite im Hintergrund landet, Kamera freigeben.
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && cameraStream && !workoutStartedAt) {
-    stopCamera();
-  }
-});
+ document.getElementById("openTrainingBtn").addEventListener("click",openTraining);
+ document.getElementById("closeTrainingBtn").addEventListener("click",closeTraining);
+ document.querySelector('[data-exercise="pushups"]').addEventListener("click",()=>showStep("camera"));
+ backBtn.addEventListener("click",()=>{
+   if (!resultStep.classList.contains("hidden")) { showStep("camera"); return; }
+   workoutActive=false; stopCamera(); stopDetectionLoop(); stopTimer(); showStep("exercise");
+ });
+ startCameraBtn.addEventListener("click",startCamera);
+ continueWithoutCameraBtn.addEventListener("click",continueWithoutCamera);
+ startWorkoutBtn.addEventListener("click",startWorkout);
+ finishWorkoutBtn.addEventListener("click",finishWorkout);
+ document.getElementById("saveTrainingBtn").addEventListener("click",saveTrainingResult);
+ document.getElementById("doneBtn").addEventListener("click",closeTraining);
+ document.getElementById("resetBtn").addEventListener("click",()=>{
+   if (!confirm("Wirklich alle Testdaten dieser v0.4 löschen?")) return;
+   localStorage.removeItem(STORAGE_KEY); progress={...DEFAULT_PROGRESS,trainingHistory:[]}; render();
+ });
+ document.addEventListener("visibilitychange",()=>{
+   if (document.hidden && cameraStream && !workoutActive) { stopCamera(); stopDetectionLoop(); }
+ });
+ window.addEventListener("resize",resizePoseCanvas);
 
 render();
