@@ -3,8 +3,9 @@ import {
   FilesetResolver
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
 
-const STORAGE_KEY = "skillTreeAppProgressV06";
+const STORAGE_KEY = "skillTreeAppProgressV07";
 const OLD_STORAGE_KEYS = [
+  "skillTreeAppProgressV06",
   "skillTreeAppProgressV05",
   "skillTreeAppProgressV041",
   "skillTreeAppProgressV04",
@@ -19,35 +20,26 @@ const MEDIAPIPE_WASM =
 const FACE_MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
 
+// Die Quick-Mode-Erkennung ist absichtlich aus v0.6 übernommen.
+// Der UI-/Skill-Tree-Umbau soll die funktionierende Zählung nicht verändern.
 const QUICK_CONFIG = {
-  // Schnelleres Tracking für zügige Wiederholungen.
   detectIntervalMs: 34,
   minDetectionConfidence: 0.46,
-
-  // Setup bleibt bewusst großzügig.
   readyMinMetric: 0.095,
   readyMaxMetric: 0.52,
   readyMinCenterX: 0.12,
   readyMaxCenterX: 0.88,
   readyMinCenterY: 0.08,
   readyMaxCenterY: 0.92,
-
-  // Weniger Weg nötig, damit schnelle Push-ups nicht am Schwellenwert hängen bleiben.
   downRatio: 1.18,
   upRatio: 1.09,
   minDownDelta: 0.024,
-
-  // Ein guter Frame reicht pro Zustand; die Phase verhindert Doppelzählungen.
   stableFrames: 1,
   minRepIntervalMs: 330,
-
-  // Wenn das Gesicht unten aus dem Bild verschwindet, ist das jetzt erlaubt.
   faceLossGraceMs: 950,
   hardResetLossMs: 2200,
   inferDownAfterLossMs: 90,
   inferDownMinRatio: 1.055,
-
-  // Reagiert deutlich schneller als v0.5.
   metricSmoothing: 0.58,
   baselineAdaptation: 0.01
 };
@@ -55,33 +47,61 @@ const QUICK_CONFIG = {
 const DEFAULT_PROGRESS = {
   pushupMax: 0,
   pushupTotal: 0,
+  pushupBestDay: 0,
+  pushupBestWeek: 0,
+  // Nur für saubere Migration älterer Versionen behalten; v0.7 zeigt/benutzt keine Streak mehr.
   pushupStreak: 0,
   lastTrainingDate: null,
   trainingHistory: []
 };
 
-const RANKS = [
-  { name: "Start", target: 0 },
-  { name: "Holz", target: 5 },
-  { name: "Stein", target: 10 },
-  { name: "Eisen", target: 20 },
-  { name: "Gold", target: 30 },
-  { name: "Kristall", target: 50 },
-  { name: "Diamant", target: 75 },
-  { name: "Meister", target: 100 }
-];
-
+// Challenge-Struktur aus der Skizze:
+// Blau = Rekord am Stück, Rot = Tagesleistung (00:00–23:59),
+// Grün = Kalenderwoche (Mo–So), Gelb = Gesamtleistung.
 const SKILL_NODES = [
-  { id: "start", type: "start", label: "Start", target: 0, x: 269, y: 530 },
-  { id: "wood", type: "max", label: "Holz", target: 5, x: 269, y: 410, parent: "start" },
-  { id: "stone", type: "max", label: "Stein", target: 10, x: 145, y: 300, parent: "wood" },
-  { id: "iron", type: "max", label: "Eisen", target: 20, x: 393, y: 300, parent: "wood" },
-  { id: "gold", type: "max", label: "Gold", target: 30, x: 269, y: 190, parent: "stone" },
-  { id: "crystal", type: "max", label: "Kristall", target: 50, x: 269, y: 70, parent: "gold" },
-  { id: "total50", type: "total", label: "Gesamt", target: 50, x: 22, y: 190, parent: "stone" },
-  { id: "total100", type: "total", label: "Gesamt", target: 100, x: 22, y: 70, parent: "total50" },
-  { id: "streak2", type: "streak", label: "Serie", target: 2, x: 516, y: 190, parent: "iron" },
-  { id: "streak3", type: "streak", label: "Serie", target: 3, x: 516, y: 70, parent: "streak2" }
+  // Starter-Pfade vor dem ersten Rang-Badge
+  { id: "max1", type: "max", branch: "max", target: 1, x: 245, y: 1450 },
+  { id: "max3", type: "max", branch: "max", target: 3, x: 205, y: 1340, parents: ["max1"] },
+  { id: "max5", type: "max", branch: "max", target: 5, x: 200, y: 1230, parents: ["max3"] },
+
+  { id: "total5", type: "total", branch: "total", target: 5, x: 405, y: 1360 },
+  { id: "total20", type: "total", branch: "total", target: 20, x: 390, y: 1245, parents: ["total5"] },
+
+  // Der Rang liegt bewusst IM Baum. Holz braucht beide Starter-Pfade.
+  { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", x: 282, y: 1110, parents: ["max5", "total20"] },
+
+  // Rekord am Stück
+  { id: "max10", type: "max", branch: "max", target: 10, x: 150, y: 1010, parents: ["woodRank"] },
+  { id: "max20", type: "max", branch: "max", target: 20, x: 95, y: 900, parents: ["max10"] },
+  { id: "max35", type: "max", branch: "max", target: 35, x: 78, y: 790, parents: ["max20"] },
+  { id: "max50", type: "max", branch: "max", target: 50, x: 65, y: 680, parents: ["max35"] },
+  { id: "max70", type: "max", branch: "max", target: 70, x: 65, y: 570, parents: ["max50"] },
+  { id: "max100", type: "max", branch: "max", target: 100, x: 50, y: 450, parents: ["max70"] },
+
+  // Tagesleistung – immer lokaler Kalendertag 00:00 bis 23:59
+  { id: "day50", type: "day", branch: "day", target: 50, x: 245, y: 995, parents: ["woodRank"] },
+  { id: "day100", type: "day", branch: "day", target: 100, x: 210, y: 885, parents: ["day50"] },
+  { id: "day200", type: "day", branch: "day", target: 200, x: 205, y: 775, parents: ["day100"] },
+  { id: "day350", type: "day", branch: "day", target: 350, x: 202, y: 665, parents: ["day200"] },
+  { id: "day500", type: "day", branch: "day", target: 500, x: 205, y: 555, parents: ["day350"] },
+  { id: "day750", type: "day", branch: "day", target: 750, x: 205, y: 435, parents: ["day500"] },
+  { id: "day1000", type: "day", branch: "day", target: 1000, x: 205, y: 315, parents: ["day750"] },
+
+  // Wochenleistung – Montag 00:00 bis Montag 00:00 der Folgewoche
+  { id: "week300", type: "week", branch: "week", target: 300, x: 350, y: 985, parents: ["woodRank"] },
+  { id: "week800", type: "week", branch: "week", target: 800, x: 360, y: 865, parents: ["week300"] },
+  { id: "week1500", type: "week", branch: "week", target: 1500, x: 365, y: 745, parents: ["week800"] },
+  { id: "week2500", type: "week", branch: "week", target: 2500, x: 365, y: 625, parents: ["week1500"] },
+  { id: "week4000", type: "week", branch: "week", target: 4000, x: 365, y: 505, parents: ["week2500"] },
+  { id: "week5000", type: "week", branch: "week", target: 5000, x: 365, y: 385, parents: ["week4000"] },
+  { id: "week7000", type: "week", branch: "week", target: 7000, x: 365, y: 265, parents: ["week5000"] },
+
+  // Gesamtleistung
+  { id: "total100", type: "total", branch: "total", target: 100, x: 470, y: 1015, parents: ["woodRank"] },
+  { id: "total300", type: "total", branch: "total", target: 300, x: 500, y: 895, parents: ["total100"] },
+  { id: "total1000", type: "total", branch: "total", target: 1000, x: 515, y: 770, parents: ["total300"] },
+  { id: "total2000", type: "total", branch: "total", target: 2000, x: 525, y: 645, parents: ["total1000"] },
+  { id: "total5000", type: "total", branch: "total", target: 5000, x: 530, y: 515, parents: ["total2000"] }
 ];
 
 let progress = loadProgress();
@@ -121,11 +141,29 @@ let inferredBottomFromLoss = false;
 let lastRepAt = 0;
 
 // ---------- DOM ----------
+const homeView = document.getElementById("homeView");
+const treeView = document.getElementById("treeView");
+const historyView = document.getElementById("historyView");
+const treeScroll = document.getElementById("treeScroll");
 const skillTree = document.getElementById("skillTree");
+
 const maxStat = document.getElementById("maxStat");
+const dayStat = document.getElementById("dayStat");
+const weekStat = document.getElementById("weekStat");
 const totalStat = document.getElementById("totalStat");
-const streakStat = document.getElementById("streakStat");
 const rankStat = document.getElementById("rankStat");
+
+const homePushMeta = document.getElementById("homePushMeta");
+const homeTodayStat = document.getElementById("homeTodayStat");
+const homeWeekStat = document.getElementById("homeWeekStat");
+const homeTotalStat = document.getElementById("homeTotalStat");
+const historyHomeHint = document.getElementById("historyHomeHint");
+
+const historyList = document.getElementById("historyList");
+const historyCount = document.getElementById("historyCount");
+const historyTodayStat = document.getElementById("historyTodayStat");
+const historyWeekStat = document.getElementById("historyWeekStat");
+const historyTotalStat = document.getElementById("historyTotalStat");
 
 const trainingModal = document.getElementById("trainingModal");
 const exerciseStep = document.getElementById("exerciseStep");
@@ -156,8 +194,6 @@ const finalTime = document.getElementById("finalTime");
 const detectedResult = document.getElementById("detectedResult");
 const repInput = document.getElementById("repInput");
 const successDetails = document.getElementById("successDetails");
-const historyList = document.getElementById("historyList");
-const historyCount = document.getElementById("historyCount");
 const manualRepWrap = document.getElementById("manualRepWrap");
 const autoResultNote = document.getElementById("autoResultNote");
 const resultRepLabel = document.getElementById("resultRepLabel");
@@ -204,17 +240,29 @@ function looksLikeOldProgress(value) {
     "pushupMax" in value ||
     "pushupTotal" in value ||
     "pushupStreak" in value ||
-    "lastTrainingDate" in value
+    "lastTrainingDate" in value ||
+    "trainingHistory" in value
   );
 }
 
 function normalizeProgress(value) {
+  const trainingHistory = Array.isArray(value?.trainingHistory) ? value.trainingHistory : [];
   return {
     pushupMax: Math.max(0, Number(value?.pushupMax) || 0),
     pushupTotal: Math.max(0, Number(value?.pushupTotal) || 0),
+    pushupBestDay: Math.max(
+      0,
+      Number(value?.pushupBestDay) || 0,
+      calculateBestDayFromHistory(trainingHistory)
+    ),
+    pushupBestWeek: Math.max(
+      0,
+      Number(value?.pushupBestWeek) || 0,
+      calculateBestWeekFromHistory(trainingHistory)
+    ),
     pushupStreak: Math.max(0, Number(value?.pushupStreak) || 0),
     lastTrainingDate: value?.lastTrainingDate || null,
-    trainingHistory: Array.isArray(value?.trainingHistory) ? value.trainingHistory : []
+    trainingHistory
   };
 }
 
@@ -222,54 +270,163 @@ function saveProgress() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
-// ---------- Skill Tree ----------
+// ---------- Views / Dashboard ----------
+function showView(name) {
+  homeView.classList.toggle("hidden", name !== "home");
+  treeView.classList.toggle("hidden", name !== "tree");
+  historyView.classList.toggle("hidden", name !== "history");
+
+  window.scrollTo(0, 0);
+
+  if (name === "tree") {
+    renderTree();
+    requestAnimationFrame(() => {
+      treeScroll.scrollLeft = Math.max(0, (treeScroll.scrollWidth - treeScroll.clientWidth) / 2);
+      treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight - 24);
+    });
+  }
+
+  if (name === "history") renderHistory();
+}
+
 function render() {
+  const todayTotal = getTodayTotal();
+  const weekTotal = getCurrentWeekTotal();
+  const rankName = getCurrentRankName();
+
   maxStat.textContent = progress.pushupMax;
+  dayStat.textContent = todayTotal;
+  weekStat.textContent = weekTotal;
   totalStat.textContent = progress.pushupTotal;
-  streakStat.textContent = progress.pushupStreak;
-  rankStat.textContent = getRank(progress.pushupMax).name;
+  rankStat.textContent = rankName;
+
+  homePushMeta.textContent = `${rankName} · Rekord ${progress.pushupMax}`;
+  homeTodayStat.textContent = todayTotal;
+  homeWeekStat.textContent = weekTotal;
+  homeTotalStat.textContent = progress.pushupTotal;
+
+  historyTodayStat.textContent = todayTotal;
+  historyWeekStat.textContent = weekTotal;
+  historyTotalStat.textContent = progress.pushupTotal;
+
+  const history = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
+  if (history.length) {
+    historyHomeHint.textContent = `${history.length} ${history.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(history[0].date)}`;
+  } else {
+    historyHomeHint.textContent = "Noch kein Training gespeichert";
+  }
+
   renderTree();
   renderHistory();
 }
 
-function getRank(maxReps) {
-  return RANKS.reduce((current, rank) => maxReps >= rank.target ? rank : current, RANKS[0]);
+function getCurrentRankName() {
+  return isNodeDone(getNode("woodRank")) ? "Holz" : "Starter";
 }
 
+function getNode(id) {
+  return SKILL_NODES.find(node => node.id === id);
+}
+
+function getTodayTotal() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return getHistoryTotalBetween(start, end);
+}
+
+function getCurrentWeekTotal() {
+  const now = new Date();
+  const start = startOfLocalWeek(now);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return getHistoryTotalBetween(start, end);
+}
+
+function startOfLocalWeek(date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = start.getDay(); // Sonntag = 0
+  const daysSinceMonday = (day + 6) % 7;
+  start.setDate(start.getDate() - daysSinceMonday);
+  return start;
+}
+
+function getHistoryTotalBetween(start, end) {
+  const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
+  return items.reduce((sum, item) => {
+    if (item?.exercise && item.exercise !== "pushups") return sum;
+    const date = new Date(item?.date);
+    if (Number.isNaN(date.getTime()) || date < start || date >= end) return sum;
+    return sum + Math.max(0, Number(item?.reps) || 0);
+  }, 0);
+}
+
+function calculateBestDayFromHistory(items) {
+  const totals = new Map();
+  for (const item of items || []) {
+    if (item?.exercise && item.exercise !== "pushups") continue;
+    const date = new Date(item?.date);
+    if (Number.isNaN(date.getTime())) continue;
+    const key = localDateString(date);
+    totals.set(key, (totals.get(key) || 0) + Math.max(0, Number(item?.reps) || 0));
+  }
+  return Math.max(0, ...totals.values());
+}
+
+function calculateBestWeekFromHistory(items) {
+  const totals = new Map();
+  for (const item of items || []) {
+    if (item?.exercise && item.exercise !== "pushups") continue;
+    const date = new Date(item?.date);
+    if (Number.isNaN(date.getTime())) continue;
+    const key = localDateString(startOfLocalWeek(date));
+    totals.set(key, (totals.get(key) || 0) + Math.max(0, Number(item?.reps) || 0));
+  }
+  return Math.max(0, ...totals.values());
+}
+
+// ---------- Skill Tree ----------
 function nodeValue(node) {
+  if (!node) return 0;
   if (node.type === "max") return progress.pushupMax;
+  if (node.type === "day") return progress.pushupBestDay;
+  if (node.type === "week") return progress.pushupBestWeek;
   if (node.type === "total") return progress.pushupTotal;
-  if (node.type === "streak") return progress.pushupStreak;
-  return Infinity;
+  return 0;
 }
 
 function isNodeDone(node) {
-  if (node.type === "start") return true;
+  if (!node) return false;
+  if (node.type === "rank") {
+    return (node.parents || []).every(parentId => isNodeDone(getNode(parentId)));
+  }
   return nodeValue(node) >= node.target;
 }
 
 function isNodeAvailable(node) {
-  if (!node.parent) return true;
-  const parent = SKILL_NODES.find(n => n.id === node.parent);
-  return parent ? isNodeDone(parent) : true;
+  if (!node) return false;
+  if (!node.parents?.length) return true;
+  return node.parents.every(parentId => isNodeDone(getNode(parentId)));
 }
 
 function renderTree() {
   skillTree.innerHTML = "";
 
   SKILL_NODES.forEach(node => {
-    if (!node.parent) return;
-    const parent = SKILL_NODES.find(n => n.id === node.parent);
-    if (!parent) return;
-    const line = createConnector(parent, node);
-    if (isNodeDone(parent) && isNodeDone(node)) line.classList.add("done");
-    skillTree.appendChild(line);
+    (node.parents || []).forEach(parentId => {
+      const parent = getNode(parentId);
+      if (!parent) return;
+      const line = createConnector(parent, node);
+      if (isNodeDone(parent) && isNodeDone(node)) line.classList.add("done");
+      skillTree.appendChild(line);
+    });
   });
 
   SKILL_NODES.forEach(node => {
     const el = document.createElement("button");
     el.type = "button";
-    el.className = "skill-node";
+    el.className = `skill-node branch-${node.branch}`;
     el.style.left = `${node.x}px`;
     el.style.top = `${node.y}px`;
 
@@ -279,28 +436,90 @@ function renderTree() {
     else if (available) el.classList.add("next");
     else el.classList.add("locked");
 
-    const unit = node.type === "total" ? "gesamt" : node.type === "streak" ? "Tage" : node.type === "start" ? "" : "am Stück";
+    if (node.type === "rank") {
+      el.classList.add("rank-node");
+      el.innerHTML = `
+        <span class="rank-emoji">${done ? "🪵" : "🔒"}</span>
+        <span class="node-target">HOLZ</span>
+        <span class="node-label">RANG</span>
+      `;
+      el.addEventListener("click", () => {
+        if (done) {
+          alert("Holz-Rang freigeschaltet!\n\nDafür brauchst du 5 Push-ups am Stück und 20 Push-ups gesamt.");
+        } else {
+          const maxDone = isNodeDone(getNode("max5"));
+          const totalDone = isNodeDone(getNode("total20"));
+          alert(`Holz-Rang\n\n${maxDone ? "✓" : "○"} 5 Push-ups am Stück\n${totalDone ? "✓" : "○"} 20 Push-ups gesamt`);
+        }
+      });
+      skillTree.appendChild(el);
+      return;
+    }
+
+    const unit = node.type === "max"
+      ? "am Stück"
+      : node.type === "day"
+        ? "an 1 Tag"
+        : node.type === "week"
+          ? "in 1 Woche"
+          : "gesamt";
 
     el.innerHTML = `
-      <span class="node-rank">${node.label}</span>
-      <span class="node-target">${node.type === "start" ? "✓" : node.target}</span>
-      <span class="node-label">${unit}</span>
+      <span class="node-target">${node.target}</span>
+      <span class="node-label">Push-ups</span>
+      <span class="node-unit">${unit}</span>
+      ${!done && !available ? '<span class="node-lock">🔒</span>' : ""}
     `;
 
     el.addEventListener("click", () => {
-      const current = node.type === "max" ? progress.pushupMax : node.type === "total" ? progress.pushupTotal : node.type === "streak" ? progress.pushupStreak : 0;
-      if (node.type === "start") alert("Startpunkt deines Push-up Skill Trees.");
-      else alert(`${node.label}: Ziel ${node.target} ${unit}.\nAktuell: ${current}.`);
+      const current = nodeValue(node);
+      const currentLabel = node.type === "day"
+        ? "Bester Tag"
+        : node.type === "week"
+          ? "Beste Woche"
+          : "Aktuell";
+      const detail = node.type === "day"
+        ? "Ein Tag zählt immer von 00:00 bis 23:59 Uhr. Ein einmal geschaffter Knoten bleibt freigeschaltet."
+        : node.type === "week"
+          ? "Eine Woche läuft von Montag bis Sonntag. Ein einmal geschaffter Knoten bleibt freigeschaltet."
+          : "";
+      alert(`${node.target} Push-ups ${unit}\n${currentLabel}: ${current}\n${detail}`.trim());
     });
 
     skillTree.appendChild(el);
   });
 }
 
+function getNodeDimensions(node) {
+  return node.type === "rank" ? { width: 112, height: 98 } : { width: 96, height: 96 };
+}
 
+function createConnector(from, to) {
+  const line = document.createElement("div");
+  line.className = `connector branch-${to.branch}`;
+
+  const fromSize = getNodeDimensions(from);
+  const toSize = getNodeDimensions(to);
+  const x1 = from.x + fromSize.width / 2;
+  const y1 = from.y + fromSize.height / 2;
+  const x2 = to.x + toSize.width / 2;
+  const y2 = to.y + toSize.height / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  line.style.left = `${x1}px`;
+  line.style.top = `${y1}px`;
+  line.style.width = `${length}px`;
+  line.style.transform = `rotate(${angle}deg)`;
+  return line;
+}
+
+// ---------- Historie ----------
 function renderHistory() {
   const items = Array.isArray(progress.trainingHistory)
-    ? progress.trainingHistory.slice(0, 30)
+    ? progress.trainingHistory.slice(0, 200)
     : [];
 
   historyCount.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"}`;
@@ -373,27 +592,7 @@ function formatWorkoutDate(isoString) {
   return `${datePart}, ${time} Uhr`;
 }
 
-function createConnector(from, to) {
-  const line = document.createElement("div");
-  line.className = "connector";
-  const nodeW = 112;
-  const nodeH = 98;
-  const x1 = from.x + nodeW / 2;
-  const y1 = from.y + nodeH / 2;
-  const x2 = to.x + nodeW / 2;
-  const y2 = to.y + nodeH / 2;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.hypot(dx, dy);
-  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  line.style.left = `${x1}px`;
-  line.style.top = `${y1}px`;
-  line.style.width = `${length}px`;
-  line.style.transform = `rotate(${angle}deg)`;
-  return line;
-}
-
-// ---------- Modal ----------
+// ---------- Training Modal ----------
 function showStep(stepName) {
   [exerciseStep, quickStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
 
@@ -434,6 +633,7 @@ function closeTraining() {
   stopCamera();
   trainingModal.classList.add("hidden");
   document.body.style.overflow = "";
+  render();
 }
 
 function resetTrainingSession() {
@@ -487,7 +687,6 @@ function resetTrainingSession() {
   setPositionStatus("neutral", "⬜", "Kamera noch nicht aktiv", "Display nach oben, ungefähr unter bzw. leicht vor deinem Gesicht.");
   cameraStatus.textContent = "Kein Kamerabild auf dem Screen: Die Zahl und die Position-Ampel haben Vorrang.";
 }
-
 // ---------- Face Detector ----------
 async function initFaceDetector() {
   if (faceDetector) return faceDetector;
@@ -1075,16 +1274,11 @@ function saveTrainingResult() {
   if (reps === 0 && !confirm("0 Wiederholungen speichern?")) return;
 
   const oldMax = progress.pushupMax;
-  const oldRank = getRank(oldMax);
-  const oldStreak = progress.pushupStreak;
-
-  const today = localDateString(new Date());
-  const newStreak = calculateStreak(progress.lastTrainingDate, today, progress.pushupStreak);
+  const oldRank = getCurrentRankName();
 
   progress.pushupMax = Math.max(progress.pushupMax, reps);
   progress.pushupTotal += reps;
-  progress.pushupStreak = newStreak;
-  progress.lastTrainingDate = today;
+  progress.lastTrainingDate = localDateString(new Date());
 
   progress.trainingHistory.unshift({
     exercise: "pushups",
@@ -1093,31 +1287,33 @@ function saveTrainingResult() {
     durationSeconds: elapsedSeconds,
     date: new Date().toISOString(),
     usedCamera: cameraWasStarted,
-    mode: cameraWasStarted && !manualMode ? "face-quick-v06" : "manual",
+    mode: cameraWasStarted && !manualMode ? "face-quick-v06-engine" : "manual",
     calibrationTopMetric: baselineTopMetric
   });
 
+  const todayTotal = getTodayTotal();
+  const weekTotal = getCurrentWeekTotal();
+  progress.pushupBestDay = Math.max(progress.pushupBestDay, todayTotal);
+  progress.pushupBestWeek = Math.max(progress.pushupBestWeek, weekTotal);
   progress.trainingHistory = progress.trainingHistory.slice(0, 200);
   saveProgress();
   render();
 
-  const newRank = getRank(progress.pushupMax);
+  const newRank = getCurrentRankName();
   const isNewRecord = reps > oldMax;
-  const rankUp = newRank.name !== oldRank.name;
+  const rankUp = newRank !== oldRank;
 
   successDetails.innerHTML = "";
   addSuccessLine(`${reps} Push-ups gespeichert`);
+  addSuccessLine(`Heute: ${todayTotal} Push-ups`);
+  addSuccessLine(`Diese Woche: ${weekTotal} Push-ups`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
-
 
   if (isNewRecord) addSuccessLine(`🏆 Neuer Rekord: ${progress.pushupMax}`, true);
   else addSuccessLine(`Rekord bleibt bei ${progress.pushupMax}`);
 
-  if (rankUp) addSuccessLine(`⬆️ Neuer Rang: ${newRank.name}`, true);
-  else addSuccessLine(`Rang: ${newRank.name}`);
-
-  if (newStreak > oldStreak) addSuccessLine(`🔥 Trainingsserie: ${newStreak} Tage`, true);
-  else addSuccessLine(`Trainingsserie: ${newStreak} Tage`);
+  if (rankUp) addSuccessLine(`🪵 Neuer Rang: ${newRank}`, true);
+  else addSuccessLine(`Rang: ${newRank}`);
 
   showStep("success");
 }
@@ -1129,27 +1325,11 @@ function addSuccessLine(text, good = false) {
   successDetails.appendChild(line);
 }
 
-function calculateStreak(lastDate, today, currentStreak) {
-  if (!lastDate) return 1;
-  if (lastDate === today) return Math.max(1, currentStreak);
-
-  const last = parseLocalDate(lastDate);
-  const now = parseLocalDate(today);
-  const diffDays = Math.round((now - last) / 86400000);
-  if (diffDays === 1) return Math.max(1, currentStreak) + 1;
-  return 1;
-}
-
 function localDateString(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
-}
-
-function parseLocalDate(value) {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
 }
 
 function median(values) {
@@ -1167,6 +1347,11 @@ function sleep(ms) {
 }
 
 // ---------- Events ----------
+document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
+document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
+document.getElementById("historyBackBtn").addEventListener("click", () => showView("home"));
+
 document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
 
@@ -1188,12 +1373,16 @@ startWorkoutBtn.addEventListener("click", startCountdown);
 finishWorkoutBtn.addEventListener("click", finishWorkout);
 manualModeBtn.addEventListener("click", startManualMode);
 document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
-document.getElementById("doneBtn").addEventListener("click", closeTraining);
+document.getElementById("doneBtn").addEventListener("click", () => {
+  closeTraining();
+  showView("home");
+});
 
 document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("Wirklich alle Testdaten dieser v0.6 löschen?")) return;
-  localStorage.removeItem(STORAGE_KEY);
+  if (!confirm("Wirklich alle lokalen Testdaten löschen?")) return;
+  [STORAGE_KEY, ...OLD_STORAGE_KEYS].forEach(key => localStorage.removeItem(key));
   progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
+  saveProgress();
   render();
 });
 
@@ -1205,3 +1394,4 @@ document.addEventListener("visibilitychange", () => {
 });
 
 render();
+showView("home");
