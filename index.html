@@ -4,40 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#17171d" />
-  <title>Skill Tree v0.1</title>
+  <title>Skill Tree v0.2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <div class="eyebrow">SKILL TREE PROTOTYPE</div>
-      <h1>Power</h1>
+      <div class="eyebrow">SKILL TREE • v0.2</div>
+      <h1>Push-ups</h1>
     </div>
-
-    <div class="top-actions">
-      <button id="resetButton" class="small-button">Reset</button>
-    </div>
+    <button id="resetButton" class="ghost-button">Reset</button>
   </header>
 
-  <section class="stats">
-    <div class="stat">
-      <span>Best</span>
-      <strong id="bestStat">0</strong>
-    </div>
-    <div class="stat">
-      <span>Total</span>
-      <strong id="totalStat">0</strong>
-    </div>
-    <div class="stat">
-      <span>Streak</span>
-      <strong id="streakStat">0</strong>
-    </div>
+  <section class="overview">
+    <div class="metric"><span>Best</span><strong id="bestStat">0</strong></div>
+    <div class="metric"><span>Total</span><strong id="totalStat">0</strong></div>
+    <div class="metric"><span>Streak</span><strong><span id="streakStat">0</span>d</strong></div>
+    <div class="metric rank-metric"><span>Rang</span><strong id="rankStat">–</strong></div>
   </section>
 
-  <div class="hint">
-    Tippe auf einen verfügbaren Knoten und trage deinen Fortschritt ein.
-    Gesperrte Knoten werden automatisch freigeschaltet.
-  </div>
+  <section class="legend">
+    <span><i class="legend-dot complete"></i> geschafft</span>
+    <span><i class="legend-dot available"></i> erreichbar</span>
+    <span><i class="legend-dot locked"></i> gesperrt</span>
+  </section>
 
   <main id="viewport" class="viewport">
     <div id="tree" class="tree">
@@ -45,34 +35,66 @@
     </div>
   </main>
 
+  <button id="trainingButton" class="training-button">+ Training eintragen</button>
+
   <div id="modalBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-      <button id="closeModal" class="close-button" aria-label="Schließen">×</button>
+    <section id="trainingModal" class="sheet hidden">
+      <div class="sheet-handle"></div>
+      <button class="close-button" data-close>×</button>
+      <div class="eyebrow">NEUES TRAINING</div>
+      <h2>Push-ups eintragen</h2>
+      <p class="sheet-copy">Trage dein Training einmal ein. Der Skill Tree prüft danach automatisch Rekord, Gesamtzahl, Streak und neue Freischaltungen.</p>
 
-      <div id="modalType" class="eyebrow">SKILL</div>
-      <h2 id="modalTitle">Skill</h2>
-      <p id="modalDescription"></p>
+      <label for="sessionBest">Maximal am Stück in diesem Training</label>
+      <input id="sessionBest" type="number" min="0" inputmode="numeric" placeholder="z. B. 12" />
 
-      <div class="progress-box">
-        <div class="progress-row">
-          <span>Fortschritt</span>
-          <strong id="modalProgressText">0 / 0</strong>
-        </div>
-        <div class="progress-track">
-          <div id="modalProgressBar" class="progress-fill"></div>
-        </div>
+      <label for="sessionTotal">Push-ups insgesamt in diesem Training</label>
+      <input id="sessionTotal" type="number" min="1" inputmode="numeric" placeholder="z. B. 34" />
+
+      <div id="trainingError" class="error hidden"></div>
+      <button id="saveTraining" class="primary-button">Training speichern</button>
+    </section>
+
+    <section id="resultModal" class="sheet hidden">
+      <div class="sheet-handle"></div>
+      <button class="close-button" data-close>×</button>
+      <div class="eyebrow">TRAINING GESPEICHERT</div>
+      <h2 id="resultHeadline">Fortschritt aktualisiert</h2>
+
+      <div class="result-grid">
+        <div><span>Best</span><strong id="resultBest">0</strong></div>
+        <div><span>Total</span><strong id="resultTotal">0</strong></div>
+        <div><span>Streak</span><strong id="resultStreak">0d</strong></div>
       </div>
 
-      <div id="inputArea">
-        <label id="inputLabel" for="progressInput">Neuen Wert eintragen</label>
-        <input id="progressInput" type="number" min="0" inputmode="numeric" />
-        <button id="saveProgress" class="primary-button">Speichern</button>
+      <div id="resultRecord" class="notice hidden"></div>
+
+      <div id="unlockSection" class="unlock-section hidden">
+        <div class="section-label">NEU FREIGESCHALTET</div>
+        <div id="unlockList" class="unlock-list"></div>
       </div>
 
-      <div id="completedMessage" class="completed-message hidden">
-        ✓ Geschafft
+      <div id="rankSection" class="rank-section hidden">
+        <div class="section-label">NEUER RANG</div>
+        <div id="rankReveal" class="rank-reveal"></div>
       </div>
-    </div>
+
+      <button class="primary-button" data-close>Weiter</button>
+    </section>
+
+    <section id="nodeModal" class="sheet hidden">
+      <div class="sheet-handle"></div>
+      <button class="close-button" data-close>×</button>
+      <div id="nodeModalType" class="eyebrow">SKILL</div>
+      <h2 id="nodeModalTitle">Skill</h2>
+      <p id="nodeModalText" class="sheet-copy"></p>
+
+      <div class="node-progress">
+        <div><span>Fortschritt</span><strong id="nodeModalProgress">0 / 0</strong></div>
+        <div class="bar"><div id="nodeModalBar"></div></div>
+      </div>
+      <div id="nodeModalState" class="notice"></div>
+    </section>
   </div>
 
   <script src="app.js"></script>
