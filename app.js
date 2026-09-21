@@ -1,18 +1,22 @@
 import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
 
-const STORAGE_KEY = "skillTreeAppProgressV04";
-const OLD_STORAGE_KEYS = ["skillTreeAppProgressV03", "skillTreeProgress", "skillTreeAppProgress", "progress"];
+const STORAGE_KEY = "skillTreeAppProgressV041";
+const OLD_STORAGE_KEYS = ["skillTreeAppProgressV04", "skillTreeAppProgressV03", "skillTreeProgress", "skillTreeAppProgress", "progress"];
 const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 
 const PUSHUP_CONFIG = {
-  upAngle: 155,
-  downAngle: 95,
-  minVisibility: 0.55,
-  maxBodyAngleFromHorizontal: 55,
-  stableFrames: 3,
-  minTransitionMs: 220,
-  smoothing: 0.35
+  upAngle: 142,
+  downAngle: 112,
+  minVisibility: 0.38,
+  stableFrames: 2,
+  minTransitionMs: 180,
+  smoothing: 0.18,
+  landmarkGraceMs: 650,
+  resetAfterLossMs: 1800,
+  minCalibratedTop: 138,
+  calibrationDrop: 34,
+  uiAngleIntervalMs: 120
 };
 
 const DEFAULT_PROGRESS = {
@@ -61,10 +65,15 @@ let autoDetectionAvailable = false;
 let workoutActive = false;
 let repCount = 0;
 let pushupPhase = "unknown";
-let smoothedElbowAngle = null;
+let smoothedArmAngles = { left: null, right: null };
 let upFrames = 0;
 let downFrames = 0;
 let lastTransitionAt = 0;
+let lastGoodPoseAt = 0;
+let lastAngleUiAt = 0;
+let calibratedTopAngle = 0;
+let effectiveUpAngle = PUSHUP_CONFIG.upAngle;
+let effectiveDownAngle = PUSHUP_CONFIG.downAngle;
 
 const skillTree = document.getElementById("skillTree");
 const maxStat = document.getElementById("maxStat");
@@ -251,8 +260,19 @@ function resetTrainingSession() {
   workoutActive = false;
   stopCamera(); stopTimer(); stopDetectionLoop();
   workoutStartedAt = null; elapsedSeconds = 0; cameraWasStarted = false; autoDetectionAvailable = false;
-  repCount = 0; pushupPhase = "unknown"; smoothedElbowAngle = null; upFrames = 0; downFrames = 0; lastTransitionAt = 0; lastVideoTime = -1;
-  repInput.value = ""; liveRepCount.textContent = "0"; timerDisplay.textContent = "00:00"; finalTime.textContent = "00:00"; detectedResult.textContent = "–"; angleDisplay.textContent = "–°"; formCue.textContent = "Position finden …";
+  repCount = 0;
+  pushupPhase = "unknown";
+  smoothedArmAngles = { left: null, right: null };
+  upFrames = 0;
+  downFrames = 0;
+  lastTransitionAt = 0;
+  lastGoodPoseAt = 0;
+  lastAngleUiAt = 0;
+  calibratedTopAngle = 0;
+  effectiveUpAngle = PUSHUP_CONFIG.upAngle;
+  effectiveDownAngle = PUSHUP_CONFIG.downAngle;
+  lastVideoTime = -1;
+  repInput.value = ""; liveRepCount.textContent = "0"; timerDisplay.textContent = "00:00"; finalTime.textContent = "00:00"; detectedResult.textContent = "–"; angleDisplay.textContent = "Arme: –°"; formCue.textContent = "Position finden …";
   clearPoseCanvas();
   cameraPlaceholder.classList.remove("hidden"); timerOverlay.classList.add("hidden"); counterOverlay.classList.add("hidden"); formOverlay.classList.add("hidden");
   startCameraBtn.classList.remove("hidden"); startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
@@ -306,7 +326,7 @@ async function startCamera() {
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 1280 } },
       audio: false
     });
 
@@ -322,8 +342,8 @@ async function startCamera() {
     try {
       await initPoseLandmarker();
       autoDetectionAvailable = true;
-      setPoseQuality("warn", "Stell dich seitlich vollständig ins Bild");
-      cameraStatus.textContent = "Erkennung bereit. Schulter, Ellenbogen, Handgelenk und Hüfte sollten sichtbar sein.";
+      setPoseQuality("warn", "Bring Schultern und Arme ins Bild");
+      cameraStatus.textContent = "Erkennung bereit. Stell das Handy ca. 0,7–1 m vor dich, niedrig und etwa 30–45° schräg. Schulter, Ellenbogen und Handgelenke sollten sichtbar sein.";
       startDetectionLoop();
     } catch (modelError) {
       console.error(modelError);
@@ -389,145 +409,339 @@ function detectPoseFrame() {
 
 function processPoseResult(result) {
   clearPoseCanvas();
+
+  const now = performance.now();
   const landmarks = result?.landmarks?.[0];
+  const worldLandmarks = result?.worldLandmarks?.[0] || null;
+
   if (!landmarks) {
-    setPoseQuality("bad", "Kein Körper erkannt");
-    formCue.textContent = "Geh etwas weiter ins Bild";
-    angleDisplay.textContent = "–°";
-    resetStableFrames();
+    handlePoseLoss(now, "Kein Körper erkannt");
     return;
   }
 
-  const analysis = analyzePushupPose(landmarks);
-  drawRelevantPose(landmarks, analysis?.side);
+  const analysis = analyzePushupPose(landmarks, worldLandmarks);
+  drawUpperBodyPose(landmarks, analysis?.visibleSides || []);
 
   if (!analysis) {
-    setPoseQuality("warn", "Arm oder Hüfte nicht gut sichtbar");
-    formCue.textContent = "Seitlich + ganzer Oberkörper";
-    angleDisplay.textContent = "–°";
-    resetStableFrames();
+    handlePoseLoss(now, "Arme nicht sicher erkannt");
     return;
   }
 
-  if (!analysis.bodyHorizontalEnough) {
-    setPoseQuality("warn", "Dreh dich seitlicher zur Kamera");
-    formCue.textContent = "Seitliche Push-up-Position";
-    angleDisplay.textContent = `${Math.round(analysis.elbowAngle)}°`;
-    resetStableFrames();
-    return;
+  lastGoodPoseAt = now;
+
+  if (analysis.armCount >= 2) {
+    setPoseQuality("good", "Beide Arme erkannt");
+  } else {
+    setPoseQuality(
+      "warn",
+      `${analysis.visibleSides[0] === "left" ? "Linker" : "Rechter"} Arm erkannt · zweiter Arm darf besser sichtbar sein`
+    );
   }
 
-  setPoseQuality("good", `Pose erkannt · ${analysis.side === "left" ? "linker" : "rechter"} Arm`);
-  updatePushupState(analysis.elbowAngle);
+  updatePushupState(analysis, now);
 }
 
-function analyzePushupPose(landmarks) {
+function handlePoseLoss(now, reason) {
+  const lostFor = lastGoodPoseAt ? now - lastGoodPoseAt : Infinity;
+
+  if (lostFor <= PUSHUP_CONFIG.landmarkGraceMs) {
+    setPoseQuality("warn", "Kurz verloren · Bewegung läuft weiter");
+    formCue.textContent = "Weiter – ich suche dich wieder …";
+    return;
+  }
+
+  setPoseQuality("bad", reason);
+  formCue.textContent = "Schultern + Arme ins Bild";
+  angleDisplay.textContent = "Arme: –°";
+  resetStableFrames();
+
+  if (workoutActive && lostFor > PUSHUP_CONFIG.resetAfterLossMs) {
+    pushupPhase = "unknown";
+  }
+}
+
+function analyzePushupPose(landmarks, worldLandmarks) {
   const sides = [
-    { name: "left", shoulder: 11, elbow: 13, wrist: 15, hip: 23 },
-    { name: "right", shoulder: 12, elbow: 14, wrist: 16, hip: 24 }
+    { name: "left", shoulder: 11, elbow: 13, wrist: 15 },
+    { name: "right", shoulder: 12, elbow: 14, wrist: 16 }
   ];
 
-  const scored = sides.map(side => {
-    const points = [landmarks[side.shoulder], landmarks[side.elbow], landmarks[side.wrist], landmarks[side.hip]];
-    const visibility = points.reduce((sum, point) => sum + (point?.visibility ?? 0), 0) / points.length;
-    return { side, visibility };
-  }).sort((a, b) => b.visibility - a.visibility);
+  const validArms = [];
 
-  const best = scored[0];
-  if (!best || best.visibility < PUSHUP_CONFIG.minVisibility) return null;
+  for (const side of sides) {
+    const s2d = landmarks[side.shoulder];
+    const e2d = landmarks[side.elbow];
+    const w2d = landmarks[side.wrist];
 
-  const s = landmarks[best.side.shoulder];
-  const e = landmarks[best.side.elbow];
-  const w = landmarks[best.side.wrist];
-  const h = landmarks[best.side.hip];
-  if ([s,e,w,h].some(p => (p?.visibility ?? 0) < PUSHUP_CONFIG.minVisibility)) return null;
+    if (!s2d || !e2d || !w2d) continue;
 
-  const elbowAngle = calculateAngle(s, e, w);
-  const width = Math.max(1, cameraVideo.videoWidth);
-  const height = Math.max(1, cameraVideo.videoHeight);
-  const dx = (h.x - s.x) * width;
-  const dy = (h.y - s.y) * height;
-  const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
-  const bodyAngle = Math.min(angle, Math.abs(180 - angle));
+    const visibility =
+      ((s2d.visibility ?? 0) + (e2d.visibility ?? 0) + (w2d.visibility ?? 0)) / 3;
+
+    if (visibility < PUSHUP_CONFIG.minVisibility) continue;
+
+    let rawAngle;
+
+    if (
+      worldLandmarks?.[side.shoulder] &&
+      worldLandmarks?.[side.elbow] &&
+      worldLandmarks?.[side.wrist]
+    ) {
+      rawAngle = calculateAngle3D(
+        worldLandmarks[side.shoulder],
+        worldLandmarks[side.elbow],
+        worldLandmarks[side.wrist]
+      );
+    } else {
+      rawAngle = calculateAngle2D(s2d, e2d, w2d);
+    }
+
+    if (!Number.isFinite(rawAngle)) continue;
+
+    const previous = smoothedArmAngles[side.name];
+    const alpha = PUSHUP_CONFIG.smoothing;
+    const smoothed =
+      previous === null
+        ? rawAngle
+        : previous * (1 - alpha) + rawAngle * alpha;
+
+    smoothedArmAngles[side.name] = smoothed;
+
+    validArms.push({
+      name: side.name,
+      angle: smoothed,
+      visibility
+    });
+  }
+
+  if (!validArms.length) return null;
+
+  let usedArms = validArms;
+
+  if (
+    validArms.length === 2 &&
+    Math.abs(validArms[0].angle - validArms[1].angle) > 38
+  ) {
+    usedArms = [
+      [...validArms].sort((a, b) => b.visibility - a.visibility)[0]
+    ];
+  }
+
+  const totalWeight = usedArms.reduce(
+    (sum, arm) => sum + arm.visibility,
+    0
+  );
+
+  const combinedAngle =
+    usedArms.reduce(
+      (sum, arm) => sum + arm.angle * arm.visibility,
+      0
+    ) / Math.max(totalWeight, 0.001);
 
   return {
-    side: best.side.name,
-    elbowAngle,
-    bodyHorizontalEnough: bodyAngle <= PUSHUP_CONFIG.maxBodyAngleFromHorizontal
+    combinedAngle,
+    arms: validArms,
+    armCount: validArms.length,
+    visibleSides: validArms.map(arm => arm.name)
   };
 }
 
-function calculateAngle(a, b, c) {
+function calculateAngle2D(a, b, c) {
   const ab = { x: a.x - b.x, y: a.y - b.y };
   const cb = { x: c.x - b.x, y: c.y - b.y };
   const dot = ab.x * cb.x + ab.y * cb.y;
   const magAB = Math.hypot(ab.x, ab.y);
   const magCB = Math.hypot(cb.x, cb.y);
-  if (!magAB || !magCB) return 180;
+
+  if (!magAB || !magCB) return NaN;
+
   const cos = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
   return Math.acos(cos) * 180 / Math.PI;
 }
 
-function updatePushupState(rawAngle) {
-  smoothedElbowAngle = smoothedElbowAngle === null ? rawAngle : smoothedElbowAngle * (1 - PUSHUP_CONFIG.smoothing) + rawAngle * PUSHUP_CONFIG.smoothing;
-  const angle = smoothedElbowAngle;
-  angleDisplay.textContent = `${Math.round(angle)}°`;
+function calculateAngle3D(a, b, c) {
+  const ab = {
+    x: a.x - b.x,
+    y: a.y - b.y,
+    z: (a.z ?? 0) - (b.z ?? 0)
+  };
+  const cb = {
+    x: c.x - b.x,
+    y: c.y - b.y,
+    z: (c.z ?? 0) - (b.z ?? 0)
+  };
+
+  const dot = ab.x * cb.x + ab.y * cb.y + ab.z * cb.z;
+  const magAB = Math.hypot(ab.x, ab.y, ab.z);
+  const magCB = Math.hypot(cb.x, cb.y, cb.z);
+
+  if (!magAB || !magCB) return NaN;
+
+  const cos = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
+  return Math.acos(cos) * 180 / Math.PI;
+}
+
+function updatePushupState(analysis, now) {
+  const angle = analysis.combinedAngle;
+
+  if (now - lastAngleUiAt >= PUSHUP_CONFIG.uiAngleIntervalMs) {
+    angleDisplay.textContent = `Arme: ${Math.round(angle)}°`;
+    lastAngleUiAt = now;
+  }
+
+  if (!workoutActive && angle >= 125 && angle <= 172) {
+    calibratedTopAngle = Math.max(calibratedTopAngle, angle);
+    updateEffectiveThresholds();
+  }
 
   if (!workoutActive) {
-    formCue.textContent = angle >= PUSHUP_CONFIG.upAngle ? "Startposition erkannt" : angle <= PUSHUP_CONFIG.downAngle ? "Tiefe Position erkannt" : "Position erkannt";
+    if (angle >= effectiveUpAngle) {
+      formCue.textContent = "OBEN erkannt ✓";
+    } else if (angle <= effectiveDownAngle) {
+      formCue.textContent = "UNTEN erkannt ✓";
+    } else {
+      formCue.textContent = "Position erkannt";
+    }
     return;
   }
 
-  if (angle >= PUSHUP_CONFIG.upAngle) { upFrames += 1; downFrames = 0; }
-  else if (angle <= PUSHUP_CONFIG.downAngle) { downFrames += 1; upFrames = 0; }
-  else { resetStableFrames(); }
+  if (angle >= effectiveUpAngle) {
+    upFrames += 1;
+    downFrames = 0;
+  } else if (angle <= effectiveDownAngle) {
+    downFrames += 1;
+    upFrames = 0;
+  } else {
+    resetStableFrames();
+  }
 
-  const now = performance.now();
-  const enoughTime = now - lastTransitionAt >= PUSHUP_CONFIG.minTransitionMs;
+  const enoughTime =
+    now - lastTransitionAt >= PUSHUP_CONFIG.minTransitionMs;
 
   if (pushupPhase === "unknown") {
-    formCue.textContent = "Arme strecken → Start";
+    formCue.textContent = "Arme strecken → OBEN";
+
     if (upFrames >= PUSHUP_CONFIG.stableFrames) {
-      pushupPhase = "up"; lastTransitionAt = now; formCue.textContent = "Jetzt runter"; resetStableFrames();
+      pushupPhase = "up";
+      lastTransitionAt = now;
+      formCue.textContent = "OBEN ✓ · jetzt runter";
+      resetStableFrames();
     }
     return;
   }
 
   if (pushupPhase === "up") {
     formCue.textContent = "Runter";
-    if (enoughTime && downFrames >= PUSHUP_CONFIG.stableFrames) {
-      pushupPhase = "down"; lastTransitionAt = now; formCue.textContent = "Jetzt hoch"; resetStableFrames();
+
+    if (
+      enoughTime &&
+      downFrames >= PUSHUP_CONFIG.stableFrames
+    ) {
+      pushupPhase = "down";
+      lastTransitionAt = now;
+      formCue.textContent = "UNTEN ✓ · jetzt hoch";
+      resetStableFrames();
     }
     return;
   }
 
   if (pushupPhase === "down") {
     formCue.textContent = "Hoch";
-    if (enoughTime && upFrames >= PUSHUP_CONFIG.stableFrames) {
+
+    if (
+      enoughTime &&
+      upFrames >= PUSHUP_CONFIG.stableFrames
+    ) {
       repCount += 1;
       liveRepCount.textContent = String(repCount);
       pushupPhase = "up";
       lastTransitionAt = now;
       formCue.textContent = "✓ Gewertet · wieder runter";
       resetStableFrames();
-      if (liveRepCount.animate) liveRepCount.animate([{transform:"scale(1)"},{transform:"scale(1.35)"},{transform:"scale(1)"}], {duration:240,easing:"ease-out"});
+
+      if (navigator.vibrate) navigator.vibrate(35);
+
+      if (liveRepCount.animate) {
+        liveRepCount.animate(
+          [
+            { transform: "scale(1)" },
+            { transform: "scale(1.35)" },
+            { transform: "scale(1)" }
+          ],
+          { duration: 240, easing: "ease-out" }
+        );
+      }
     }
   }
 }
 
+function updateEffectiveThresholds() {
+  if (calibratedTopAngle < PUSHUP_CONFIG.minCalibratedTop) {
+    effectiveUpAngle = PUSHUP_CONFIG.upAngle;
+    effectiveDownAngle = PUSHUP_CONFIG.downAngle;
+    return;
+  }
+
+  effectiveUpAngle = clamp(
+    calibratedTopAngle - 8,
+    136,
+    152
+  );
+
+  effectiveDownAngle = clamp(
+    effectiveUpAngle - PUSHUP_CONFIG.calibrationDrop,
+    100,
+    120
+  );
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function resetStableFrames() { upFrames = 0; downFrames = 0; }
 
-function drawRelevantPose(landmarks, sideName) {
-  if (!poseCanvas.width || !poseCanvas.height || !sideName) return;
-  const ids = sideName === "right" ? [12,14,16,24] : [11,13,15,23];
-  const pts = ids.map(i => landmarks[i]);
+function drawUpperBodyPose(landmarks, visibleSides) {
+  if (!poseCanvas.width || !poseCanvas.height) return;
+
+  const sideMap = {
+    left: [11, 13, 15],
+    right: [12, 14, 16]
+  };
+
   poseCtx.save();
-  poseCtx.lineWidth = Math.max(4, poseCanvas.width * 0.004);
+  poseCtx.lineWidth = Math.max(
+    4,
+    poseCanvas.width * 0.004
+  );
   poseCtx.strokeStyle = "rgba(91,201,255,.95)";
   poseCtx.fillStyle = "rgba(255,255,255,.95)";
   poseCtx.lineCap = "round";
-  drawLine(pts[0], pts[1]); drawLine(pts[1], pts[2]); drawLine(pts[0], pts[3]);
-  pts.forEach(drawPoint);
+
+  for (const sideName of visibleSides) {
+    const ids = sideMap[sideName];
+    if (!ids) continue;
+
+    const pts = ids.map(i => landmarks[i]);
+    if (pts.some(p => !p)) continue;
+
+    drawLine(pts[0], pts[1]);
+    drawLine(pts[1], pts[2]);
+    pts.forEach(drawPoint);
+  }
+
+  const leftShoulder = landmarks[11];
+  const rightShoulder = landmarks[12];
+
+  if (
+    leftShoulder &&
+    rightShoulder &&
+    (leftShoulder.visibility ?? 0) > 0.25 &&
+    (rightShoulder.visibility ?? 0) > 0.25
+  ) {
+    drawLine(leftShoulder, rightShoulder);
+  }
+
   poseCtx.restore();
 }
 
@@ -542,11 +756,18 @@ function setPoseQuality(state,text) { poseQuality.className = `pose-quality ${st
 
 function startWorkout() {
   workoutStartedAt = Date.now(); elapsedSeconds = 0; workoutActive = true;
-  repCount = 0; liveRepCount.textContent = "0"; pushupPhase = "unknown"; smoothedElbowAngle = null; resetStableFrames(); lastTransitionAt = 0;
+  repCount = 0;
+  liveRepCount.textContent = "0";
+  pushupPhase = "unknown";
+  smoothedArmAngles = { left: null, right: null };
+  resetStableFrames();
+  lastTransitionAt = 0;
+  lastGoodPoseAt = performance.now();
+  updateEffectiveThresholds();
   startWorkoutBtn.classList.add("hidden"); finishWorkoutBtn.classList.remove("hidden"); timerOverlay.classList.remove("hidden");
   if (cameraWasStarted) {
     counterOverlay.classList.remove("hidden"); formOverlay.classList.remove("hidden");
-    cameraStatus.textContent = autoDetectionAvailable ? "Training läuft. Gezählt wird erst bei OBEN → UNTEN → OBEN." : "Training läuft. Automatische Erkennung ist nicht verfügbar; trage die Zahl danach manuell ein.";
+    cameraStatus.textContent = autoDetectionAvailable ? `Training läuft. Gezählt wird bei OBEN → UNTEN → OBEN. Grenzen: oben ab ${Math.round(effectiveUpAngle)}°, unten bis ${Math.round(effectiveDownAngle)}°.` : "Training läuft. Automatische Erkennung ist nicht verfügbar; trage die Zahl danach manuell ein.";
   } else {
     cameraStatus.textContent = "Manuelles Training läuft. Trage die Wiederholungen anschließend ein.";
   }
@@ -636,7 +857,7 @@ function parseLocalDate(value) { const [y,m,d] = value.split("-").map(Number); r
  document.getElementById("saveTrainingBtn").addEventListener("click",saveTrainingResult);
  document.getElementById("doneBtn").addEventListener("click",closeTraining);
  document.getElementById("resetBtn").addEventListener("click",()=>{
-   if (!confirm("Wirklich alle Testdaten dieser v0.4 löschen?")) return;
+   if (!confirm("Wirklich alle Testdaten dieser v0.4.1 löschen?")) return;
    localStorage.removeItem(STORAGE_KEY); progress={...DEFAULT_PROGRESS,trainingHistory:[]}; render();
  });
  document.addEventListener("visibilitychange",()=>{
