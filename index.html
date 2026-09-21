@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f16" />
-  <title>Skill Tree – v0.5</title>
+  <title>Skill Tree – v0.6</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -26,6 +26,21 @@
 
     <section class="tree-wrap">
       <div class="tree" id="skillTree" aria-label="Push-up Skill Tree"></div>
+    </section>
+
+
+    <section class="history-section" aria-labelledby="historyHeading">
+      <div class="history-head">
+        <div>
+          <p class="eyebrow">WORKOUTS</p>
+          <h2 id="historyHeading">Historie</h2>
+        </div>
+        <span id="historyCount" class="history-count">0 Trainings</span>
+      </div>
+
+      <div id="historyList" class="history-list">
+        <div class="history-empty">Noch kein Training gespeichert.</div>
+      </div>
     </section>
 
     <button id="openTrainingBtn" class="training-main-btn" type="button">+ Training</button>
@@ -115,15 +130,19 @@
             <strong id="finalTime">00:00</strong>
           </div>
           <div class="result-summary">
-            <span>Automatisch erkannt</span>
+            <span id="resultRepLabel">Erkannt</span>
             <strong id="detectedResult">–</strong>
           </div>
         </div>
 
-        <label class="rep-input-wrap" for="repInput">
-          <span>Wiederholungen zum Speichern</span>
+        <div id="autoResultNote" class="auto-result-note">
+          Die Kamera-Zahl wird direkt gespeichert. Keine nachträgliche Korrektur im Quick Mode.
+        </div>
+
+        <label id="manualRepWrap" class="rep-input-wrap hidden" for="repInput">
+          <span>Wie viele Push-ups hast du gemacht?</span>
           <input id="repInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="z. B. 10" />
-          <small>Falls die Kamera sich verzählt hat, kannst du die Zahl hier korrigieren.</small>
+          <small>Dieses Feld erscheint nur im manuellen Modus.</small>
         </label>
 
         <button id="saveTrainingBtn" class="primary-btn" type="button">Training speichern</button>

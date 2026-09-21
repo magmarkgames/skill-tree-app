@@ -3,8 +3,9 @@ import {
   FilesetResolver
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
 
-const STORAGE_KEY = "skillTreeAppProgressV05";
+const STORAGE_KEY = "skillTreeAppProgressV06";
 const OLD_STORAGE_KEYS = [
+  "skillTreeAppProgressV05",
   "skillTreeAppProgressV041",
   "skillTreeAppProgressV04",
   "skillTreeAppProgressV03",
@@ -19,27 +20,36 @@ const FACE_MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
 
 const QUICK_CONFIG = {
-  detectIntervalMs: 75,
-  minDetectionConfidence: 0.55,
+  // Schnelleres Tracking für zügige Wiederholungen.
+  detectIntervalMs: 34,
+  minDetectionConfidence: 0.46,
 
-  // Vor dem Start: Gesicht soll gut sichtbar, aber nicht riesig sein.
-  readyMinMetric: 0.11,
-  readyMaxMetric: 0.48,
-  readyMinCenterX: 0.18,
-  readyMaxCenterX: 0.82,
-  readyMinCenterY: 0.12,
-  readyMaxCenterY: 0.88,
+  // Setup bleibt bewusst großzügig.
+  readyMinMetric: 0.095,
+  readyMaxMetric: 0.52,
+  readyMinCenterX: 0.12,
+  readyMaxCenterX: 0.88,
+  readyMinCenterY: 0.08,
+  readyMaxCenterY: 0.92,
 
-  // Dynamische Push-up-Grenzen relativ zur kalibrierten oberen Position.
-  downRatio: 1.30,
-  upRatio: 1.12,
-  minDownDelta: 0.045,
+  // Weniger Weg nötig, damit schnelle Push-ups nicht am Schwellenwert hängen bleiben.
+  downRatio: 1.18,
+  upRatio: 1.09,
+  minDownDelta: 0.024,
 
-  stableFrames: 2,
-  faceLossGraceMs: 650,
-  hardResetLossMs: 1800,
-  metricSmoothing: 0.28,
-  baselineAdaptation: 0.012
+  // Ein guter Frame reicht pro Zustand; die Phase verhindert Doppelzählungen.
+  stableFrames: 1,
+  minRepIntervalMs: 330,
+
+  // Wenn das Gesicht unten aus dem Bild verschwindet, ist das jetzt erlaubt.
+  faceLossGraceMs: 950,
+  hardResetLossMs: 2200,
+  inferDownAfterLossMs: 90,
+  inferDownMinRatio: 1.055,
+
+  // Reagiert deutlich schneller als v0.5.
+  metricSmoothing: 0.58,
+  baselineAdaptation: 0.01
 };
 
 const DEFAULT_PROGRESS = {
@@ -105,6 +115,10 @@ let upThreshold = null;
 let downFrames = 0;
 let upFrames = 0;
 let calibrationSamples = [];
+let lastMetric = null;
+let maxMetricSinceTop = null;
+let inferredBottomFromLoss = false;
+let lastRepAt = 0;
 
 // ---------- DOM ----------
 const skillTree = document.getElementById("skillTree");
@@ -142,6 +156,11 @@ const finalTime = document.getElementById("finalTime");
 const detectedResult = document.getElementById("detectedResult");
 const repInput = document.getElementById("repInput");
 const successDetails = document.getElementById("successDetails");
+const historyList = document.getElementById("historyList");
+const historyCount = document.getElementById("historyCount");
+const manualRepWrap = document.getElementById("manualRepWrap");
+const autoResultNote = document.getElementById("autoResultNote");
+const resultRepLabel = document.getElementById("resultRepLabel");
 
 // ---------- Daten ----------
 function loadProgress() {
@@ -210,6 +229,7 @@ function render() {
   streakStat.textContent = progress.pushupStreak;
   rankStat.textContent = getRank(progress.pushupMax).name;
   renderTree();
+  renderHistory();
 }
 
 function getRank(maxReps) {
@@ -275,6 +295,82 @@ function renderTree() {
 
     skillTree.appendChild(el);
   });
+}
+
+
+function renderHistory() {
+  const items = Array.isArray(progress.trainingHistory)
+    ? progress.trainingHistory.slice(0, 30)
+    : [];
+
+  historyCount.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"}`;
+  historyList.innerHTML = "";
+
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    empty.textContent = "Noch kein Training gespeichert.";
+    historyList.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const entry = document.createElement("div");
+    entry.className = "history-entry";
+
+    const main = document.createElement("div");
+    main.className = "history-entry-main";
+
+    const when = document.createElement("strong");
+    when.textContent = formatWorkoutDate(item.date);
+
+    const details = document.createElement("span");
+    const duration = Number.isFinite(Number(item.durationSeconds))
+      ? formatTime(Math.max(0, Number(item.durationSeconds)))
+      : "–";
+    const mode = String(item.mode || "").startsWith("face-quick")
+      ? "Quick Mode"
+      : "Manuell";
+    details.textContent = `${mode} · ${duration}`;
+
+    main.append(when, details);
+
+    const reps = document.createElement("div");
+    reps.className = "history-entry-reps";
+    const count = Math.max(0, Number(item.reps) || 0);
+    reps.textContent = `${count} Push-up${count === 1 ? "" : "s"}`;
+
+    entry.append(main, reps);
+    historyList.appendChild(entry);
+  });
+}
+
+function formatWorkoutDate(isoString) {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "Unbekanntes Datum";
+
+  const now = new Date();
+  const today = localDateString(now);
+  const itemDay = localDateString(date);
+
+  const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterday = localDateString(yesterdayDate);
+
+  const time = new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+
+  if (itemDay === today) return `Heute, ${time} Uhr`;
+  if (itemDay === yesterday) return `Gestern, ${time} Uhr`;
+
+  const datePart = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
+
+  return `${datePart}, ${time} Uhr`;
 }
 
 function createConnector(from, to) {
@@ -367,6 +463,10 @@ function resetTrainingSession() {
   downFrames = 0;
   upFrames = 0;
   calibrationSamples = [];
+  lastMetric = null;
+  maxMetricSinceTop = null;
+  inferredBottomFromLoss = false;
+  lastRepAt = 0;
 
   liveRepCount.textContent = "0";
   timerDisplay.textContent = "00:00";
@@ -396,17 +496,30 @@ async function initFaceDetector() {
   faceDetectorLoading = (async () => {
     const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
 
-    // CPU ist bei dem kleinen BlazeFace-Modell auf Mobilgeräten sehr brauchbar
-    // und vermeidet einige GPU/WebGL-Sonderfälle.
-    faceDetector = await FaceDetector.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: FACE_MODEL,
-        delegate: "CPU"
-      },
+    const commonOptions = {
       runningMode: "VIDEO",
       minDetectionConfidence: QUICK_CONFIG.minDetectionConfidence,
       minSuppressionThreshold: 0.3
-    });
+    };
+
+    try {
+      faceDetector = await FaceDetector.createFromOptions(vision, {
+        ...commonOptions,
+        baseOptions: {
+          modelAssetPath: FACE_MODEL,
+          delegate: "GPU"
+        }
+      });
+    } catch (gpuError) {
+      console.warn("GPU nicht verfügbar, nutze CPU:", gpuError);
+      faceDetector = await FaceDetector.createFromOptions(vision, {
+        ...commonOptions,
+        baseOptions: {
+          modelAssetPath: FACE_MODEL,
+          delegate: "CPU"
+        }
+      });
+    }
 
     return faceDetector;
   })();
@@ -552,6 +665,13 @@ function processFaceResult(result, now) {
     confidence: detection?.categories?.[0]?.score ?? 0
   };
 
+  lastMetric = currentFace.metric;
+  if (workoutActive && phase === "up") {
+    maxMetricSinceTop = maxMetricSinceTop === null
+      ? currentFace.metric
+      : Math.max(maxMetricSinceTop, currentFace.metric);
+  }
+
   lastFaceSeenAt = now;
 
   if (countdownActive) {
@@ -571,6 +691,11 @@ function handleFaceLoss(now) {
   const lostFor = lastFaceSeenAt ? now - lastFaceSeenAt : Infinity;
 
   if (countdownActive) {
+    if (lostFor <= 450) {
+      setPositionStatus("warn", "🟨", "Kurz verloren", "Oben bleiben – ich suche dein Gesicht wieder.");
+      return;
+    }
+
     setPositionStatus("bad", "🟥", "Gesicht verloren", "Bleib während des Countdowns oben über dem Handy.");
     return;
   }
@@ -584,17 +709,50 @@ function handleFaceLoss(now) {
     return;
   }
 
-  if (lostFor <= QUICK_CONFIG.faceLossGraceMs) {
-    setPositionStatus("warn", "🟨", "Kurz aus dem Blickfeld", "Weiterbewegen – ich suche dein Gesicht wieder.");
+  // Während des Trainings ist ein verschwundenes Gesicht unten NICHT mehr automatisch ein Fehler.
+  // Bei schnellen Push-ups verlässt das Gesicht die Short-Range-Erkennung oft genau in der tiefen Position.
+  if (phase === "up") {
+    const descentWasVisible =
+      Number.isFinite(maxMetricSinceTop) &&
+      Number.isFinite(baselineTopMetric) &&
+      maxMetricSinceTop >= baselineTopMetric * QUICK_CONFIG.inferDownMinRatio;
+
+    if (
+      descentWasVisible &&
+      lostFor >= QUICK_CONFIG.inferDownAfterLossMs &&
+      lostFor <= QUICK_CONFIG.faceLossGraceMs
+    ) {
+      phase = "down";
+      inferredBottomFromLoss = true;
+      downFrames = 0;
+      upFrames = 0;
+      motionCue.textContent = "HOCH";
+      setPositionStatus("good", "🟩", "Tief erkannt", "Gesicht darf unten kurz aus dem Bild verschwinden. Jetzt wieder hoch.");
+      return;
+    }
+  }
+
+  if (phase === "down" && lostFor <= QUICK_CONFIG.faceLossGraceMs) {
+    motionCue.textContent = "HOCH";
+    setPositionStatus("good", "🟩", "Tief erkannt", "Jetzt wieder hoch – sobald du auftauchst, zählt die Wiederholung.");
     return;
   }
 
-  setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Kopf etwas mehr über das Handy bringen.");
+  if (lostFor <= QUICK_CONFIG.faceLossGraceMs) {
+    setPositionStatus("warn", "🟨", "Kurz verloren", "Weiterbewegen – die Wiederholung bleibt aktiv.");
+    return;
+  }
+
+  setPositionStatus("warn", "🟨", "Kopf wieder über das Handy", "Die Bewegung bleibt noch kurz gespeichert.");
 
   if (lostFor > QUICK_CONFIG.hardResetLossMs) {
     downFrames = 0;
     upFrames = 0;
-    motionCue.textContent = phase === "down" ? "HOCH" : "RUNTER";
+    phase = "up";
+    inferredBottomFromLoss = false;
+    maxMetricSinceTop = null;
+    motionCue.textContent = "RUNTER";
+    setPositionStatus("bad", "🟥", "Gesicht länger nicht erkannt", "Kopf wieder über das Handy bringen.");
   }
 }
 
@@ -668,6 +826,10 @@ async function startCountdown() {
 
   countdownActive = true;
   calibrationSamples = [];
+  lastMetric = null;
+  maxMetricSinceTop = null;
+  inferredBottomFromLoss = false;
+  lastRepAt = 0;
   startWorkoutBtn.disabled = true;
   countdownBox.classList.remove("hidden");
   motionCue.textContent = "Oben bleiben";
@@ -717,6 +879,10 @@ function beginWorkout() {
   phase = "up";
   downFrames = 0;
   upFrames = 0;
+  lastMetric = currentFace?.metric ?? baselineTopMetric;
+  maxMetricSinceTop = currentFace?.metric ?? baselineTopMetric;
+  inferredBottomFromLoss = false;
+  lastRepAt = 0;
   liveRepCount.textContent = "0";
 
   startWorkoutBtn.classList.add("hidden");
@@ -731,37 +897,65 @@ function beginWorkout() {
 }
 
 function updateRepState(metric, now) {
-  if (!Number.isFinite(metric) || !Number.isFinite(downThreshold) || !Number.isFinite(upThreshold)) return;
+  if (
+    !Number.isFinite(metric) ||
+    !Number.isFinite(downThreshold) ||
+    !Number.isFinite(upThreshold)
+  ) return;
 
   if (phase === "up") {
     motionCue.textContent = "RUNTER";
 
-    if (metric >= downThreshold) downFrames += 1;
-    else downFrames = 0;
+    maxMetricSinceTop = maxMetricSinceTop === null
+      ? metric
+      : Math.max(maxMetricSinceTop, metric);
+
+    if (metric >= downThreshold) {
+      downFrames += 1;
+    } else {
+      downFrames = 0;
+    }
 
     if (downFrames >= QUICK_CONFIG.stableFrames) {
       phase = "down";
+      inferredBottomFromLoss = false;
       downFrames = 0;
       upFrames = 0;
       motionCue.textContent = "HOCH";
-      setPositionStatus("good", "🟩", "Unten erkannt", "Jetzt wieder hoch.");
+      setPositionStatus("good", "🟩", "Tief erkannt", "Jetzt direkt wieder hoch.");
     }
+
+    lastMetric = metric;
     return;
   }
 
   motionCue.textContent = "HOCH";
 
-  if (metric <= upThreshold) upFrames += 1;
-  else upFrames = 0;
+  if (metric <= upThreshold) {
+    upFrames += 1;
+  } else {
+    upFrames = 0;
+  }
 
-  if (upFrames >= QUICK_CONFIG.stableFrames) {
+  const repFastEnough =
+    lastRepAt === 0 ||
+    now - lastRepAt >= QUICK_CONFIG.minRepIntervalMs;
+
+  if (
+    upFrames >= QUICK_CONFIG.stableFrames &&
+    repFastEnough
+  ) {
     repCount += 1;
+    lastRepAt = now;
     liveRepCount.textContent = String(repCount);
     pulseCounter();
-    if (navigator.vibrate) navigator.vibrate(35);
 
-    // Obere Distanz sehr langsam nachführen, falls das Handy minimal verrutscht.
-    if (metric > baselineTopMetric * 0.82 && metric < baselineTopMetric * 1.18) {
+    if (navigator.vibrate) navigator.vibrate(28);
+
+    if (
+      metric > baselineTopMetric * 0.84 &&
+      metric < baselineTopMetric * 1.16
+    ) {
       baselineTopMetric =
         baselineTopMetric * (1 - QUICK_CONFIG.baselineAdaptation) +
         metric * QUICK_CONFIG.baselineAdaptation;
@@ -769,11 +963,20 @@ function updateRepState(metric, now) {
     }
 
     phase = "up";
+    inferredBottomFromLoss = false;
+    maxMetricSinceTop = metric;
     upFrames = 0;
     downFrames = 0;
     motionCue.textContent = "RUNTER";
-    setPositionStatus("good", "🟩", "Gut im Blick", `${repCount} Wiederholung${repCount === 1 ? "" : "en"} erkannt.`);
+    setPositionStatus(
+      "good",
+      "🟩",
+      "Gut im Blick",
+      `${repCount} Wiederholung${repCount === 1 ? "" : "en"} erkannt.`
+    );
   }
+
+  lastMetric = metric;
 }
 
 function pulseCounter() {
@@ -822,14 +1025,23 @@ function finishWorkout() {
 
   if (cameraWasStarted && !manualMode) {
     detectedResult.textContent = String(repCount);
-    repInput.value = String(repCount);
+    resultRepLabel.textContent = "Erkannt";
+    manualRepWrap.classList.add("hidden");
+    autoResultNote.classList.remove("hidden");
+    repInput.value = "";
   } else {
-    detectedResult.textContent = "–";
+    detectedResult.textContent = "Manuell";
+    resultRepLabel.textContent = "Modus";
+    manualRepWrap.classList.remove("hidden");
+    autoResultNote.classList.add("hidden");
     repInput.value = "";
   }
 
   showStep("result");
-  setTimeout(() => repInput.focus(), 50);
+
+  if (manualMode) {
+    setTimeout(() => repInput.focus(), 50);
+  }
 }
 
 function updateTimer() {
@@ -851,7 +1063,9 @@ function formatTime(seconds) {
 
 // ---------- Training speichern ----------
 function saveTrainingResult() {
-  const reps = Math.floor(Number(repInput.value));
+  const reps = cameraWasStarted && !manualMode
+    ? repCount
+    : Math.floor(Number(repInput.value));
 
   if (!Number.isFinite(reps) || reps < 0) {
     alert("Bitte gib eine gültige Wiederholungszahl ein.");
@@ -879,7 +1093,7 @@ function saveTrainingResult() {
     durationSeconds: elapsedSeconds,
     date: new Date().toISOString(),
     usedCamera: cameraWasStarted,
-    mode: cameraWasStarted && !manualMode ? "face-quick-v05" : "manual",
+    mode: cameraWasStarted && !manualMode ? "face-quick-v06" : "manual",
     calibrationTopMetric: baselineTopMetric
   });
 
@@ -895,9 +1109,6 @@ function saveTrainingResult() {
   addSuccessLine(`${reps} Push-ups gespeichert`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
 
-  if (cameraWasStarted && !manualMode && reps !== repCount) {
-    addSuccessLine(`Quick Mode erkannt: ${repCount} · korrigiert auf: ${reps}`);
-  }
 
   if (isNewRecord) addSuccessLine(`🏆 Neuer Rekord: ${progress.pushupMax}`, true);
   else addSuccessLine(`Rekord bleibt bei ${progress.pushupMax}`);
@@ -980,7 +1191,7 @@ document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainin
 document.getElementById("doneBtn").addEventListener("click", closeTraining);
 
 document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("Wirklich alle Testdaten dieser v0.5 löschen?")) return;
+  if (!confirm("Wirklich alle Testdaten dieser v0.6 löschen?")) return;
   localStorage.removeItem(STORAGE_KEY);
   progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
   render();
