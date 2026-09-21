@@ -1,22 +1,45 @@
-import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
+import {
+  FaceDetector,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
 
-const STORAGE_KEY = "skillTreeAppProgressV041";
-const OLD_STORAGE_KEYS = ["skillTreeAppProgressV04", "skillTreeAppProgressV03", "skillTreeProgress", "skillTreeAppProgress", "progress"];
-const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
-const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+const STORAGE_KEY = "skillTreeAppProgressV05";
+const OLD_STORAGE_KEYS = [
+  "skillTreeAppProgressV041",
+  "skillTreeAppProgressV04",
+  "skillTreeAppProgressV03",
+  "skillTreeProgress",
+  "skillTreeAppProgress",
+  "progress"
+];
 
-const PUSHUP_CONFIG = {
-  upAngle: 142,
-  downAngle: 112,
-  minVisibility: 0.38,
+const MEDIAPIPE_WASM =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
+const FACE_MODEL =
+  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
+
+const QUICK_CONFIG = {
+  detectIntervalMs: 75,
+  minDetectionConfidence: 0.55,
+
+  // Vor dem Start: Gesicht soll gut sichtbar, aber nicht riesig sein.
+  readyMinMetric: 0.11,
+  readyMaxMetric: 0.48,
+  readyMinCenterX: 0.18,
+  readyMaxCenterX: 0.82,
+  readyMinCenterY: 0.12,
+  readyMaxCenterY: 0.88,
+
+  // Dynamische Push-up-Grenzen relativ zur kalibrierten oberen Position.
+  downRatio: 1.30,
+  upRatio: 1.12,
+  minDownDelta: 0.045,
+
   stableFrames: 2,
-  minTransitionMs: 180,
-  smoothing: 0.18,
-  landmarkGraceMs: 650,
-  resetAfterLossMs: 1800,
-  minCalibratedTop: 138,
-  calibrationDrop: 34,
-  uiAngleIntervalMs: 120
+  faceLossGraceMs: 650,
+  hardResetLossMs: 1800,
+  metricSmoothing: 0.28,
+  baselineAdaptation: 0.012
 };
 
 const DEFAULT_PROGRESS = {
@@ -52,69 +75,91 @@ const SKILL_NODES = [
 ];
 
 let progress = loadProgress();
+
 let cameraStream = null;
-let poseLandmarker = null;
-let poseLoadingPromise = null;
+let faceDetector = null;
+let faceDetectorLoading = null;
 let detectionFrameId = null;
+let lastDetectionAt = 0;
 let lastVideoTime = -1;
+
+let currentFace = null;
+let smoothedMetric = null;
+let lastFaceSeenAt = 0;
+let goodPositionSince = 0;
+let readyForCountdown = false;
+
 let workoutStartedAt = null;
 let timerInterval = null;
 let elapsedSeconds = 0;
-let cameraWasStarted = false;
-let autoDetectionAvailable = false;
 let workoutActive = false;
-let repCount = 0;
-let pushupPhase = "unknown";
-let smoothedArmAngles = { left: null, right: null };
-let upFrames = 0;
-let downFrames = 0;
-let lastTransitionAt = 0;
-let lastGoodPoseAt = 0;
-let lastAngleUiAt = 0;
-let calibratedTopAngle = 0;
-let effectiveUpAngle = PUSHUP_CONFIG.upAngle;
-let effectiveDownAngle = PUSHUP_CONFIG.downAngle;
+let cameraWasStarted = false;
+let manualMode = false;
+let countdownActive = false;
 
+let repCount = 0;
+let phase = "up";
+let baselineTopMetric = null;
+let downThreshold = null;
+let upThreshold = null;
+let downFrames = 0;
+let upFrames = 0;
+let calibrationSamples = [];
+
+// ---------- DOM ----------
 const skillTree = document.getElementById("skillTree");
 const maxStat = document.getElementById("maxStat");
 const totalStat = document.getElementById("totalStat");
 const streakStat = document.getElementById("streakStat");
 const rankStat = document.getElementById("rankStat");
+
 const trainingModal = document.getElementById("trainingModal");
 const exerciseStep = document.getElementById("exerciseStep");
-const cameraStep = document.getElementById("cameraStep");
+const quickStep = document.getElementById("quickStep");
 const resultStep = document.getElementById("resultStep");
 const successStep = document.getElementById("successStep");
 const trainingTitle = document.getElementById("trainingTitle");
 const backBtn = document.getElementById("backBtn");
+
 const cameraVideo = document.getElementById("cameraVideo");
-const poseCanvas = document.getElementById("poseCanvas");
-const poseCtx = poseCanvas.getContext("2d");
-const cameraPlaceholder = document.getElementById("cameraPlaceholder");
-const cameraStatus = document.getElementById("cameraStatus");
-const timerOverlay = document.getElementById("timerOverlay");
-const timerDisplay = document.getElementById("timerDisplay");
-const counterOverlay = document.getElementById("counterOverlay");
 const liveRepCount = document.getElementById("liveRepCount");
-const formOverlay = document.getElementById("formOverlay");
-const formCue = document.getElementById("formCue");
-const angleDisplay = document.getElementById("angleDisplay");
-const poseQuality = document.getElementById("poseQuality");
-const poseQualityText = document.getElementById("poseQualityText");
+const timerDisplay = document.getElementById("timerDisplay");
+const motionCue = document.getElementById("motionCue");
+const positionStatus = document.getElementById("positionStatus");
+const positionEmoji = document.getElementById("positionEmoji");
+const positionTitle = document.getElementById("positionTitle");
+const positionHint = document.getElementById("positionHint");
+const cameraStatus = document.getElementById("cameraStatus");
+const countdownBox = document.getElementById("countdownBox");
+const countdownNumber = document.getElementById("countdownNumber");
+
+const startCameraBtn = document.getElementById("startCameraBtn");
+const startWorkoutBtn = document.getElementById("startWorkoutBtn");
+const finishWorkoutBtn = document.getElementById("finishWorkoutBtn");
+const manualModeBtn = document.getElementById("manualModeBtn");
+
 const finalTime = document.getElementById("finalTime");
 const detectedResult = document.getElementById("detectedResult");
 const repInput = document.getElementById("repInput");
 const successDetails = document.getElementById("successDetails");
-const startCameraBtn = document.getElementById("startCameraBtn");
-const continueWithoutCameraBtn = document.getElementById("continueWithoutCameraBtn");
-const startWorkoutBtn = document.getElementById("startWorkoutBtn");
-const finishWorkoutBtn = document.getElementById("finishWorkoutBtn");
 
+// ---------- Daten ----------
 function loadProgress() {
   const current = safeReadJson(STORAGE_KEY);
   if (current) return normalizeProgress(current);
 
   for (const key of OLD_STORAGE_KEYS) {
+    const candidate = safeReadJson(key);
+    if (looksLikeOldProgress(candidate)) {
+      const migrated = normalizeProgress(candidate);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  }
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || key === STORAGE_KEY) continue;
     const candidate = safeReadJson(key);
     if (looksLikeOldProgress(candidate)) {
       const migrated = normalizeProgress(candidate);
@@ -137,7 +182,10 @@ function safeReadJson(key) {
 
 function looksLikeOldProgress(value) {
   return !!value && typeof value === "object" && (
-    "pushupMax" in value || "pushupTotal" in value || "pushupStreak" in value || "lastTrainingDate" in value
+    "pushupMax" in value ||
+    "pushupTotal" in value ||
+    "pushupStreak" in value ||
+    "lastTrainingDate" in value
   );
 }
 
@@ -155,6 +203,7 @@ function saveProgress() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
+// ---------- Skill Tree ----------
 function render() {
   maxStat.textContent = progress.pushupMax;
   totalStat.textContent = progress.pushupTotal;
@@ -175,7 +224,8 @@ function nodeValue(node) {
 }
 
 function isNodeDone(node) {
-  return node.type === "start" || nodeValue(node) >= node.target;
+  if (node.type === "start") return true;
+  return nodeValue(node) >= node.target;
 }
 
 function isNodeAvailable(node) {
@@ -197,46 +247,79 @@ function renderTree() {
   });
 
   SKILL_NODES.forEach(node => {
-    const element = document.createElement("button");
-    element.type = "button";
-    element.className = "skill-node";
-    element.style.left = `${node.x}px`;
-    element.style.top = `${node.y}px`;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "skill-node";
+    el.style.left = `${node.x}px`;
+    el.style.top = `${node.y}px`;
 
     const done = isNodeDone(node);
     const available = isNodeAvailable(node);
-    if (done) element.classList.add("done");
-    else if (available) element.classList.add("next");
-    else element.classList.add("locked");
+    if (done) el.classList.add("done");
+    else if (available) el.classList.add("next");
+    else el.classList.add("locked");
 
     const unit = node.type === "total" ? "gesamt" : node.type === "streak" ? "Tage" : node.type === "start" ? "" : "am Stück";
-    element.innerHTML = `<span class="node-rank">${node.label}</span><span class="node-target">${node.type === "start" ? "✓" : node.target}</span><span class="node-label">${unit}</span>`;
-    skillTree.appendChild(element);
+
+    el.innerHTML = `
+      <span class="node-rank">${node.label}</span>
+      <span class="node-target">${node.type === "start" ? "✓" : node.target}</span>
+      <span class="node-label">${unit}</span>
+    `;
+
+    el.addEventListener("click", () => {
+      const current = node.type === "max" ? progress.pushupMax : node.type === "total" ? progress.pushupTotal : node.type === "streak" ? progress.pushupStreak : 0;
+      if (node.type === "start") alert("Startpunkt deines Push-up Skill Trees.");
+      else alert(`${node.label}: Ziel ${node.target} ${unit}.\nAktuell: ${current}.`);
+    });
+
+    skillTree.appendChild(el);
   });
 }
 
 function createConnector(from, to) {
   const line = document.createElement("div");
   line.className = "connector";
-  const x1 = from.x + 56, y1 = from.y + 49, x2 = to.x + 56, y2 = to.y + 49;
-  const dx = x2 - x1, dy = y2 - y1;
+  const nodeW = 112;
+  const nodeH = 98;
+  const x1 = from.x + nodeW / 2;
+  const y1 = from.y + nodeH / 2;
+  const x2 = to.x + nodeW / 2;
+  const y2 = to.y + nodeH / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
   line.style.left = `${x1}px`;
   line.style.top = `${y1}px`;
-  line.style.width = `${Math.hypot(dx, dy)}px`;
-  line.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
+  line.style.width = `${length}px`;
+  line.style.transform = `rotate(${angle}deg)`;
   return line;
 }
 
+// ---------- Modal ----------
 function showStep(stepName) {
-  [exerciseStep, cameraStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
+  [exerciseStep, quickStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
+
   if (stepName === "exercise") {
-    exerciseStep.classList.remove("hidden"); trainingTitle.textContent = "Übung auswählen"; backBtn.classList.add("hidden");
-  } else if (stepName === "camera") {
-    cameraStep.classList.remove("hidden"); trainingTitle.textContent = "Push-up Training"; backBtn.classList.remove("hidden");
-  } else if (stepName === "result") {
-    resultStep.classList.remove("hidden"); trainingTitle.textContent = "Training prüfen"; backBtn.classList.remove("hidden");
-  } else if (stepName === "success") {
-    successStep.classList.remove("hidden"); trainingTitle.textContent = "Fertig"; backBtn.classList.add("hidden");
+    exerciseStep.classList.remove("hidden");
+    trainingTitle.textContent = "Übung auswählen";
+    backBtn.classList.add("hidden");
+  }
+  if (stepName === "quick") {
+    quickStep.classList.remove("hidden");
+    trainingTitle.textContent = "Push-up Quick Mode";
+    backBtn.classList.remove("hidden");
+  }
+  if (stepName === "result") {
+    resultStep.classList.remove("hidden");
+    trainingTitle.textContent = "Training prüfen";
+    backBtn.classList.remove("hidden");
+  }
+  if (stepName === "success") {
+    successStep.classList.remove("hidden");
+    trainingTitle.textContent = "Fertig";
+    backBtn.classList.add("hidden");
   }
 }
 
@@ -249,125 +332,146 @@ function openTraining() {
 
 function closeTraining() {
   workoutActive = false;
-  stopCamera();
+  countdownActive = false;
   stopTimer();
   stopDetectionLoop();
+  stopCamera();
   trainingModal.classList.add("hidden");
   document.body.style.overflow = "";
 }
 
 function resetTrainingSession() {
   workoutActive = false;
-  stopCamera(); stopTimer(); stopDetectionLoop();
-  workoutStartedAt = null; elapsedSeconds = 0; cameraWasStarted = false; autoDetectionAvailable = false;
-  repCount = 0;
-  pushupPhase = "unknown";
-  smoothedArmAngles = { left: null, right: null };
-  upFrames = 0;
-  downFrames = 0;
-  lastTransitionAt = 0;
-  lastGoodPoseAt = 0;
-  lastAngleUiAt = 0;
-  calibratedTopAngle = 0;
-  effectiveUpAngle = PUSHUP_CONFIG.upAngle;
-  effectiveDownAngle = PUSHUP_CONFIG.downAngle;
+  countdownActive = false;
+  manualMode = false;
+  cameraWasStarted = false;
+  stopTimer();
+  stopDetectionLoop();
+  stopCamera();
+
+  currentFace = null;
+  smoothedMetric = null;
+  lastFaceSeenAt = 0;
+  goodPositionSince = 0;
+  readyForCountdown = false;
   lastVideoTime = -1;
-  repInput.value = ""; liveRepCount.textContent = "0"; timerDisplay.textContent = "00:00"; finalTime.textContent = "00:00"; detectedResult.textContent = "–"; angleDisplay.textContent = "Arme: –°"; formCue.textContent = "Position finden …";
-  clearPoseCanvas();
-  cameraPlaceholder.classList.remove("hidden"); timerOverlay.classList.add("hidden"); counterOverlay.classList.add("hidden"); formOverlay.classList.add("hidden");
-  startCameraBtn.classList.remove("hidden"); startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
-  continueWithoutCameraBtn.classList.remove("hidden"); startWorkoutBtn.classList.add("hidden"); finishWorkoutBtn.classList.add("hidden");
-  setPoseQuality("neutral", "Kamera noch nicht aktiv");
-  cameraStatus.textContent = "Starte die Kamera. Beim ersten Mal fragt dein Browser nach der Berechtigung.";
+  lastDetectionAt = 0;
+
+  workoutStartedAt = null;
+  elapsedSeconds = 0;
+  repCount = 0;
+  phase = "up";
+  baselineTopMetric = null;
+  downThreshold = null;
+  upThreshold = null;
+  downFrames = 0;
+  upFrames = 0;
+  calibrationSamples = [];
+
+  liveRepCount.textContent = "0";
+  timerDisplay.textContent = "00:00";
+  motionCue.textContent = "Handy hinlegen und Kamera starten";
+  finalTime.textContent = "00:00";
+  detectedResult.textContent = "–";
+  repInput.value = "";
+
+  startCameraBtn.classList.remove("hidden");
+  startCameraBtn.disabled = false;
+  startCameraBtn.textContent = "Kamera starten";
+  startWorkoutBtn.classList.add("hidden");
+  startWorkoutBtn.disabled = true;
+  finishWorkoutBtn.classList.add("hidden");
+  manualModeBtn.classList.remove("hidden");
+  countdownBox.classList.add("hidden");
+
+  setPositionStatus("neutral", "⬜", "Kamera noch nicht aktiv", "Display nach oben, ungefähr unter bzw. leicht vor deinem Gesicht.");
+  cameraStatus.textContent = "Kein Kamerabild auf dem Screen: Die Zahl und die Position-Ampel haben Vorrang.";
 }
 
-async function initPoseLandmarker() {
-  if (poseLandmarker) return poseLandmarker;
-  if (poseLoadingPromise) return poseLoadingPromise;
+// ---------- Face Detector ----------
+async function initFaceDetector() {
+  if (faceDetector) return faceDetector;
+  if (faceDetectorLoading) return faceDetectorLoading;
 
-  poseLoadingPromise = (async () => {
+  faceDetectorLoading = (async () => {
     const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
-    const base = {
-      baseOptions: { modelAssetPath: POSE_MODEL, delegate: "GPU" },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.6,
-      minPosePresenceConfidence: 0.6,
-      minTrackingConfidence: 0.6,
-      outputSegmentationMasks: false
-    };
 
-    try {
-      poseLandmarker = await PoseLandmarker.createFromOptions(vision, base);
-    } catch (gpuError) {
-      console.warn("GPU nicht verfügbar, CPU-Fallback", gpuError);
-      poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-        ...base,
-        baseOptions: { modelAssetPath: POSE_MODEL, delegate: "CPU" }
-      });
-    }
-    return poseLandmarker;
+    // CPU ist bei dem kleinen BlazeFace-Modell auf Mobilgeräten sehr brauchbar
+    // und vermeidet einige GPU/WebGL-Sonderfälle.
+    faceDetector = await FaceDetector.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: FACE_MODEL,
+        delegate: "CPU"
+      },
+      runningMode: "VIDEO",
+      minDetectionConfidence: QUICK_CONFIG.minDetectionConfidence,
+      minSuppressionThreshold: 0.3
+    });
+
+    return faceDetector;
   })();
 
-  try { return await poseLoadingPromise; }
-  finally { poseLoadingPromise = null; }
+  try {
+    return await faceDetectorLoading;
+  } finally {
+    faceDetectorLoading = null;
+  }
 }
 
 async function startCamera() {
-  cameraStatus.textContent = "Kamera wird geöffnet …";
-  startCameraBtn.disabled = true;
-  startCameraBtn.textContent = "Wird geladen …";
-
   if (!navigator.mediaDevices?.getUserMedia) {
-    cameraStatus.textContent = "Dieser Browser unterstützt den Kamerazugriff hier nicht. Du kannst trotzdem ohne Kamera trainieren.";
-    startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
+    setPositionStatus("bad", "🟥", "Kamera nicht verfügbar", "Du kannst unten in den manuellen Modus wechseln.");
     return;
   }
 
+  startCameraBtn.disabled = true;
+  startCameraBtn.textContent = "Wird geladen …";
+  cameraStatus.textContent = "Frontkamera und Gesichtserkennung werden gestartet …";
+
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 1280 } },
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      },
       audio: false
     });
+
+    const track = cameraStream.getVideoTracks()[0];
+
+    // Wenn das Gerät einen echten Zoom-Regler anbietet, nutzen wir den kleinsten Zoom.
+    // Das reduziert unnötiges digitales Reinzoomen auf unterstützten Smartphones.
+    try {
+      const caps = track.getCapabilities?.();
+      if (caps?.zoom && Number.isFinite(caps.zoom.min)) {
+        await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] });
+      }
+    } catch (zoomError) {
+      console.info("Minimaler Kamera-Zoom konnte nicht gesetzt werden:", zoomError);
+    }
 
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
     cameraWasStarted = true;
-    cameraPlaceholder.classList.add("hidden");
-    formOverlay.classList.remove("hidden");
-    resizePoseCanvas();
-    setPoseQuality("warn", "Körpererkennung wird geladen …");
-    cameraStatus.textContent = "Pose-Modell wird geladen. Beim ersten Start braucht das kurz Internetzugriff.";
 
-    try {
-      await initPoseLandmarker();
-      autoDetectionAvailable = true;
-      setPoseQuality("warn", "Bring Schultern und Arme ins Bild");
-      cameraStatus.textContent = "Erkennung bereit. Stell das Handy ca. 0,7–1 m vor dich, niedrig und etwa 30–45° schräg. Schulter, Ellenbogen und Handgelenke sollten sichtbar sein.";
-      startDetectionLoop();
-    } catch (modelError) {
-      console.error(modelError);
-      autoDetectionAvailable = false;
-      setPoseQuality("bad", "Automatische Erkennung nicht verfügbar");
-      cameraStatus.textContent = "Die Kamera läuft, aber die Körpererkennung konnte nicht geladen werden. Du kannst trotzdem manuell trainieren.";
-    }
+    setPositionStatus("warn", "🟨", "Erkennung wird geladen", "Bleib kurz über dem Handy.");
+    await initFaceDetector();
 
     startCameraBtn.classList.add("hidden");
-    continueWithoutCameraBtn.classList.add("hidden");
     startWorkoutBtn.classList.remove("hidden");
-  } catch (error) {
-    console.error(error);
-    setPoseQuality("bad", "Kamerazugriff nicht verfügbar");
-    cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder ist nicht verfügbar. Du kannst ohne Kamera weitermachen.";
-    startCameraBtn.disabled = false; startCameraBtn.textContent = "Kamera + Erkennung starten";
-  }
-}
+    manualModeBtn.classList.add("hidden");
+    cameraStatus.textContent = "Leg das Handy flach hin. Sobald die Ampel grün ist, kannst du direkt den 3‑Sekunden-Countdown starten.";
+    motionCue.textContent = "Bring dein Gesicht über das Handy";
 
-function continueWithoutCamera() {
-  stopCamera(); stopDetectionLoop(); cameraWasStarted = false; autoDetectionAvailable = false;
-  startCameraBtn.classList.add("hidden"); continueWithoutCameraBtn.classList.add("hidden"); startWorkoutBtn.classList.remove("hidden");
-  formOverlay.classList.add("hidden"); setPoseQuality("neutral", "Manueller Modus");
-  cameraStatus.textContent = "Starte das Training und trage die Wiederholungen anschließend selbst ein.";
+    startDetectionLoop();
+  } catch (error) {
+    console.error("Kamera/FaceDetector konnte nicht gestartet werden:", error);
+    setPositionStatus("bad", "🟥", "Kamera konnte nicht gestartet werden", "Berechtigung prüfen oder manuellen Modus verwenden.");
+    cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder die Gesichtserkennung konnte nicht geladen werden.";
+    startCameraBtn.disabled = false;
+    startCameraBtn.textContent = "Kamera erneut versuchen";
+  }
 }
 
 function stopCamera() {
@@ -376,15 +480,14 @@ function stopCamera() {
   cameraVideo.srcObject = null;
 }
 
-function resizePoseCanvas() {
-  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
-  poseCanvas.width = cameraVideo.videoWidth;
-  poseCanvas.height = cameraVideo.videoHeight;
-}
-
 function startDetectionLoop() {
   stopDetectionLoop();
-  const loop = () => { detectPoseFrame(); detectionFrameId = requestAnimationFrame(loop); };
+
+  const loop = now => {
+    detectFaceFrame(now);
+    detectionFrameId = requestAnimationFrame(loop);
+  };
+
   detectionFrameId = requestAnimationFrame(loop);
 }
 
@@ -393,385 +496,340 @@ function stopDetectionLoop() {
   detectionFrameId = null;
 }
 
-function detectPoseFrame() {
-  if (!poseLandmarker || !cameraStream || cameraVideo.readyState < 2) return;
-  if (cameraVideo.videoWidth !== poseCanvas.width || cameraVideo.videoHeight !== poseCanvas.height) resizePoseCanvas();
+function detectFaceFrame(now) {
+  if (!faceDetector || !cameraStream || cameraVideo.readyState < 2) return;
+  if (now - lastDetectionAt < QUICK_CONFIG.detectIntervalMs) return;
   if (cameraVideo.currentTime === lastVideoTime) return;
+
+  lastDetectionAt = now;
   lastVideoTime = cameraVideo.currentTime;
 
   try {
-    const result = poseLandmarker.detectForVideo(cameraVideo, performance.now());
-    processPoseResult(result);
+    const result = faceDetector.detectForVideo(cameraVideo, now);
+    processFaceResult(result, now);
   } catch (error) {
-    console.error("Pose-Erkennung:", error);
+    console.error("Face detection error:", error);
   }
 }
 
-function processPoseResult(result) {
-  clearPoseCanvas();
+function processFaceResult(result, now) {
+  const detections = Array.isArray(result?.detections) ? result.detections : [];
 
-  const now = performance.now();
-  const landmarks = result?.landmarks?.[0];
-  const worldLandmarks = result?.worldLandmarks?.[0] || null;
-
-  if (!landmarks) {
-    handlePoseLoss(now, "Kein Körper erkannt");
+  if (!detections.length) {
+    handleFaceLoss(now);
     return;
   }
 
-  const analysis = analyzePushupPose(landmarks, worldLandmarks);
-  drawUpperBodyPose(landmarks, analysis?.visibleSides || []);
+  // Höchste Confidence verwenden.
+  const detection = [...detections].sort((a, b) => {
+    const aScore = a?.categories?.[0]?.score ?? 0;
+    const bScore = b?.categories?.[0]?.score ?? 0;
+    return bScore - aScore;
+  })[0];
 
-  if (!analysis) {
-    handlePoseLoss(now, "Arme nicht sicher erkannt");
+  const box = detection?.boundingBox;
+  if (!box || !cameraVideo.videoWidth || !cameraVideo.videoHeight) {
+    handleFaceLoss(now);
     return;
   }
 
-  lastGoodPoseAt = now;
+  const frameW = cameraVideo.videoWidth;
+  const frameH = cameraVideo.videoHeight;
+  const normW = clamp(box.width / frameW, 0, 1);
+  const normH = clamp(box.height / frameH, 0, 1);
+  const centerX = clamp((box.originX + box.width / 2) / frameW, 0, 1);
+  const centerY = clamp((box.originY + box.height / 2) / frameH, 0, 1);
+  const rawMetric = Math.sqrt(Math.max(0.000001, normW * normH));
 
-  if (analysis.armCount >= 2) {
-    setPoseQuality("good", "Beide Arme erkannt");
-  } else {
-    setPoseQuality(
-      "warn",
-      `${analysis.visibleSides[0] === "left" ? "Linker" : "Rechter"} Arm erkannt · zweiter Arm darf besser sichtbar sein`
-    );
-  }
+  smoothedMetric = smoothedMetric === null
+    ? rawMetric
+    : smoothedMetric * (1 - QUICK_CONFIG.metricSmoothing) + rawMetric * QUICK_CONFIG.metricSmoothing;
 
-  updatePushupState(analysis, now);
-}
+  currentFace = {
+    metric: smoothedMetric,
+    centerX,
+    centerY,
+    confidence: detection?.categories?.[0]?.score ?? 0
+  };
 
-function handlePoseLoss(now, reason) {
-  const lostFor = lastGoodPoseAt ? now - lastGoodPoseAt : Infinity;
+  lastFaceSeenAt = now;
 
-  if (lostFor <= PUSHUP_CONFIG.landmarkGraceMs) {
-    setPoseQuality("warn", "Kurz verloren · Bewegung läuft weiter");
-    formCue.textContent = "Weiter – ich suche dich wieder …";
+  if (countdownActive) {
+    if (isFaceReady(currentFace)) calibrationSamples.push(currentFace.metric);
     return;
-  }
-
-  setPoseQuality("bad", reason);
-  formCue.textContent = "Schultern + Arme ins Bild";
-  angleDisplay.textContent = "Arme: –°";
-  resetStableFrames();
-
-  if (workoutActive && lostFor > PUSHUP_CONFIG.resetAfterLossMs) {
-    pushupPhase = "unknown";
-  }
-}
-
-function analyzePushupPose(landmarks, worldLandmarks) {
-  const sides = [
-    { name: "left", shoulder: 11, elbow: 13, wrist: 15 },
-    { name: "right", shoulder: 12, elbow: 14, wrist: 16 }
-  ];
-
-  const validArms = [];
-
-  for (const side of sides) {
-    const s2d = landmarks[side.shoulder];
-    const e2d = landmarks[side.elbow];
-    const w2d = landmarks[side.wrist];
-
-    if (!s2d || !e2d || !w2d) continue;
-
-    const visibility =
-      ((s2d.visibility ?? 0) + (e2d.visibility ?? 0) + (w2d.visibility ?? 0)) / 3;
-
-    if (visibility < PUSHUP_CONFIG.minVisibility) continue;
-
-    let rawAngle;
-
-    if (
-      worldLandmarks?.[side.shoulder] &&
-      worldLandmarks?.[side.elbow] &&
-      worldLandmarks?.[side.wrist]
-    ) {
-      rawAngle = calculateAngle3D(
-        worldLandmarks[side.shoulder],
-        worldLandmarks[side.elbow],
-        worldLandmarks[side.wrist]
-      );
-    } else {
-      rawAngle = calculateAngle2D(s2d, e2d, w2d);
-    }
-
-    if (!Number.isFinite(rawAngle)) continue;
-
-    const previous = smoothedArmAngles[side.name];
-    const alpha = PUSHUP_CONFIG.smoothing;
-    const smoothed =
-      previous === null
-        ? rawAngle
-        : previous * (1 - alpha) + rawAngle * alpha;
-
-    smoothedArmAngles[side.name] = smoothed;
-
-    validArms.push({
-      name: side.name,
-      angle: smoothed,
-      visibility
-    });
-  }
-
-  if (!validArms.length) return null;
-
-  let usedArms = validArms;
-
-  if (
-    validArms.length === 2 &&
-    Math.abs(validArms[0].angle - validArms[1].angle) > 38
-  ) {
-    usedArms = [
-      [...validArms].sort((a, b) => b.visibility - a.visibility)[0]
-    ];
-  }
-
-  const totalWeight = usedArms.reduce(
-    (sum, arm) => sum + arm.visibility,
-    0
-  );
-
-  const combinedAngle =
-    usedArms.reduce(
-      (sum, arm) => sum + arm.angle * arm.visibility,
-      0
-    ) / Math.max(totalWeight, 0.001);
-
-  return {
-    combinedAngle,
-    arms: validArms,
-    armCount: validArms.length,
-    visibleSides: validArms.map(arm => arm.name)
-  };
-}
-
-function calculateAngle2D(a, b, c) {
-  const ab = { x: a.x - b.x, y: a.y - b.y };
-  const cb = { x: c.x - b.x, y: c.y - b.y };
-  const dot = ab.x * cb.x + ab.y * cb.y;
-  const magAB = Math.hypot(ab.x, ab.y);
-  const magCB = Math.hypot(cb.x, cb.y);
-
-  if (!magAB || !magCB) return NaN;
-
-  const cos = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
-  return Math.acos(cos) * 180 / Math.PI;
-}
-
-function calculateAngle3D(a, b, c) {
-  const ab = {
-    x: a.x - b.x,
-    y: a.y - b.y,
-    z: (a.z ?? 0) - (b.z ?? 0)
-  };
-  const cb = {
-    x: c.x - b.x,
-    y: c.y - b.y,
-    z: (c.z ?? 0) - (b.z ?? 0)
-  };
-
-  const dot = ab.x * cb.x + ab.y * cb.y + ab.z * cb.z;
-  const magAB = Math.hypot(ab.x, ab.y, ab.z);
-  const magCB = Math.hypot(cb.x, cb.y, cb.z);
-
-  if (!magAB || !magCB) return NaN;
-
-  const cos = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
-  return Math.acos(cos) * 180 / Math.PI;
-}
-
-function updatePushupState(analysis, now) {
-  const angle = analysis.combinedAngle;
-
-  if (now - lastAngleUiAt >= PUSHUP_CONFIG.uiAngleIntervalMs) {
-    angleDisplay.textContent = `Arme: ${Math.round(angle)}°`;
-    lastAngleUiAt = now;
-  }
-
-  if (!workoutActive && angle >= 125 && angle <= 172) {
-    calibratedTopAngle = Math.max(calibratedTopAngle, angle);
-    updateEffectiveThresholds();
   }
 
   if (!workoutActive) {
-    if (angle >= effectiveUpAngle) {
-      formCue.textContent = "OBEN erkannt ✓";
-    } else if (angle <= effectiveDownAngle) {
-      formCue.textContent = "UNTEN erkannt ✓";
-    } else {
-      formCue.textContent = "Position erkannt";
-    }
+    updateSetupGuidance(currentFace, now);
     return;
   }
 
-  if (angle >= effectiveUpAngle) {
-    upFrames += 1;
+  updateRepState(currentFace.metric, now);
+}
+
+function handleFaceLoss(now) {
+  const lostFor = lastFaceSeenAt ? now - lastFaceSeenAt : Infinity;
+
+  if (countdownActive) {
+    setPositionStatus("bad", "🟥", "Gesicht verloren", "Bleib während des Countdowns oben über dem Handy.");
+    return;
+  }
+
+  if (!workoutActive) {
+    readyForCountdown = false;
+    startWorkoutBtn.disabled = true;
+    goodPositionSince = 0;
+    setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Beug dich etwas über das Handy oder schieb es näher zu deinem Gesicht.");
+    motionCue.textContent = "Gesicht ins Blickfeld bringen";
+    return;
+  }
+
+  if (lostFor <= QUICK_CONFIG.faceLossGraceMs) {
+    setPositionStatus("warn", "🟨", "Kurz aus dem Blickfeld", "Weiterbewegen – ich suche dein Gesicht wieder.");
+    return;
+  }
+
+  setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Kopf etwas mehr über das Handy bringen.");
+
+  if (lostFor > QUICK_CONFIG.hardResetLossMs) {
     downFrames = 0;
-  } else if (angle <= effectiveDownAngle) {
-    downFrames += 1;
     upFrames = 0;
-  } else {
-    resetStableFrames();
+    motionCue.textContent = phase === "down" ? "HOCH" : "RUNTER";
   }
+}
 
-  const enoughTime =
-    now - lastTransitionAt >= PUSHUP_CONFIG.minTransitionMs;
+function updateSetupGuidance(face, now) {
+  readyForCountdown = false;
+  startWorkoutBtn.disabled = true;
 
-  if (pushupPhase === "unknown") {
-    formCue.textContent = "Arme strecken → OBEN";
-
-    if (upFrames >= PUSHUP_CONFIG.stableFrames) {
-      pushupPhase = "up";
-      lastTransitionAt = now;
-      formCue.textContent = "OBEN ✓ · jetzt runter";
-      resetStableFrames();
-    }
+  if (face.metric < QUICK_CONFIG.readyMinMetric) {
+    goodPositionSince = 0;
+    setPositionStatus("warn", "🟨", "Etwas näher ans Handy", "Schieb das Handy ein Stück weiter nach vorne unter dein Gesicht.");
+    motionCue.textContent = "Etwas näher";
     return;
   }
 
-  if (pushupPhase === "up") {
-    formCue.textContent = "Runter";
-
-    if (
-      enoughTime &&
-      downFrames >= PUSHUP_CONFIG.stableFrames
-    ) {
-      pushupPhase = "down";
-      lastTransitionAt = now;
-      formCue.textContent = "UNTEN ✓ · jetzt hoch";
-      resetStableFrames();
-    }
+  if (face.metric > QUICK_CONFIG.readyMaxMetric) {
+    goodPositionSince = 0;
+    setPositionStatus("warn", "🟨", "Etwas weiter weg", "Das Gesicht ist sehr nah an der Frontkamera.");
+    motionCue.textContent = "Etwas weiter weg";
     return;
   }
 
-  if (pushupPhase === "down") {
-    formCue.textContent = "Hoch";
+  const centered =
+    face.centerX >= QUICK_CONFIG.readyMinCenterX &&
+    face.centerX <= QUICK_CONFIG.readyMaxCenterX &&
+    face.centerY >= QUICK_CONFIG.readyMinCenterY &&
+    face.centerY <= QUICK_CONFIG.readyMaxCenterY;
 
-    if (
-      enoughTime &&
-      upFrames >= PUSHUP_CONFIG.stableFrames
-    ) {
-      repCount += 1;
-      liveRepCount.textContent = String(repCount);
-      pushupPhase = "up";
-      lastTransitionAt = now;
-      formCue.textContent = "✓ Gewertet · wieder runter";
-      resetStableFrames();
-
-      if (navigator.vibrate) navigator.vibrate(35);
-
-      if (liveRepCount.animate) {
-        liveRepCount.animate(
-          [
-            { transform: "scale(1)" },
-            { transform: "scale(1.35)" },
-            { transform: "scale(1)" }
-          ],
-          { duration: 240, easing: "ease-out" }
-        );
-      }
-    }
-  }
-}
-
-function updateEffectiveThresholds() {
-  if (calibratedTopAngle < PUSHUP_CONFIG.minCalibratedTop) {
-    effectiveUpAngle = PUSHUP_CONFIG.upAngle;
-    effectiveDownAngle = PUSHUP_CONFIG.downAngle;
+  if (!centered) {
+    goodPositionSince = 0;
+    setPositionStatus("warn", "🟨", "Kopf etwas mittiger", "Schieb das Handy kurz so, dass es ungefähr unter deinem Gesicht liegt.");
+    motionCue.textContent = "Handy etwas verschieben";
     return;
   }
 
-  effectiveUpAngle = clamp(
-    calibratedTopAngle - 8,
-    136,
-    152
-  );
+  if (!goodPositionSince) goodPositionSince = now;
+  const stableFor = now - goodPositionSince;
 
-  effectiveDownAngle = clamp(
-    effectiveUpAngle - PUSHUP_CONFIG.calibrationDrop,
-    100,
-    120
-  );
-}
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function resetStableFrames() { upFrames = 0; downFrames = 0; }
-
-function drawUpperBodyPose(landmarks, visibleSides) {
-  if (!poseCanvas.width || !poseCanvas.height) return;
-
-  const sideMap = {
-    left: [11, 13, 15],
-    right: [12, 14, 16]
-  };
-
-  poseCtx.save();
-  poseCtx.lineWidth = Math.max(
-    4,
-    poseCanvas.width * 0.004
-  );
-  poseCtx.strokeStyle = "rgba(91,201,255,.95)";
-  poseCtx.fillStyle = "rgba(255,255,255,.95)";
-  poseCtx.lineCap = "round";
-
-  for (const sideName of visibleSides) {
-    const ids = sideMap[sideName];
-    if (!ids) continue;
-
-    const pts = ids.map(i => landmarks[i]);
-    if (pts.some(p => !p)) continue;
-
-    drawLine(pts[0], pts[1]);
-    drawLine(pts[1], pts[2]);
-    pts.forEach(drawPoint);
+  if (stableFor < 450) {
+    setPositionStatus("good", "🟩", "Gut im Blick", "Kurz so bleiben …");
+    motionCue.textContent = "Position passt";
+    return;
   }
 
-  const leftShoulder = landmarks[11];
-  const rightShoulder = landmarks[12];
+  readyForCountdown = true;
+  startWorkoutBtn.disabled = false;
+  setPositionStatus("good", "🟩", "Bereit", "Start drücken – im Countdown einfach oben bleiben.");
+  motionCue.textContent = "Bereit";
+}
 
-  if (
-    leftShoulder &&
-    rightShoulder &&
-    (leftShoulder.visibility ?? 0) > 0.25 &&
-    (rightShoulder.visibility ?? 0) > 0.25
-  ) {
-    drawLine(leftShoulder, rightShoulder);
+function isFaceReady(face) {
+  if (!face) return false;
+  if (face.metric < QUICK_CONFIG.readyMinMetric || face.metric > QUICK_CONFIG.readyMaxMetric) return false;
+  return (
+    face.centerX >= QUICK_CONFIG.readyMinCenterX &&
+    face.centerX <= QUICK_CONFIG.readyMaxCenterX &&
+    face.centerY >= QUICK_CONFIG.readyMinCenterY &&
+    face.centerY <= QUICK_CONFIG.readyMaxCenterY
+  );
+}
+
+function setPositionStatus(state, emoji, title, hint) {
+  positionStatus.className = `position-status ${state}`;
+  positionEmoji.textContent = emoji;
+  positionTitle.textContent = title;
+  positionHint.textContent = hint;
+}
+
+// ---------- Countdown / Training ----------
+async function startCountdown() {
+  if (!readyForCountdown || !currentFace || countdownActive) return;
+
+  countdownActive = true;
+  calibrationSamples = [];
+  startWorkoutBtn.disabled = true;
+  countdownBox.classList.remove("hidden");
+  motionCue.textContent = "Oben bleiben";
+
+  for (const value of [3, 2, 1]) {
+    countdownNumber.textContent = String(value);
+    await sleep(700);
+    if (!countdownActive) return;
   }
 
-  poseCtx.restore();
+  countdownNumber.textContent = "GO";
+  await sleep(350);
+  if (!countdownActive) return;
+
+  const usableSamples = calibrationSamples.filter(Number.isFinite);
+  if (usableSamples.length < 4) {
+    countdownActive = false;
+    countdownBox.classList.add("hidden");
+    setPositionStatus("bad", "🟥", "Kalibrierung nicht geklappt", "Gesicht war im Countdown nicht stabil sichtbar. Versuch es direkt nochmal.");
+    startWorkoutBtn.disabled = false;
+    return;
+  }
+
+  baselineTopMetric = median(usableSamples);
+  calculateThresholds();
+
+  countdownActive = false;
+  countdownBox.classList.add("hidden");
+  beginWorkout();
 }
 
-function drawLine(a,b) {
-  poseCtx.beginPath(); poseCtx.moveTo(a.x*poseCanvas.width,a.y*poseCanvas.height); poseCtx.lineTo(b.x*poseCanvas.width,b.y*poseCanvas.height); poseCtx.stroke();
+function calculateThresholds() {
+  if (!Number.isFinite(baselineTopMetric)) return;
+  upThreshold = baselineTopMetric * QUICK_CONFIG.upRatio;
+  downThreshold = Math.max(
+    baselineTopMetric * QUICK_CONFIG.downRatio,
+    baselineTopMetric + QUICK_CONFIG.minDownDelta
+  );
 }
-function drawPoint(p) {
-  poseCtx.beginPath(); poseCtx.arc(p.x*poseCanvas.width,p.y*poseCanvas.height,Math.max(5,poseCanvas.width*.006),0,Math.PI*2); poseCtx.fill();
-}
-function clearPoseCanvas() { poseCtx.clearRect(0,0,poseCanvas.width,poseCanvas.height); }
-function setPoseQuality(state,text) { poseQuality.className = `pose-quality ${state}`; poseQualityText.textContent = text; }
 
-function startWorkout() {
-  workoutStartedAt = Date.now(); elapsedSeconds = 0; workoutActive = true;
+function beginWorkout() {
+  workoutActive = true;
+  manualMode = false;
+  workoutStartedAt = Date.now();
+  elapsedSeconds = 0;
   repCount = 0;
+  phase = "up";
+  downFrames = 0;
+  upFrames = 0;
   liveRepCount.textContent = "0";
-  pushupPhase = "unknown";
-  smoothedArmAngles = { left: null, right: null };
-  resetStableFrames();
-  lastTransitionAt = 0;
-  lastGoodPoseAt = performance.now();
-  updateEffectiveThresholds();
-  startWorkoutBtn.classList.add("hidden"); finishWorkoutBtn.classList.remove("hidden"); timerOverlay.classList.remove("hidden");
-  if (cameraWasStarted) {
-    counterOverlay.classList.remove("hidden"); formOverlay.classList.remove("hidden");
-    cameraStatus.textContent = autoDetectionAvailable ? `Training läuft. Gezählt wird bei OBEN → UNTEN → OBEN. Grenzen: oben ab ${Math.round(effectiveUpAngle)}°, unten bis ${Math.round(effectiveDownAngle)}°.` : "Training läuft. Automatische Erkennung ist nicht verfügbar; trage die Zahl danach manuell ein.";
-  } else {
-    cameraStatus.textContent = "Manuelles Training läuft. Trage die Wiederholungen anschließend ein.";
+
+  startWorkoutBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.remove("hidden");
+  manualModeBtn.classList.add("hidden");
+
+  setPositionStatus("good", "🟩", "Training läuft", "Du musst nicht auf die Kamera schauen – nur auf Zahl und Ampel.");
+  motionCue.textContent = "RUNTER";
+
+  updateTimer();
+  timerInterval = window.setInterval(updateTimer, 250);
+}
+
+function updateRepState(metric, now) {
+  if (!Number.isFinite(metric) || !Number.isFinite(downThreshold) || !Number.isFinite(upThreshold)) return;
+
+  if (phase === "up") {
+    motionCue.textContent = "RUNTER";
+
+    if (metric >= downThreshold) downFrames += 1;
+    else downFrames = 0;
+
+    if (downFrames >= QUICK_CONFIG.stableFrames) {
+      phase = "down";
+      downFrames = 0;
+      upFrames = 0;
+      motionCue.textContent = "HOCH";
+      setPositionStatus("good", "🟩", "Unten erkannt", "Jetzt wieder hoch.");
+    }
+    return;
   }
-  updateTimer(); timerInterval = window.setInterval(updateTimer,250);
+
+  motionCue.textContent = "HOCH";
+
+  if (metric <= upThreshold) upFrames += 1;
+  else upFrames = 0;
+
+  if (upFrames >= QUICK_CONFIG.stableFrames) {
+    repCount += 1;
+    liveRepCount.textContent = String(repCount);
+    pulseCounter();
+    if (navigator.vibrate) navigator.vibrate(35);
+
+    // Obere Distanz sehr langsam nachführen, falls das Handy minimal verrutscht.
+    if (metric > baselineTopMetric * 0.82 && metric < baselineTopMetric * 1.18) {
+      baselineTopMetric =
+        baselineTopMetric * (1 - QUICK_CONFIG.baselineAdaptation) +
+        metric * QUICK_CONFIG.baselineAdaptation;
+      calculateThresholds();
+    }
+
+    phase = "up";
+    upFrames = 0;
+    downFrames = 0;
+    motionCue.textContent = "RUNTER";
+    setPositionStatus("good", "🟩", "Gut im Blick", `${repCount} Wiederholung${repCount === 1 ? "" : "en"} erkannt.`);
+  }
+}
+
+function pulseCounter() {
+  if (!liveRepCount.animate) return;
+  liveRepCount.animate(
+    [
+      { transform: "scale(1)" },
+      { transform: "scale(1.12)" },
+      { transform: "scale(1)" }
+    ],
+    { duration: 220, easing: "ease-out" }
+  );
+}
+
+function startManualMode() {
+  stopDetectionLoop();
+  stopCamera();
+  manualMode = true;
+  cameraWasStarted = false;
+  workoutActive = true;
+  workoutStartedAt = Date.now();
+  elapsedSeconds = 0;
+  repCount = 0;
+
+  startCameraBtn.classList.add("hidden");
+  startWorkoutBtn.classList.add("hidden");
+  manualModeBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.remove("hidden");
+
+  setPositionStatus("neutral", "✍️", "Manueller Modus", "Nach dem Training gibst du die Wiederholungszahl selbst ein.");
+  motionCue.textContent = "Training läuft";
+
+  updateTimer();
+  timerInterval = window.setInterval(updateTimer, 250);
+}
+
+function finishWorkout() {
+  updateTimer();
+  workoutActive = false;
+  countdownActive = false;
+  stopTimer();
+  stopDetectionLoop();
+  stopCamera();
+
+  finalTime.textContent = formatTime(elapsedSeconds);
+
+  if (cameraWasStarted && !manualMode) {
+    detectedResult.textContent = String(repCount);
+    repInput.value = String(repCount);
+  } else {
+    detectedResult.textContent = "–";
+    repInput.value = "";
+  }
+
+  showStep("result");
+  setTimeout(() => repInput.focus(), 50);
 }
 
 function updateTimer() {
@@ -779,90 +837,160 @@ function updateTimer() {
   elapsedSeconds = Math.floor((Date.now() - workoutStartedAt) / 1000);
   timerDisplay.textContent = formatTime(elapsedSeconds);
 }
-function stopTimer() { if (timerInterval) clearInterval(timerInterval); timerInterval = null; }
 
-function finishWorkout() {
-  updateTimer(); workoutActive = false; stopTimer(); stopDetectionLoop(); stopCamera();
-  finalTime.textContent = formatTime(elapsedSeconds);
-  if (cameraWasStarted && autoDetectionAvailable) { detectedResult.textContent = String(repCount); repInput.value = String(repCount); }
-  else { detectedResult.textContent = "–"; repInput.value = ""; }
-  showStep("result"); setTimeout(() => repInput.focus(),50);
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
 }
 
 function formatTime(seconds) {
-  const mins = Math.floor(seconds/60).toString().padStart(2,"0");
-  const secs = (seconds%60).toString().padStart(2,"0");
+  const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const secs = (seconds % 60).toString().padStart(2, "0");
   return `${mins}:${secs}`;
 }
 
+// ---------- Training speichern ----------
 function saveTrainingResult() {
   const reps = Math.floor(Number(repInput.value));
-  if (!Number.isFinite(reps) || reps < 0) { alert("Bitte gib eine gültige Wiederholungszahl ein."); return; }
+
+  if (!Number.isFinite(reps) || reps < 0) {
+    alert("Bitte gib eine gültige Wiederholungszahl ein.");
+    return;
+  }
+
   if (reps === 0 && !confirm("0 Wiederholungen speichern?")) return;
 
   const oldMax = progress.pushupMax;
   const oldRank = getRank(oldMax);
   const oldStreak = progress.pushupStreak;
-  const today = localDateString(new Date());
-  const newStreak = calculateStreak(progress.lastTrainingDate,today,progress.pushupStreak);
 
-  progress.pushupMax = Math.max(progress.pushupMax,reps);
+  const today = localDateString(new Date());
+  const newStreak = calculateStreak(progress.lastTrainingDate, today, progress.pushupStreak);
+
+  progress.pushupMax = Math.max(progress.pushupMax, reps);
   progress.pushupTotal += reps;
   progress.pushupStreak = newStreak;
   progress.lastTrainingDate = today;
+
   progress.trainingHistory.unshift({
-    exercise:"pushups", reps,
-    autoDetectedReps: cameraWasStarted && autoDetectionAvailable ? repCount : null,
-    durationSeconds:elapsedSeconds, date:new Date().toISOString(), usedCamera:cameraWasStarted,
-    mode: cameraWasStarted && autoDetectionAvailable ? "camera-auto" : "manual"
+    exercise: "pushups",
+    reps,
+    autoDetectedReps: cameraWasStarted && !manualMode ? repCount : null,
+    durationSeconds: elapsedSeconds,
+    date: new Date().toISOString(),
+    usedCamera: cameraWasStarted,
+    mode: cameraWasStarted && !manualMode ? "face-quick-v05" : "manual",
+    calibrationTopMetric: baselineTopMetric
   });
-  progress.trainingHistory = progress.trainingHistory.slice(0,200);
-  saveProgress(); render();
+
+  progress.trainingHistory = progress.trainingHistory.slice(0, 200);
+  saveProgress();
+  render();
 
   const newRank = getRank(progress.pushupMax);
+  const isNewRecord = reps > oldMax;
+  const rankUp = newRank.name !== oldRank.name;
+
   successDetails.innerHTML = "";
   addSuccessLine(`${reps} Push-ups gespeichert`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
-  if (cameraWasStarted && autoDetectionAvailable && reps !== repCount) addSuccessLine(`Kamera erkannt: ${repCount} · korrigiert auf: ${reps}`);
-  addSuccessLine(reps > oldMax ? `🏆 Neuer Rekord: ${progress.pushupMax}` : `Rekord bleibt bei ${progress.pushupMax}`, reps > oldMax);
-  addSuccessLine(newRank.name !== oldRank.name ? `⬆️ Neuer Rang: ${newRank.name}` : `Rang: ${newRank.name}`, newRank.name !== oldRank.name);
-  addSuccessLine(newStreak > oldStreak ? `🔥 Trainingsserie: ${newStreak} Tage` : `Trainingsserie: ${newStreak} Tage`, newStreak > oldStreak);
+
+  if (cameraWasStarted && !manualMode && reps !== repCount) {
+    addSuccessLine(`Quick Mode erkannt: ${repCount} · korrigiert auf: ${reps}`);
+  }
+
+  if (isNewRecord) addSuccessLine(`🏆 Neuer Rekord: ${progress.pushupMax}`, true);
+  else addSuccessLine(`Rekord bleibt bei ${progress.pushupMax}`);
+
+  if (rankUp) addSuccessLine(`⬆️ Neuer Rang: ${newRank.name}`, true);
+  else addSuccessLine(`Rang: ${newRank.name}`);
+
+  if (newStreak > oldStreak) addSuccessLine(`🔥 Trainingsserie: ${newStreak} Tage`, true);
+  else addSuccessLine(`Trainingsserie: ${newStreak} Tage`);
+
   showStep("success");
 }
 
-function addSuccessLine(text, good=false) {
-  const line = document.createElement("div"); line.className = `success-line${good ? " good" : ""}`; line.textContent = text; successDetails.appendChild(line);
+function addSuccessLine(text, good = false) {
+  const line = document.createElement("div");
+  line.className = `success-line${good ? " good" : ""}`;
+  line.textContent = text;
+  successDetails.appendChild(line);
 }
 
-function calculateStreak(lastDate,today,currentStreak) {
+function calculateStreak(lastDate, today, currentStreak) {
   if (!lastDate) return 1;
-  if (lastDate === today) return Math.max(1,currentStreak);
-  const diffDays = Math.round((parseLocalDate(today)-parseLocalDate(lastDate))/86400000);
-  return diffDays === 1 ? Math.max(1,currentStreak)+1 : 1;
-}
-function localDateString(date) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`; }
-function parseLocalDate(value) { const [y,m,d] = value.split("-").map(Number); return new Date(y,m-1,d); }
+  if (lastDate === today) return Math.max(1, currentStreak);
 
- document.getElementById("openTrainingBtn").addEventListener("click",openTraining);
- document.getElementById("closeTrainingBtn").addEventListener("click",closeTraining);
- document.querySelector('[data-exercise="pushups"]').addEventListener("click",()=>showStep("camera"));
- backBtn.addEventListener("click",()=>{
-   if (!resultStep.classList.contains("hidden")) { showStep("camera"); return; }
-   workoutActive=false; stopCamera(); stopDetectionLoop(); stopTimer(); showStep("exercise");
- });
- startCameraBtn.addEventListener("click",startCamera);
- continueWithoutCameraBtn.addEventListener("click",continueWithoutCamera);
- startWorkoutBtn.addEventListener("click",startWorkout);
- finishWorkoutBtn.addEventListener("click",finishWorkout);
- document.getElementById("saveTrainingBtn").addEventListener("click",saveTrainingResult);
- document.getElementById("doneBtn").addEventListener("click",closeTraining);
- document.getElementById("resetBtn").addEventListener("click",()=>{
-   if (!confirm("Wirklich alle Testdaten dieser v0.4.1 löschen?")) return;
-   localStorage.removeItem(STORAGE_KEY); progress={...DEFAULT_PROGRESS,trainingHistory:[]}; render();
- });
- document.addEventListener("visibilitychange",()=>{
-   if (document.hidden && cameraStream && !workoutActive) { stopCamera(); stopDetectionLoop(); }
- });
- window.addEventListener("resize",resizePoseCanvas);
+  const last = parseLocalDate(lastDate);
+  const now = parseLocalDate(today);
+  const diffDays = Math.round((now - last) / 86400000);
+  if (diffDays === 1) return Math.max(1, currentStreak) + 1;
+  return 1;
+}
+
+function localDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseLocalDate(value) {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ---------- Events ----------
+document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
+document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
+
+document.querySelector('[data-exercise="pushups"]').addEventListener("click", () => {
+  showStep("quick");
+});
+
+backBtn.addEventListener("click", () => {
+  if (!resultStep.classList.contains("hidden")) {
+    showStep("quick");
+    return;
+  }
+  resetTrainingSession();
+  showStep("exercise");
+});
+
+startCameraBtn.addEventListener("click", startCamera);
+startWorkoutBtn.addEventListener("click", startCountdown);
+finishWorkoutBtn.addEventListener("click", finishWorkout);
+manualModeBtn.addEventListener("click", startManualMode);
+document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
+document.getElementById("doneBtn").addEventListener("click", closeTraining);
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("Wirklich alle Testdaten dieser v0.5 löschen?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
+  render();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && !workoutActive && !countdownActive) {
+    stopDetectionLoop();
+    stopCamera();
+  }
+});
 
 render();

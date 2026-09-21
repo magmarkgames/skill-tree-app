@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
-  <title>Skill Tree – v0.4</title>
+  <meta name="theme-color" content="#0b0f16" />
+  <title>Skill Tree – v0.5</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -44,72 +44,86 @@
 
       <section id="exerciseStep" class="step">
         <button class="exercise-card active" data-exercise="pushups" type="button">
-          <span class="exercise-icon">💪</span>
-          <span><strong>Push-ups</strong><small>Automatische Kamera-Erkennung (Beta)</small></span>
+          <span class="exercise-icon">⚡</span>
+          <span>
+            <strong>Push-ups · Quick Mode</strong>
+            <small>Handy hinlegen → Gesicht erkennen → los</small>
+          </span>
           <span>›</span>
         </button>
+
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">🦵</span><span><strong>Squats</strong><small>Kommt als Nächstes</small></span><span>🔒</span>
+          <span class="exercise-icon">🦵</span>
+          <span><strong>Squats</strong><small>Kommt später</small></span>
+          <span>🔒</span>
         </button>
+
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">🔥</span><span><strong>Sit-ups</strong><small>Noch nicht aktiv</small></span><span>🔒</span>
-        </button>
-        <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">⏱️</span><span><strong>Plank</strong><small>Noch nicht aktiv</small></span><span>🔒</span>
+          <span class="exercise-icon">🔥</span>
+          <span><strong>Sit-ups</strong><small>Noch nicht aktiv</small></span>
+          <span>🔒</span>
         </button>
       </section>
 
-      <section id="cameraStep" class="step hidden">
-        <div class="setup-tip">
-          <strong>So stellst du das Handy auf:</strong>
-          <span>Handy ca. 0,7–1 m vor dir · niedrig aufstellen · etwa 30–45° schräg · Schultern + Arme sichtbar. Das Display darf zu dir zeigen.</span>
+      <section id="quickStep" class="step hidden">
+        <!-- Video bleibt aktiv für MediaPipe, ist für den Nutzer aber bewusst unsichtbar. -->
+        <video id="cameraVideo" class="camera-feed-hidden" autoplay muted playsinline></video>
+
+        <div class="quick-stage">
+          <div class="quick-meta">
+            <span>⚡ QUICK MODE</span>
+            <strong id="timerDisplay">00:00</strong>
+          </div>
+
+          <div class="rep-hero" aria-live="polite">
+            <strong id="liveRepCount">0</strong>
+            <span>PUSH-UPS</span>
+          </div>
+
+          <div id="motionCue" class="motion-cue">Handy hinlegen und Kamera starten</div>
+
+          <div id="positionStatus" class="position-status neutral" aria-live="polite">
+            <span id="positionEmoji">⬜</span>
+            <div>
+              <strong id="positionTitle">Kamera noch nicht aktiv</strong>
+              <small id="positionHint">Display nach oben, ungefähr unter bzw. leicht vor deinem Gesicht.</small>
+            </div>
+          </div>
+
+          <div id="countdownBox" class="countdown-box hidden" aria-live="assertive">
+            <strong id="countdownNumber">3</strong>
+            <span>Oben bleiben</span>
+          </div>
         </div>
 
-        <div class="camera-box">
-          <video id="cameraVideo" autoplay muted playsinline></video>
-          <canvas id="poseCanvas"></canvas>
-
-          <div id="cameraPlaceholder" class="camera-placeholder">
-            <span>📷</span>
-            <strong>Kamera noch nicht gestartet</strong>
-            <small>Das Kamerabild wird nicht als Video gespeichert.</small>
-          </div>
-
-          <div id="counterOverlay" class="counter-overlay hidden">
-            <span>PUSH-UPS</span><strong id="liveRepCount">0</strong>
-          </div>
-          <div id="timerOverlay" class="timer-overlay hidden">
-            <span>ZEIT</span><strong id="timerDisplay">00:00</strong>
-          </div>
-          <div id="formOverlay" class="form-overlay hidden">
-            <strong id="formCue">Position finden …</strong><span id="angleDisplay">Arme: –°</span>
-          </div>
-        </div>
-
-        <div id="poseQuality" class="pose-quality neutral">
-          <span class="quality-dot"></span><strong id="poseQualityText">Kamera noch nicht aktiv</strong>
-        </div>
-
-        <p id="cameraStatus" class="status-text">Starte die Kamera. Beim ersten Mal fragt dein Browser nach der Berechtigung.</p>
+        <p id="cameraStatus" class="status-text">
+          Kein Kamerabild auf dem Screen: Die Zahl und die Position-Ampel haben Vorrang.
+        </p>
 
         <div class="button-stack">
-          <button id="startCameraBtn" class="primary-btn" type="button">Kamera + Erkennung starten</button>
-          <button id="continueWithoutCameraBtn" class="secondary-btn" type="button">Ohne Kamera weitermachen</button>
-          <button id="startWorkoutBtn" class="primary-btn hidden" type="button">Training starten</button>
+          <button id="startCameraBtn" class="primary-btn" type="button">Kamera starten</button>
+          <button id="startWorkoutBtn" class="primary-btn hidden" type="button" disabled>3s Countdown starten</button>
           <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
+          <button id="manualModeBtn" class="secondary-btn" type="button">Ohne Kamera trainieren</button>
         </div>
       </section>
 
       <section id="resultStep" class="step hidden">
         <div class="result-grid">
-          <div class="result-summary"><span>Trainingszeit</span><strong id="finalTime">00:00</strong></div>
-          <div class="result-summary"><span>Automatisch erkannt</span><strong id="detectedResult">–</strong></div>
+          <div class="result-summary">
+            <span>Trainingszeit</span>
+            <strong id="finalTime">00:00</strong>
+          </div>
+          <div class="result-summary">
+            <span>Automatisch erkannt</span>
+            <strong id="detectedResult">–</strong>
+          </div>
         </div>
 
         <label class="rep-input-wrap" for="repInput">
           <span>Wiederholungen zum Speichern</span>
-          <input id="repInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="z. B. 24" />
-          <small>Du kannst die automatische Erkennung hier korrigieren.</small>
+          <input id="repInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="z. B. 10" />
+          <small>Falls die Kamera sich verzählt hat, kannst du die Zahl hier korrigieren.</small>
         </label>
 
         <button id="saveTrainingBtn" class="primary-btn" type="button">Training speichern</button>
