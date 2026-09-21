@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f16" />
-  <title>Skill Tree – v0.7</title>
+  <title>Skill Tree – v0.9</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
     <section id="homeView" class="view home-view">
       <header class="home-header">
         <div>
-          <p class="eyebrow">SKILL TREE · v0.7</p>
+          <p class="eyebrow">SKILL TREE · v0.9</p>
           <h1>Deine Skills</h1>
           <p class="home-subtitle">Trainieren, Fortschritt sammeln und neue Äste freischalten.</p>
         </div>
@@ -103,7 +103,7 @@
           <span class="training-home-icon">▶</span>
           <span>
             <strong>Training starten</strong>
-            <small>Übung wählen und Workout beginnen</small>
+            <small>Übung und Variante wählen</small>
           </span>
           <span>›</span>
         </button>
@@ -146,14 +146,17 @@
       </section>
 
       <div class="tree-legend" aria-label="Skill Tree Legende">
-        <span class="legend-max">● Rekord</span>
-        <span class="legend-day">● Tag</span>
-        <span class="legend-week">● Woche</span>
+        <span class="legend-max">● Standard</span>
         <span class="legend-total">● Gesamt</span>
+        <span class="legend-week">● Woche</span>
+        <span class="legend-variant">● Variante</span>
+        <span class="legend-rank">⬢ Rang</span>
       </div>
 
-      <section id="treeScroll" class="tree-scroll" aria-label="Scrollbarer Push-up Skill Tree">
-        <div class="tree" id="skillTree" aria-label="Push-up Skill Tree"></div>
+      <div class="tree-helper-note">Große Varianten-Knoten antippen, um den Unter-Skill-Tree zu öffnen.</div>
+
+      <section id="treeScroll" class="tree-scroll tree-scroll-light" aria-label="Scrollbarer Push-up Skill Tree">
+        <div class="tree tree-v08" id="skillTree" aria-label="Push-up Skill Tree"></div>
       </section>
     </section>
 
@@ -196,8 +199,8 @@
         <button class="exercise-card active" data-exercise="pushups" type="button">
           <span class="exercise-icon">⚡</span>
           <span>
-            <strong>Push-ups · Quick Mode</strong>
-            <small>Handy hinlegen → Gesicht erkennen → los</small>
+            <strong>Push-ups</strong>
+            <small>Variante wählen und Workout starten</small>
           </span>
           <span>›</span>
         </button>
@@ -215,12 +218,6 @@
         </button>
 
         <button class="exercise-card" type="button" disabled>
-          <span class="exercise-icon">💨</span>
-          <span><strong>Sprint</strong><small>Kommt später</small></span>
-          <span>🔒</span>
-        </button>
-
-        <button class="exercise-card" type="button" disabled>
           <span class="exercise-icon">🏃</span>
           <span><strong>Jogging</strong><small>Kommt später</small></span>
           <span>🔒</span>
@@ -233,13 +230,62 @@
         </button>
       </section>
 
+      <section id="variantStep" class="step hidden">
+        <p class="variant-step-copy">Die Kamera erkennt die Variante noch nicht automatisch. Wähle deshalb vor dem Training, welche Push-up Variante du machst.</p>
+
+        <div class="variant-grid">
+          <button class="variant-card selected" data-variant="standard" type="button">
+            <span class="variant-icon">⬆️</span>
+            <strong>Standard</strong>
+            <small>Normale Push-ups</small>
+          </button>
+          <button class="variant-card" data-variant="wide" type="button">
+            <span class="variant-icon">↔️</span>
+            <strong>Wide</strong>
+            <small>Breiter Griff</small>
+          </button>
+          <button class="variant-card" data-variant="diamond" type="button">
+            <span class="variant-icon">🔷</span>
+            <strong>Diamond</strong>
+            <small>Enge Hände</small>
+          </button>
+          <button class="variant-card" data-variant="pike" type="button">
+            <span class="variant-icon">🔺</span>
+            <strong>Pike</strong>
+            <small>Schulterfokus</small>
+          </button>
+          <button class="variant-card" data-variant="incline" type="button">
+            <span class="variant-icon">🟦</span>
+            <strong>Incline</strong>
+            <small>Erhöhte Hände</small>
+          </button>
+          <button class="variant-card" data-variant="decline" type="button">
+            <span class="variant-icon">🟪</span>
+            <strong>Decline</strong>
+            <small>Erhöhte Füße</small>
+          </button>
+          <button class="variant-card locked" type="button" disabled>
+            <span class="variant-icon">👏</span>
+            <strong>Clapping</strong>
+            <small>Später</small>
+          </button>
+          <button class="variant-card locked" type="button" disabled>
+            <span class="variant-icon">✨</span>
+            <strong>Mehr Varianten</strong>
+            <small>in Kürze</small>
+          </button>
+        </div>
+
+        <button id="startSelectedVariantBtn" class="primary-btn" type="button">Variante bestätigen</button>
+      </section>
+
       <section id="quickStep" class="step hidden">
         <!-- Video bleibt aktiv für MediaPipe, ist für den Nutzer aber bewusst unsichtbar. -->
         <video id="cameraVideo" class="camera-feed-hidden" autoplay muted playsinline></video>
 
         <div class="quick-stage">
           <div class="quick-meta">
-            <span>⚡ QUICK MODE</span>
+            <span id="quickVariantPill" class="quick-variant-pill">⚡ STANDARD PUSH-UP</span>
             <strong id="timerDisplay">00:00</strong>
           </div>
 
@@ -265,8 +311,16 @@
         </div>
 
         <p id="cameraStatus" class="status-text">
-          Kein Kamerabild auf dem Screen: Die Zahl und die Position-Ampel haben Vorrang.
+          Kein Kamerabild auf dem Screen: Zähler, Variante und nächste Ziele stehen im Fokus.
         </p>
+
+        <section class="live-goals-panel" aria-labelledby="liveGoalsHeading">
+          <div class="live-goals-head">
+            <strong id="liveGoalsHeading">Nächste Ziele</strong>
+            <span id="liveGoalsVariantHint">Standard</span>
+          </div>
+          <div id="liveGoalsList" class="live-goals-list"></div>
+        </section>
 
         <div class="button-stack">
           <button id="startCameraBtn" class="primary-btn" type="button">Kamera starten</button>
@@ -307,6 +361,41 @@
         <div id="successDetails" class="success-details"></div>
         <button id="doneBtn" class="primary-btn" type="button">Zur Startseite</button>
       </section>
+    </div>
+  </div>
+
+  <div id="variantModal" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="variantModalTitle">
+    <div class="sheet-panel">
+      <div class="modal-head">
+        <div></div>
+        <div>
+          <p class="eyebrow">UNTER-SKILL-TREE</p>
+          <h2 id="variantModalTitle">Wide Push-Up</h2>
+        </div>
+        <button id="closeVariantModalBtn" class="icon-btn" type="button" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="variant-skill-hero">
+        <div id="variantModalIcon" class="variant-skill-icon">↔️</div>
+        <div class="variant-skill-copy">
+          <p id="variantModalSubtitle">Max Reps und Gesamt-Fortschritt für diese Variante.</p>
+        </div>
+        <div class="variant-skill-progress">
+          <strong id="variantModalProgress">0 / 10</strong>
+          <small>Meilensteine</small>
+        </div>
+      </div>
+
+      <div class="variant-tree-columns">
+        <section class="variant-column">
+          <h3>Max Reps</h3>
+          <div id="variantMaxMilestones" class="variant-milestones"></div>
+        </section>
+        <section class="variant-column">
+          <h3>Gesamt</h3>
+          <div id="variantTotalMilestones" class="variant-milestones"></div>
+        </section>
+      </div>
     </div>
   </div>
 

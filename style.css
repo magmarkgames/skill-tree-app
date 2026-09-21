@@ -715,3 +715,412 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .tree-stats strong { font-size: 13px; }
   .quick-stage { min-height: 470px; }
 }
+
+/* ---------- v0.8 Push-Up Tree Rework ---------- */
+.tree-view {
+  background:
+    radial-gradient(circle at top right, rgba(95, 141, 255, .12), transparent 24%),
+    linear-gradient(180deg, #0f1520 0%, #0b0f16 100%);
+}
+
+.tree-helper-note {
+  margin: 10px 0 12px;
+  color: #b9c5db;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tree-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 14px;
+  color: #c1cce0;
+  font-size: 11px;
+  font-weight: 800;
+}
+.tree-legend .legend-max { color: var(--blue); }
+.tree-legend .legend-total { color: var(--yellow); }
+.tree-legend .legend-week { color: var(--green); }
+.tree-legend .legend-variant { color: #d77cff; }
+.tree-legend .legend-rank { color: #d7c5a2; }
+
+.tree-scroll-light {
+  border-color: #243246;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)),
+    radial-gradient(circle at 50% 100%, rgba(119, 169, 255, .15), transparent 28%),
+    linear-gradient(180deg, #111827 0%, #0b1220 100%);
+}
+
+.tree-v08 {
+  width: 660px;
+  height: 1540px;
+  background:
+    radial-gradient(circle at 15% 92%, rgba(255,255,255,.045), transparent 12%),
+    radial-gradient(circle at 88% 94%, rgba(255,255,255,.045), transparent 12%);
+}
+
+.connector {
+  height: 4px;
+  background: #253243;
+  opacity: .95;
+}
+.connector.active.branch-max { background: color-mix(in srgb, var(--blue) 45%, #253243); }
+.connector.active.branch-total { background: color-mix(in srgb, var(--yellow) 45%, #253243); }
+.connector.active.branch-week { background: color-mix(in srgb, var(--green) 45%, #253243); }
+.connector.active.branch-variant { background: color-mix(in srgb, #d77cff 45%, #253243); }
+.connector.done.branch-variant { background: #d77cff; }
+.connector.done.branch-rank { background: #ba865d; }
+
+.skill-node {
+  border-color: rgba(255,255,255,.18);
+  background: rgba(20, 29, 43, .92);
+  backdrop-filter: blur(2px);
+}
+.skill-node.branch-variant { --branch: #d77cff; }
+.skill-node .node-progress {
+  width: 72%;
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+}
+.skill-node .node-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--branch);
+}
+.skill-node .node-label {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.1;
+}
+.skill-node.done .node-progress span { filter: saturate(1.1); }
+
+.rank-node {
+  width: 116px;
+  height: 104px;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.14), 0 18px 30px rgba(0,0,0,.28);
+}
+.rank-node .rank-emoji { font-size: 22px; }
+.rank-node .node-target { font-size: 16px; }
+.rank-node.rank-holz {
+  background: linear-gradient(145deg, #ba7c4a 0%, #88542f 100%);
+}
+.rank-node.rank-stein {
+  background: linear-gradient(145deg, #70849a 0%, #47596c 100%);
+}
+.rank-node.rank-bronze {
+  background: linear-gradient(145deg, #d38f5b 0%, #99613c 100%);
+}
+
+.variant-skill-node {
+  width: 112px;
+  height: 98px;
+  border-radius: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.09), transparent 34%),
+    linear-gradient(145deg, color-mix(in srgb, var(--branch) 42%, #1d2634) 0%, #21152a 100%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--branch) 55%, rgba(255,255,255,.15)), 0 16px 28px rgba(0,0,0,.26);
+}
+.variant-skill-node .variant-skill-node-icon { font-size: 21px; }
+.variant-skill-node .node-target { margin-top: 3px; font-size: 14px; }
+.variant-skill-node .node-label { font-size: 9px; }
+.variant-skill-node .node-plus,
+.variant-skill-node .node-lock {
+  margin-top: 4px;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* Variant selection */
+.variant-step-copy {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.variant-card {
+  min-height: 92px;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+}
+.variant-card.selected {
+  border-color: var(--accent);
+  background: linear-gradient(145deg, rgba(95,141,255,.18), rgba(20,27,38,1));
+  box-shadow: inset 0 0 0 1px rgba(95,141,255,.2);
+}
+.variant-card.locked {
+  opacity: .42;
+}
+.variant-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  font-size: 17px;
+}
+.variant-card strong,
+.variant-card small {
+  display: block;
+}
+.variant-card small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.quick-variant-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(95,141,255,.14);
+  color: #b9d0ff;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+/* Variant detail modal */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(5, 8, 12, .72);
+}
+.sheet-panel {
+  width: min(100%, 760px);
+  max-height: min(88dvh, 760px);
+  padding: 18px 16px max(28px, env(safe-area-inset-bottom));
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  background: #101722;
+  overflow-y: auto;
+}
+.variant-skill-hero {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(145deg, #162132 0%, #111722 100%);
+}
+.variant-skill-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  font-size: 26px;
+}
+.variant-skill-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.variant-skill-progress {
+  text-align: right;
+}
+.variant-skill-progress strong,
+.variant-skill-progress small {
+  display: block;
+}
+.variant-skill-progress strong { font-size: 22px; }
+.variant-skill-progress small { color: var(--muted); }
+.variant-tree-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+.variant-column {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+.variant-column h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.variant-milestones {
+  display: grid;
+  gap: 8px;
+}
+.milestone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-2);
+}
+.milestone-item strong { font-size: 16px; }
+.milestone-item span { color: var(--muted); font-size: 12px; }
+.milestone-item.done {
+  border-color: #4b8b69;
+  background: linear-gradient(145deg, rgba(57,201,120,.18), rgba(29,38,52,1));
+}
+
+@media (max-width: 620px) {
+  .variant-grid,
+  .variant-tree-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ---------- v0.9 Training goals panel ---------- */
+.quick-stage {
+  min-height: 420px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035) 0%, rgba(255,255,255,.01) 100%),
+    linear-gradient(180deg, #111a28 0%, #0d131d 100%);
+}
+
+.status-text {
+  margin: 12px 2px 0;
+}
+
+.live-goals-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #161e2c 0%, #111722 100%);
+  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+}
+
+.live-goals-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.live-goals-head strong {
+  font-size: 15px;
+}
+.live-goals-head span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(95,141,255,.12);
+  color: #bfd2ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.live-goals-list {
+  display: grid;
+  gap: 10px;
+}
+
+.live-goal-card {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.03);
+}
+.live-goal-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 18px;
+  background: rgba(255,255,255,.06);
+}
+.live-goal-copy {
+  min-width: 0;
+}
+.live-goal-copy strong,
+.live-goal-copy small {
+  display: block;
+}
+.live-goal-copy strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
+.live-goal-copy small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.live-goal-progress {
+  width: 100%;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.live-goal-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.live-goal-card.tone-total .live-goal-progress span,
+.live-goal-card.tone-total .live-goal-icon {
+  background-color: rgba(243,190,88,.18);
+}
+.live-goal-card.tone-total .live-goal-progress span { background: var(--yellow); }
+
+.live-goal-card.tone-max .live-goal-progress span,
+.live-goal-card.tone-max .live-goal-icon {
+  background-color: rgba(98,169,230,.18);
+}
+.live-goal-card.tone-max .live-goal-progress span { background: var(--blue); }
+
+.live-goal-card.tone-week .live-goal-progress span,
+.live-goal-card.tone-week .live-goal-icon {
+  background-color: rgba(57,201,120,.18);
+}
+.live-goal-card.tone-week .live-goal-progress span { background: var(--green); }
+
+.live-goal-card.tone-variant .live-goal-progress span,
+.live-goal-card.tone-variant .live-goal-icon,
+.live-goal-card.tone-variant-soft .live-goal-icon {
+  background-color: rgba(215,124,255,.18);
+}
+.live-goal-card.tone-variant .live-goal-progress span,
+.live-goal-card.tone-variant-soft .live-goal-progress span { background: #d77cff; }
+.live-goal-card.tone-variant-soft .live-goal-progress span { opacity: .72; }
+
+.goal-done {
+  border-color: rgba(57,201,120,.26);
+  background: linear-gradient(145deg, rgba(57,201,120,.12), rgba(255,255,255,.03));
+}
+
+.button-stack {
+  margin-top: 14px;
+}
