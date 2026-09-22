@@ -80,24 +80,24 @@ function createEmptyVariantStats() {
 // ---------- v0.10.1 Generated Asset Icon System ----------
 const ASSET_PATHS = {
   variants: {
-    standard: "assets/variant-standard.png",
-    wide: "assets/variant-wide.png",
-    diamond: "assets/variant-diamond.png",
-    pike: "assets/variant-pike.png",
-    incline: "assets/variant-incline.png",
-    decline: "assets/variant-decline.png"
+    standard: "variant-standard.png",
+    wide: "variant-wide.png",
+    diamond: "variant-diamond.png",
+    pike: "variant-pike.png",
+    incline: "variant-incline.png",
+    decline: "variant-decline.png"
   },
   metrics: {
-    max: "assets/metric-max.png",
-    total: "assets/metric-total.png",
-    day: "assets/metric-day.png",
-    week: "assets/metric-week.png"
+    max: "metric-max.png",
+    total: "metric-total.png",
+    day: "metric-day.png",
+    week: "metric-week.png"
   },
   ranks: {
-    Holz: "assets/rank-wood.png",
-    Stein: "assets/rank-stone.png",
-    Bronze: "assets/rank-bronze.png",
-    Silber: "assets/rank-silver.png"
+    Holz: "rank-wood.png",
+    Stein: "rank-stone.png",
+    Bronze: "rank-bronze.png",
+    Silber: "rank-silver.png"
   }
 };
 
