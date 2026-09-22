@@ -3526,3 +3526,41 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .tree-v10 .variant-skill-node.variant-explosive .node-target {
   font-size: clamp(6px, calc(var(--tree-node-size) * .115), 8px);
 }
+
+
+/* ======================================================================
+   v0.10.16 — Tree polish: aligned rows, clean mystery nodes, rank locks
+   ====================================================================== */
+
+/* Completed circles no longer need a progress bar: green already means done. */
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-progress {
+  display: none !important;
+}
+
+/* Mystery nodes are deliberately minimal: one centered question mark only. */
+.tree-v10 .skill-node.mystery:not(.rank-node):not(.variant-skill-node) {
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+}
+.tree-v10 .skill-node.mystery .mystery-mark {
+  margin: 0 !important;
+  font-size: clamp(38px, calc(var(--tree-node-size) * .72), 50px) !important;
+  line-height: 1 !important;
+}
+
+/* Rank and special-variant completion outline follows the generated artwork
+   itself instead of a rectangular button box. This keeps the badge perfectly
+   centered inside its green completion outline. */
+.tree-v10 .rank-node.done,
+.tree-v10 .variant-skill-node.done {
+  outline: none !important;
+  border-radius: 0 !important;
+}
+.tree-v10 .rank-node.done .rank-symbol .app-asset-icon,
+.tree-v10 .variant-skill-node.done .variant-skill-node-icon .app-asset-icon {
+  filter:
+    drop-shadow(0 0 1px #ffffff)
+    drop-shadow(0 0 2px var(--tree-complete))
+    drop-shadow(0 0 2px var(--tree-complete));
+}

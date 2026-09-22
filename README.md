@@ -1,6 +1,6 @@
-# Skill Tree App v0.10.15
+# Skill Tree App v0.10.16
 
-## Neu in v0.10.15
+## Neu in v0.10.16
 
 - Abgeschlossene normale Meilensteine bleiben komplett grün.
 - Abgeschlossene **Ränge und Varianten behalten ihr Original-Icon** und bekommen nur eine grüne Umrandung.
@@ -12,3 +12,6 @@
 - Gold/Platin/Diamant benötigen jeweils 3 von 5 Wegen, damit ein einzelner starker Ast den Rang nicht sofort komplett überspringt.
 
 Hinweis: Die neuen Zielzahlen sind ein erster Balancing-Vorschlag und können später problemlos angepasst werden.
+
+
+Feinschliff v0.10.16: Mystery-Knoten zeigen nur noch ?, neue Ränge benötigen ihre Spezialvariante, Folge-Knoten gesperrter Varianten bleiben verborgen, Reihen sind exakt ausgerichtet und erledigte Knoten zeigen keinen Fortschrittsbalken mehr.
