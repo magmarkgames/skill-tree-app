@@ -102,7 +102,7 @@ const ASSET_PATHS = {
 };
 
 function assetImg(src, alt = "", className = "") {
-  return `<img class="app-asset-icon ${className}" src="${src}" alt="${alt}" loading="lazy" decoding="async" draggable="false" />`;
+  return `<img class="app-asset-icon ${className}" src="${src}" alt="${alt}" loading="eager" decoding="async" draggable="false" />`;
 }
 
 function getVariantIconSvg(variant, className = "") {
@@ -1802,7 +1802,15 @@ function closeTreeStats() {
 
 // ---------- Events ----------
 let treeResizeTimer = null;
+let lastTreeLayoutWidth = Math.round(document.documentElement.clientWidth || window.innerWidth || 0);
 window.addEventListener("resize", () => {
+  // Mobile browsers fire resize events while their top/bottom bars collapse during
+  // vertical scrolling. The old handler rebuilt the complete tree on those height-
+  // only changes, which caused the visible node blinking/jank on Android.
+  const nextWidth = Math.round(document.documentElement.clientWidth || window.innerWidth || 0);
+  if (Math.abs(nextWidth - lastTreeLayoutWidth) < 2) return;
+
+  lastTreeLayoutWidth = nextWidth;
   if (treeView.classList.contains("hidden")) return;
   clearTimeout(treeResizeTimer);
   treeResizeTimer = setTimeout(() => renderTree(), 120);
