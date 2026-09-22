@@ -1,54 +1,14 @@
-# Skill Tree App v0.10.14
+# Skill Tree App v0.10.15
 
-## v0.10.14
+## Neu in v0.10.15
 
-- Abgeschlossene Skill-Tree-Knoten sind jetzt einheitlich grün.
-- Pro Fortschrittslinie ist nur das aktuelle Ziel vollständig offen; das nächste Ziel ist sichtbar + gesperrt, spätere Zwischenziele erscheinen als ?.
-- Ränge und große Skill-/Varianten-Freischaltungen bleiben als Teaser sichtbar.
-- Zukünftige Varianten mit Unlock-Knoten werden im Training erst angezeigt, wenn ihr Skill-Tree-Knoten erreichbar/freigeschaltet ist.
-- Erste geheime Ziele nach Silber wurden vorbereitet, damit die ?-Logik auch am oberen Ende des aktuellen Trees sichtbar bleibt.
+- Abgeschlossene normale Meilensteine bleiben komplett grün.
+- Abgeschlossene **Ränge und Varianten behalten ihr Original-Icon** und bekommen nur eine grüne Umrandung.
+- Neue Ränge: **Gold, Platin, Diamant**.
+- Der Skill Tree wurde deutlich nach oben erweitert.
+- Neue sichtbare Spezial-Skills: **Explosive, Archer, Handstand, Pseudo Planche**.
+- Diese Spezialvarianten erscheinen im Training erst, wenn ihr Skill-Knoten im Tree freigeschaltet wurde.
+- Kleine zukünftige Meilensteine nutzen weiterhin die Discovery-Logik: aktuell sichtbar → nächstes Ziel mit Schloss → weitere Ziele als Fragezeichen.
+- Gold/Platin/Diamant benötigen jeweils 3 von 5 Wegen, damit ein einzelner starker Ast den Rang nicht sofort komplett überspringt.
 
-## v0.10.14
-
-- Grüner, automatisch verschwindender Toast „Training gespeichert“ nach dem Beenden und Speichern eines Kamera-Workouts.
-- Alter CSS-Konflikt entfernt, der „Nächstes Set starten“ trotz neuer Pausenlogik unsichtbar gemacht hat. Der Button heißt jetzt „Training fortsetzen“ und sitzt sichtbar direkt im Pausenbereich.
-- Im Pausenmenü werden die drei aktuell nächstgelegenen Challenges kompakt untereinander mit Fortschrittsbalken angezeigt.
-- Varianten-Symbole innerhalb der vorhandenen Buttons vergrößert, ohne die Buttons selbst größer zu machen.
-- One-Screen-Workout und 30-Sekunden-Vibrationshinweis bleiben erhalten.
-
-## v0.10.11
-- Pausenziel-Buttons (30/60/90/Frei) entfernt; die Pause zählt nur noch hoch.
-- Alle 30 Sekunden gibt es einen kurzen Vibrationshinweis.
-- „Nächstes Set starten“ sitzt jetzt direkt sichtbar in der Pausenansicht.
-- Kamera-Workouts werden bei „Training beenden“ automatisch gespeichert.
-- Danach wechselt die App direkt zum Skill Tree.
-- Der separate Speicherschritt entfällt für Kamera-Workouts.
-
-
-## Neu: Multi-Set Push-up Workouts
-
-- Im Trainingsmenü wird nur noch die Hauptkategorie **Push-ups** gewählt.
-- Die Push-up-Variante wird **innerhalb des Workouts** gewählt.
-- Unterstützte Varianten: Standard, Wide, Diamond, Pike, Incline, Decline.
-- Nach der Variantenwahl startet Kamera + Positionserkennung; sobald die obere Position stabil erkannt wird, startet automatisch der 3-Sekunden-Countdown.
-- Ein Workout kann jetzt aus **mehreren Sets** bestehen.
-- Wenn während eines laufenden Sets das Gesicht länger als ca. 1,7 Sekunden durchgehend nicht erkannt wird (und bereits mindestens 1 Wiederholung erkannt wurde), wird das Set automatisch beendet und die Pause gestartet.
-- Kurzes Verschwinden des Gesichts in der tiefen Push-up-Position bleibt weiterhin Teil der Wiederholung und beendet das Set nicht.
-- Zwischen Sets läuft ein **Pausentimer hoch**. Pausenziele 30 / 60 / 90 Sekunden oder frei sind auswählbar; das Ziel erzwingt keinen Neustart.
-- Während der Pause kann direkt die nächste Push-up-Variante gewählt werden.
-- Sobald man wieder in der oberen Position ist, startet der nächste 3-Sekunden-Countdown automatisch.
-- Die aktive Trainingszeit wurde aus dem Workout-Screen entfernt.
-- Die Meilensteinleiste berücksichtigt jetzt auch mehrere Sets innerhalb desselben Workouts.
-- Beim Beenden wird das Workout als eine Einheit mit allen Sets gespeichert.
-- Die Workout-Historie unterstützt neue Multi-Set-Einträge; alte Einträge bleiben kompatibel.
-
-## Sicherheits-Fallback
-
-Während eines aktiven Sets gibt es zusätzlich **Set pausieren**. Damit kann ein Set manuell abgeschlossen werden, falls die automatische Gesicht-aus-dem-Bild-Erkennung in einer besonderen Kameraposition nicht auslöst.
-
-
-## v0.10.10
-- Pause bleibt nach einem Set bewusst stehen; Kopf/Position startet kein neues Set mehr automatisch.
-- Neuer Button „Nächstes Set starten“ schaltet erst dann die automatische Positionserkennung für den Countdown scharf.
-- Sets mit 0 Wiederholungen werden verworfen und niemals gespeichert.
-- Zusätzliche Pausen nach einem verworfenen 0er-Set werden zur bestehenden Pause addiert.
+Hinweis: Die neuen Zielzahlen sind ein erster Balancing-Vorschlag und können später problemlos angepasst werden.

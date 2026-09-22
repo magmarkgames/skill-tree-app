@@ -61,7 +61,11 @@ const VARIANT_META = {
   diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F05C82" },
   pike: { label: "Pike", shortLabel: "Pike", color: "#43C889" },
   incline: { label: "Incline", shortLabel: "Incline", color: "#F3A94F" },
-  decline: { label: "Decline", shortLabel: "Decline", color: "#35BFE6" }
+  decline: { label: "Decline", shortLabel: "Decline", color: "#35BFE6" },
+  explosive: { label: "Explosive", shortLabel: "Explosive", color: "#F0B429" },
+  archer: { label: "Archer", shortLabel: "Archer", color: "#6D7CF6" },
+  handstand: { label: "Handstand", shortLabel: "Handstand", color: "#28B8A7" },
+  pseudoPlanche: { label: "Pseudo Planche", shortLabel: "Planche", color: "#D05CE3" }
 };
 
 // Varianten mit einem echten Freischalt-Knoten erscheinen im Training erst,
@@ -74,7 +78,11 @@ const VARIANT_UNLOCK_NODES = {
   diamond: "diamondSkill",
   pike: null,
   incline: null,
-  decline: null
+  decline: null,
+  explosive: "explosiveSkill",
+  archer: "archerSkill",
+  handstand: "handstandSkill",
+  pseudoPlanche: "pseudoPlancheSkill"
 };
 
 const VARIANT_TREE_MILESTONES = {
@@ -82,7 +90,7 @@ const VARIANT_TREE_MILESTONES = {
   total: [10, 25, 75, 150, 300]
 };
 
-const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber"];
+const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
 
 function createEmptyVariantStats() {
   return Object.fromEntries(
@@ -99,7 +107,11 @@ const ASSET_PATHS = {
     diamond: "variant-diamond.webp",
     pike: "variant-pike.webp",
     incline: "variant-incline.webp",
-    decline: "variant-decline.webp"
+    decline: "variant-decline.webp",
+    explosive: "variant-explosive.webp",
+    archer: "variant-archer.webp",
+    handstand: "variant-handstand.webp",
+    pseudoPlanche: "variant-pseudo-planche.webp"
   },
   metrics: {
     max: "metric-max.webp",
@@ -111,7 +123,10 @@ const ASSET_PATHS = {
     Holz: "rank-wood.webp",
     Stein: "rank-stone.webp",
     Bronze: "rank-bronze.webp",
-    Silber: "rank-silver.webp"
+    Silber: "rank-silver.webp",
+    Gold: "rank-gold.webp",
+    Platin: "rank-platinum.webp",
+    Diamant: "rank-diamond.webp"
   }
 };
 
@@ -159,7 +174,7 @@ function renderStaticIcons() {
 }
 
 // v0.10: vertikaler Hauptbaum mit fünf Fortschrittsrichtungen.
-const SKILL_NODES = [
+const BASE_SKILL_NODES = [
   { id: "standard1", type: "metric", metric: "standardMax", branch: "max", target: 1, x: 328, y: 1630 },
   { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", x: 315, y: 1472, parents: ["standard1"], requirementCount: 1 },
 
@@ -214,6 +229,82 @@ const SKILL_NODES = [
   { id: "total2500", type: "metric", metric: "total", branch: "total", target: 2500, x: 328, y: 18, parents: ["silverRank"] },
   { id: "week1000", type: "metric", metric: "week", branch: "week", target: 1000, x: 468, y: 18, parents: ["silverRank"] }
 ];
+
+const LEGACY_TREE_OFFSET = 1850;
+
+// Existing v0.10 milestones are shifted downward unchanged, leaving room for
+// Gold, Platin and Diamant above them. Each legacy node keeps the material of
+// the chapter it originally belonged to.
+const SHIFTED_BASE_SKILL_NODES = BASE_SKILL_NODES.map(node => ({
+  ...node,
+  y: node.y + LEGACY_TREE_OFFSET,
+  tier: node.type === "rank"
+    ? node.rank.toLowerCase()
+    : (node.y < 170 ? "silber" : node.y < 675 ? "bronze" : node.y < 1150 ? "stein" : "holz")
+}));
+
+const EXTENDED_SKILL_NODES = [
+  // Silber -> Gold. The four familiar metric goals are the old post-Silber
+  // goals; Explosive is the new visible skill teaser in the fifth column.
+  { id: "explosiveSkill", type: "skill", metric: "variantPoints", variant: "explosive", branch: "variant", target: 1, x: 595, y: 1860, parents: ["silverRank"], tier: "silber" },
+  { id: "goldRank", type: "rank", branch: "rank", rank: "Gold", x: 315, y: 1680, parents: ["standard100", "day400", "total2500", "week1000", "explosiveSkill"], requirementCount: 3, tier: "gold" },
+
+  // Gold -> Platin
+  { id: "standard150", type: "metric", metric: "standardMax", branch: "max", target: 150, x: 52, y: 1510, parents: ["goldRank"], tier: "gold" },
+  { id: "standard200", type: "metric", metric: "standardMax", branch: "max", target: 200, x: 52, y: 1360, parents: ["standard150"], tier: "gold" },
+
+  { id: "day700", type: "metric", metric: "day", branch: "day", target: 700, x: 188, y: 1510, parents: ["goldRank"], tier: "gold" },
+  { id: "day1000", type: "metric", metric: "day", branch: "day", target: 1000, x: 188, y: 1360, parents: ["day700"], tier: "gold" },
+
+  { id: "total5000", type: "metric", metric: "total", branch: "total", target: 5000, x: 328, y: 1510, parents: ["goldRank"], tier: "gold" },
+  { id: "total10000", type: "metric", metric: "total", branch: "total", target: 10000, x: 328, y: 1360, parents: ["total5000"], tier: "gold" },
+
+  { id: "week1800", type: "metric", metric: "week", branch: "week", target: 1800, x: 468, y: 1510, parents: ["goldRank"], tier: "gold" },
+  { id: "week3000", type: "metric", metric: "week", branch: "week", target: 3000, x: 468, y: 1360, parents: ["week1800"], tier: "gold" },
+
+  { id: "archerSkill", type: "skill", metric: "variantPoints", variant: "archer", branch: "variant", target: 1, x: 595, y: 1500, parents: ["goldRank"], tier: "gold" },
+  { id: "archerStage2", type: "metric", metric: "variantPoints", variant: "archer", branch: "variant", target: 3, x: 595, y: 1350, parents: ["archerSkill"], tier: "gold" },
+
+  { id: "platinumRank", type: "rank", branch: "rank", rank: "Platin", x: 315, y: 1165, parents: ["standard200", "day1000", "total10000", "week3000", "archerStage2"], requirementCount: 3, tier: "platin" },
+
+  // Platin -> Diamant
+  { id: "standard250", type: "metric", metric: "standardMax", branch: "max", target: 250, x: 52, y: 995, parents: ["platinumRank"], tier: "platin" },
+  { id: "standard300", type: "metric", metric: "standardMax", branch: "max", target: 300, x: 52, y: 845, parents: ["standard250"], tier: "platin" },
+
+  { id: "day1500", type: "metric", metric: "day", branch: "day", target: 1500, x: 188, y: 995, parents: ["platinumRank"], tier: "platin" },
+  { id: "day2500", type: "metric", metric: "day", branch: "day", target: 2500, x: 188, y: 845, parents: ["day1500"], tier: "platin" },
+
+  { id: "total25000", type: "metric", metric: "total", branch: "total", target: 25000, x: 328, y: 995, parents: ["platinumRank"], tier: "platin" },
+  { id: "total50000", type: "metric", metric: "total", branch: "total", target: 50000, x: 328, y: 845, parents: ["total25000"], tier: "platin" },
+
+  { id: "week5000", type: "metric", metric: "week", branch: "week", target: 5000, x: 468, y: 995, parents: ["platinumRank"], tier: "platin" },
+  { id: "week7500", type: "metric", metric: "week", branch: "week", target: 7500, x: 468, y: 845, parents: ["week5000"], tier: "platin" },
+
+  { id: "handstandSkill", type: "skill", metric: "variantPoints", variant: "handstand", branch: "variant", target: 1, x: 595, y: 985, parents: ["platinumRank"], tier: "platin" },
+  { id: "handstandStage2", type: "metric", metric: "variantPoints", variant: "handstand", branch: "variant", target: 3, x: 595, y: 835, parents: ["handstandSkill"], tier: "platin" },
+
+  { id: "diamondRank", type: "rank", branch: "rank", rank: "Diamant", x: 315, y: 650, parents: ["standard300", "day2500", "total50000", "week7500", "handstandStage2"], requirementCount: 3, tier: "diamant" },
+
+  // Endgame teasers after Diamant. Small nodes stay hidden by the discovery
+  // system; the special Pseudo-Planche unlock remains visible as a teaser.
+  { id: "standard400", type: "metric", metric: "standardMax", branch: "max", target: 400, x: 52, y: 480, parents: ["diamondRank"], tier: "diamant" },
+  { id: "standard500", type: "metric", metric: "standardMax", branch: "max", target: 500, x: 52, y: 300, parents: ["standard400"], tier: "diamant" },
+
+  { id: "day4000", type: "metric", metric: "day", branch: "day", target: 4000, x: 188, y: 480, parents: ["diamondRank"], tier: "diamant" },
+  { id: "day6000", type: "metric", metric: "day", branch: "day", target: 6000, x: 188, y: 300, parents: ["day4000"], tier: "diamant" },
+
+  { id: "total100000", type: "metric", metric: "total", branch: "total", target: 100000, x: 328, y: 480, parents: ["diamondRank"], tier: "diamant" },
+  { id: "total250000", type: "metric", metric: "total", branch: "total", target: 250000, x: 328, y: 300, parents: ["total100000"], tier: "diamant" },
+
+  { id: "week12000", type: "metric", metric: "week", branch: "week", target: 12000, x: 468, y: 480, parents: ["diamondRank"], tier: "diamant" },
+  { id: "week20000", type: "metric", metric: "week", branch: "week", target: 20000, x: 468, y: 300, parents: ["week12000"], tier: "diamant" },
+
+  { id: "pseudoPlancheSkill", type: "skill", metric: "variantPoints", variant: "pseudoPlanche", branch: "variant", target: 1, x: 595, y: 470, parents: ["diamondRank"], tier: "diamant" },
+  { id: "pseudoPlancheStage2", type: "metric", metric: "variantPoints", variant: "pseudoPlanche", branch: "variant", target: 3, x: 595, y: 290, parents: ["pseudoPlancheSkill"], tier: "diamant" }
+];
+
+const SKILL_NODES = [...SHIFTED_BASE_SKILL_NODES, ...EXTENDED_SKILL_NODES];
+
 
 let progress = loadProgress();
 
@@ -510,6 +601,9 @@ function render() {
 }
 
 function getCurrentRankName() {
+  if (isNodeDone(getNode("diamondRank"))) return "Diamant";
+  if (isNodeDone(getNode("platinumRank"))) return "Platin";
+  if (isNodeDone(getNode("goldRank"))) return "Gold";
   if (isNodeDone(getNode("silverRank"))) return "Silber";
   if (isNodeDone(getNode("bronzeRank"))) return "Bronze";
   if (isNodeDone(getNode("stoneRank"))) return "Stein";
@@ -723,6 +817,7 @@ ${lines.join("\n")}`;
 
 function getNodeRankTier(node) {
   if (!node) return "holz";
+  if (node.tier) return node.tier;
   if (node.type === "rank" && node.rank) return node.rank.toLowerCase();
 
   // The tree is built in vertical rank chapters. A milestone inherits the

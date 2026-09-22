@@ -3449,3 +3449,80 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .workout-variant-btn.unlock-hidden {
   display: none !important;
 }
+
+
+/* ======================================================================
+   v0.10.15 — Extended ranks + preserved completed rank/variant artwork
+   ====================================================================== */
+
+.tree-v10 {
+  height: 3650px !important;
+}
+
+.tree-v10 .tier-gold {
+  --tier-main: #c89316;
+  --tier-mid: #e4c56d;
+  --tier-soft: #fbf2cf;
+  --tier-ink: #76530a;
+}
+.tree-v10 .tier-platin {
+  --tier-main: #718793;
+  --tier-mid: #b9c8cf;
+  --tier-soft: #edf4f6;
+  --tier-ink: #405861;
+}
+.tree-v10 .tier-diamant {
+  --tier-main: #2d9bc4;
+  --tier-mid: #8ed5eb;
+  --tier-soft: #e3f7fc;
+  --tier-ink: #17607d;
+}
+
+/* Completed normal milestones stay solid green. Completed rank and exercise
+   badges keep their original artwork and receive only a clear green outline. */
+.tree-v10 .rank-node.done::before,
+.tree-v10 .variant-skill-node.done::before {
+  display: none !important;
+  content: none !important;
+}
+.tree-v10 .rank-node.done,
+.tree-v10 .variant-skill-node.done {
+  background: transparent !important;
+  opacity: 1 !important;
+  filter: none !important;
+  outline: 3px solid var(--tree-complete) !important;
+  outline-offset: 3px;
+  border-radius: 18px;
+}
+.tree-v10 .rank-node.done .rank-symbol,
+.tree-v10 .variant-skill-node.done .variant-skill-node-icon {
+  opacity: 1 !important;
+}
+.tree-v10 .rank-node.done .node-target,
+.tree-v10 .variant-skill-node.done .node-target {
+  border: 2px solid var(--tree-complete) !important;
+  background: rgba(18,35,58,.88) !important;
+  color: #fff !important;
+}
+.tree-v10 .variant-skill-node.done .node-label {
+  color: var(--tree-complete-dark) !important;
+}
+.tree-v10 .rank-node.done .rank-complete-pill,
+.tree-v10 .variant-skill-node.done .node-complete-pill {
+  background: var(--tree-complete-dark) !important;
+  border-color: #fff !important;
+}
+
+/* Locked large teasers stay readable rather than disappearing into grayscale. */
+.tree-v10 .rank-node.preview-locked,
+.tree-v10 .variant-skill-node.preview-locked {
+  opacity: .68 !important;
+  filter: grayscale(.35) saturate(.72) !important;
+}
+
+/* Slightly shorter long labels for the new special variants. */
+.tree-v10 .variant-skill-node.variant-pseudoPlanche .node-target,
+.tree-v10 .variant-skill-node.variant-handstand .node-target,
+.tree-v10 .variant-skill-node.variant-explosive .node-target {
+  font-size: clamp(6px, calc(var(--tree-node-size) * .115), 8px);
+}
