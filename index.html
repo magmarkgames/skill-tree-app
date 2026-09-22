@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f4f9ff" />
-  <title>Skill Tree – v0.10.5</title>
-  <link rel="stylesheet" href="style.css?v=0.10.8" />
+  <title>Skill Tree – v0.10.9</title>
+  <link rel="stylesheet" href="style.css?v=0.10.9" />
 </head>
 <body>
   <main class="app-shell">
@@ -13,7 +13,7 @@
     <section id="homeView" class="view home-view">
       <header class="home-header">
         <div>
-          <p class="eyebrow">SKILL TREE · v0.10.5</p>
+          <p class="eyebrow">SKILL TREE · v0.10.9</p>
           <h1>Deine Skills</h1>
           <p class="home-subtitle">Trainieren, Fortschritt sammeln und neue Äste freischalten.</p>
         </div>
@@ -212,7 +212,7 @@
           <span class="exercise-icon">⚡</span>
           <span>
             <strong>Push-ups</strong>
-            <small>Variante wählen und Workout starten</small>
+            <small>Workout öffnen und Sets trainieren</small>
           </span>
           <span>›</span>
         </button>
@@ -242,101 +242,111 @@
         </button>
       </section>
 
-      <section id="variantStep" class="step hidden">
-        <p class="variant-step-copy">Die Kamera erkennt die Variante noch nicht automatisch. Wähle deshalb vor dem Training, welche Push-up Variante du machst.</p>
-
-        <div class="variant-grid">
-          <button class="variant-card selected" data-variant="standard" type="button">
-            <span class="variant-icon" data-variant-icon="standard"></span>
-            <strong>Standard</strong>
-            <small>Normale Push-ups</small>
-          </button>
-          <button class="variant-card" data-variant="wide" type="button">
-            <span class="variant-icon" data-variant-icon="wide"></span>
-            <strong>Wide</strong>
-            <small>Breiter Griff</small>
-          </button>
-          <button class="variant-card" data-variant="diamond" type="button">
-            <span class="variant-icon" data-variant-icon="diamond"></span>
-            <strong>Diamond</strong>
-            <small>Enge Hände</small>
-          </button>
-          <button class="variant-card" data-variant="pike" type="button">
-            <span class="variant-icon" data-variant-icon="pike"></span>
-            <strong>Pike</strong>
-            <small>Schulterfokus</small>
-          </button>
-          <button class="variant-card" data-variant="incline" type="button">
-            <span class="variant-icon" data-variant-icon="incline"></span>
-            <strong>Incline</strong>
-            <small>Erhöhte Hände</small>
-          </button>
-          <button class="variant-card" data-variant="decline" type="button">
-            <span class="variant-icon" data-variant-icon="decline"></span>
-            <strong>Decline</strong>
-            <small>Erhöhte Füße</small>
-          </button>
-          <button class="variant-card locked" type="button" disabled>
-            <span class="variant-icon">👏</span>
-            <strong>Clapping</strong>
-            <small>Später</small>
-          </button>
-          <button class="variant-card locked" type="button" disabled>
-            <span class="variant-icon">✨</span>
-            <strong>Mehr Varianten</strong>
-            <small>in Kürze</small>
-          </button>
-        </div>
-
-        <button id="startSelectedVariantBtn" class="primary-btn" type="button">Training starten</button>
-      </section>
+      <section id="variantStep" class="step hidden" aria-hidden="true"></section>
 
       <section id="quickStep" class="step hidden">
-        <!-- Video bleibt aktiv für MediaPipe, ist für den Nutzer aber bewusst unsichtbar. -->
         <video id="cameraVideo" class="camera-feed-hidden" autoplay muted playsinline></video>
 
-        <div class="quick-stage">
+        <div class="quick-stage multi-set-stage">
           <div class="quick-meta">
-            <span id="quickVariantPill" class="quick-variant-pill">⚡ STANDARD PUSH-UP</span>
-            <strong id="timerDisplay">00:00</strong>
+            <span id="quickVariantPill" class="quick-variant-pill">⚡ PUSH-UPS</span>
+            <strong id="setNumberLabel">SET 1</strong>
           </div>
 
-          <div class="rep-hero" aria-live="polite">
-            <strong id="liveRepCount">0</strong>
-            <span>PUSH-UPS</span>
-          </div>
-
-          <div id="motionCue" class="motion-cue">Kamera wird vorbereitet …</div>
-
-          <div id="positionStatus" class="position-status neutral" aria-live="polite">
-            <span id="positionEmoji">⬜</span>
-            <div>
-              <strong id="positionTitle">Kamera wird vorbereitet</strong>
-              <small id="positionHint">Leg das Handy hin und geh in deine obere Push-up-Position.</small>
+          <section id="setPrepPanel" class="set-prep-panel">
+            <div class="set-prep-copy">
+              <span>ERSTES SET</span>
+              <strong>Welche Variante willst du machen?</strong>
+              <small>Antippen, in Position gehen – der 3‑Sekunden-Countdown startet dann automatisch.</small>
             </div>
-          </div>
+            <div class="workout-variant-grid" aria-label="Push-up Variante wählen">
+              <button class="workout-variant-btn" data-workout-variant="standard" type="button"><span data-variant-icon="standard"></span><small>Standard</small></button>
+              <button class="workout-variant-btn" data-workout-variant="wide" type="button"><span data-variant-icon="wide"></span><small>Wide</small></button>
+              <button class="workout-variant-btn" data-workout-variant="diamond" type="button"><span data-variant-icon="diamond"></span><small>Diamond</small></button>
+              <button class="workout-variant-btn" data-workout-variant="pike" type="button"><span data-variant-icon="pike"></span><small>Pike</small></button>
+              <button class="workout-variant-btn" data-workout-variant="incline" type="button"><span data-variant-icon="incline"></span><small>Incline</small></button>
+              <button class="workout-variant-btn" data-workout-variant="decline" type="button"><span data-variant-icon="decline"></span><small>Decline</small></button>
+            </div>
+            <div id="prepCameraHint" class="prep-camera-hint">Noch keine Variante ausgewählt.</div>
+          </section>
 
-          <section class="milestone-rail-panel" aria-labelledby="liveGoalsHeading">
-            <div class="milestone-rail-head">
+          <section id="activeSetPanel" class="active-set-panel hidden">
+            <div class="rep-hero" aria-live="polite">
+              <strong id="liveRepCount">0</strong>
+              <span>PUSH-UPS</span>
+            </div>
+
+            <div id="motionCue" class="motion-cue">Position einnehmen</div>
+
+            <div id="positionStatus" class="position-status neutral" aria-live="polite">
+              <span id="positionEmoji">⬜</span>
               <div>
-                <strong id="liveGoalsHeading">Nächstes Ziel</strong>
-                <small id="liveGoalText">Deine nächsten Meilensteine erscheinen hier.</small>
+                <strong id="positionTitle">Kamera wird vorbereitet</strong>
+                <small id="positionHint">Geh in deine obere Push-up-Position.</small>
               </div>
-              <span id="liveGoalsVariantHint">Standard</span>
             </div>
-            <div id="liveGoalsList" class="milestone-track" aria-live="polite"></div>
+
+            <section class="milestone-rail-panel" aria-labelledby="liveGoalsHeading">
+              <div class="milestone-rail-head">
+                <div>
+                  <strong id="liveGoalsHeading">Nächstes Ziel</strong>
+                  <small id="liveGoalText">Deine nächsten Meilensteine erscheinen hier.</small>
+                </div>
+                <span id="liveGoalsVariantHint">Set 1</span>
+              </div>
+              <div id="liveGoalsList" class="milestone-track" aria-live="polite"></div>
+            </section>
+          </section>
+
+          <section id="pausePanel" class="pause-panel hidden" aria-live="polite">
+            <div class="pause-clock-wrap">
+              <span>PAUSE</span>
+              <strong id="pauseTimerDisplay">00:00</strong>
+              <small id="pauseTargetText">Ziel: 01:00</small>
+            </div>
+
+            <div id="lastSetCard" class="last-set-card">
+              <span>LETZTES SET</span>
+              <strong id="lastSetSummary">Standard · 0 Push-ups</strong>
+            </div>
+
+            <div class="rest-target-row" aria-label="Pausenziel">
+              <button class="rest-target-btn" data-rest-target="30" type="button">30s</button>
+              <button class="rest-target-btn selected" data-rest-target="60" type="button">60s</button>
+              <button class="rest-target-btn" data-rest-target="90" type="button">90s</button>
+              <button class="rest-target-btn" data-rest-target="0" type="button">Frei</button>
+            </div>
+
+            <div class="pause-next-copy">
+              <strong>Nächstes Set</strong>
+              <small>Variante wählen oder dieselbe behalten. Geh danach wieder in Position.</small>
+            </div>
+            <div class="workout-variant-grid compact" aria-label="Variante für das nächste Set wählen">
+              <button class="workout-variant-btn" data-workout-variant="standard" type="button"><span data-variant-icon="standard"></span><small>Standard</small></button>
+              <button class="workout-variant-btn" data-workout-variant="wide" type="button"><span data-variant-icon="wide"></span><small>Wide</small></button>
+              <button class="workout-variant-btn" data-workout-variant="diamond" type="button"><span data-variant-icon="diamond"></span><small>Diamond</small></button>
+              <button class="workout-variant-btn" data-workout-variant="pike" type="button"><span data-variant-icon="pike"></span><small>Pike</small></button>
+              <button class="workout-variant-btn" data-workout-variant="incline" type="button"><span data-variant-icon="incline"></span><small>Incline</small></button>
+              <button class="workout-variant-btn" data-workout-variant="decline" type="button"><span data-variant-icon="decline"></span><small>Decline</small></button>
+            </div>
+            <div id="pauseReadyHint" class="pause-ready-hint">Wenn du wieder oben über dem Handy bist, startet der Countdown automatisch.</div>
           </section>
 
           <div class="button-stack quick-workout-actions">
             <button id="startCameraBtn" class="primary-btn hidden" type="button">Kamera erneut versuchen</button>
             <button id="startWorkoutBtn" class="primary-btn hidden" type="button" disabled>3s Countdown starten</button>
+            <button id="pauseSetBtn" class="secondary-btn hidden" type="button">Set pausieren</button>
             <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
             <button id="manualModeBtn" class="secondary-btn" type="button">Ohne Kamera trainieren</button>
           </div>
 
-          <p id="cameraStatus" class="status-text quick-status" aria-live="polite">
-            Kamera und Erkennung werden vorbereitet.
-          </p>
+          <p id="cameraStatus" class="status-text quick-status" aria-live="polite">Wähle zuerst eine Variante.</p>
+
+          <div id="setCompleteOverlay" class="set-complete-overlay hidden" aria-live="assertive">
+            <span>SET BEENDET</span>
+            <strong id="setCompleteReps">0</strong>
+            <small id="setCompleteLabel">Standard Push-ups</small>
+          </div>
 
           <div id="countdownBox" class="countdown-box hidden" aria-live="assertive">
             <strong id="countdownNumber">3</strong>
@@ -348,18 +358,17 @@
       <section id="resultStep" class="step hidden">
         <div class="result-grid">
           <div class="result-summary">
-            <span>Trainingszeit</span>
-            <strong id="finalTime">00:00</strong>
+            <span>Sets</span>
+            <strong id="resultSetCount">0</strong>
           </div>
           <div class="result-summary">
-            <span id="resultRepLabel">Erkannt</span>
-            <strong id="detectedResult">–</strong>
+            <span>Push-ups gesamt</span>
+            <strong id="detectedResult">0</strong>
           </div>
         </div>
 
-        <div id="autoResultNote" class="auto-result-note">
-          Die Kamera-Zahl wird direkt gespeichert. Keine nachträgliche Korrektur im Quick Mode.
-        </div>
+        <div id="resultSetsList" class="result-sets-list"></div>
+        <div id="autoResultNote" class="auto-result-note">Alle Sets werden gemeinsam als ein Workout gespeichert.</div>
 
         <label id="manualRepWrap" class="rep-input-wrap hidden" for="repInput">
           <span>Wie viele Push-ups hast du gemacht?</span>
@@ -367,7 +376,9 @@
           <small>Dieses Feld erscheint nur im manuellen Modus.</small>
         </label>
 
-        <button id="saveTrainingBtn" class="primary-btn" type="button">Training speichern</button>
+        <span id="finalTime" class="hidden">00:00</span>
+        <span id="resultRepLabel" class="hidden">Erkannt</span>
+        <button id="saveTrainingBtn" class="primary-btn" type="button">Workout speichern</button>
       </section>
 
       <section id="successStep" class="step hidden">
@@ -414,6 +425,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=0.10.8"></script>
+  <script type="module" src="app.js?v=0.10.9"></script>
 </body>
 </html>

@@ -39,7 +39,8 @@ const QUICK_CONFIG = {
   inferDownAfterLossMs: 90,
   inferDownMinRatio: 1.055,
   metricSmoothing: 0.58,
-  baselineAdaptation: 0.01
+  baselineAdaptation: 0.01,
+  autoSetEndLossMs: 1700
 };
 
 const DEFAULT_PROGRESS = {
@@ -234,6 +235,19 @@ let inferredBottomFromLoss = false;
 let lastRepAt = 0;
 let currentTrainingVariant = "standard";
 
+// v0.10.9: Ein Workout kann aus mehreren Sets und Varianten bestehen.
+let trainingPhase = "prep"; // prep | countdown | active | transition | pause | result
+let workoutSessionStartedAt = null;
+let workoutSets = [];
+let sessionTotalReps = 0;
+let currentSetStartedAt = null;
+let setEnding = false;
+let pauseStartedAt = null;
+let pauseInterval = null;
+let pauseSeconds = 0;
+let pauseTargetSeconds = 60;
+let pauseTargetNotified = false;
+
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
 const treeView = document.getElementById("treeView");
@@ -270,11 +284,23 @@ const trainingTitle = document.getElementById("trainingTitle");
 const backBtn = document.getElementById("backBtn");
 const quickVariantPill = document.getElementById("quickVariantPill");
 const variantCards = Array.from(document.querySelectorAll(".variant-card[data-variant]"));
-const startSelectedVariantBtn = document.getElementById("startSelectedVariantBtn");
+const workoutVariantButtons = Array.from(document.querySelectorAll(".workout-variant-btn[data-workout-variant]"));
+const restTargetButtons = Array.from(document.querySelectorAll(".rest-target-btn[data-rest-target]"));
 
 const cameraVideo = document.getElementById("cameraVideo");
 const liveRepCount = document.getElementById("liveRepCount");
-const timerDisplay = document.getElementById("timerDisplay");
+const setNumberLabel = document.getElementById("setNumberLabel");
+const setPrepPanel = document.getElementById("setPrepPanel");
+const activeSetPanel = document.getElementById("activeSetPanel");
+const pausePanel = document.getElementById("pausePanel");
+const prepCameraHint = document.getElementById("prepCameraHint");
+const pauseTimerDisplay = document.getElementById("pauseTimerDisplay");
+const pauseTargetText = document.getElementById("pauseTargetText");
+const lastSetSummary = document.getElementById("lastSetSummary");
+const pauseReadyHint = document.getElementById("pauseReadyHint");
+const setCompleteOverlay = document.getElementById("setCompleteOverlay");
+const setCompleteReps = document.getElementById("setCompleteReps");
+const setCompleteLabel = document.getElementById("setCompleteLabel");
 const motionCue = document.getElementById("motionCue");
 const positionStatus = document.getElementById("positionStatus");
 const positionEmoji = document.getElementById("positionEmoji");
@@ -287,6 +313,7 @@ const countdownNumber = document.getElementById("countdownNumber");
 const startCameraBtn = document.getElementById("startCameraBtn");
 const startWorkoutBtn = document.getElementById("startWorkoutBtn");
 const finishWorkoutBtn = document.getElementById("finishWorkoutBtn");
+const pauseSetBtn = document.getElementById("pauseSetBtn");
 const manualModeBtn = document.getElementById("manualModeBtn");
 
 const finalTime = document.getElementById("finalTime");
@@ -296,6 +323,8 @@ const successDetails = document.getElementById("successDetails");
 const manualRepWrap = document.getElementById("manualRepWrap");
 const autoResultNote = document.getElementById("autoResultNote");
 const resultRepLabel = document.getElementById("resultRepLabel");
+const resultSetCount = document.getElementById("resultSetCount");
+const resultSetsList = document.getElementById("resultSetsList");
 
 const variantModal = document.getElementById("variantModal");
 const closeVariantModalBtn = document.getElementById("closeVariantModalBtn");
@@ -822,134 +851,139 @@ function uniqueSortedTargets(targets) {
   return [...new Set(targets.filter(Number.isFinite))].sort((a, b) => a - b);
 }
 
+function getCompletedSessionReps() {
+  return workoutSets.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+}
+
+function getSessionVariantTotal(variant, includeCurrent = true) {
+  const completed = workoutSets
+    .filter(set => set.variant === variant)
+    .reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+  const current = includeCurrent && currentTrainingVariant === variant && (trainingPhase === "active" || trainingPhase === "countdown")
+    ? repCount
+    : 0;
+  return completed + current;
+}
+
+function getSessionVariantMax(variant) {
+  const completedMax = workoutSets
+    .filter(set => set.variant === variant)
+    .reduce((max, set) => Math.max(max, Math.max(0, Number(set.reps) || 0)), 0);
+  const current = currentTrainingVariant === variant && (trainingPhase === "active" || trainingPhase === "countdown")
+    ? repCount
+    : 0;
+  return Math.max(completedMax, current);
+}
+
 function getLiveMilestoneCandidates() {
   const variant = currentTrainingVariant;
   const meta = VARIANT_META[variant] || VARIANT_META.standard;
   const candidates = [];
+  const completedSession = getCompletedSessionReps();
+  const currentSessionTotal = completedSession + ((trainingPhase === "active" || trainingPhase === "countdown") ? repCount : 0);
 
-  const addSeries = ({ targets, baseValue, sessionTarget, keyPrefix, title, short, detail, tone, icon, priority = 0 }) => {
-    uniqueSortedTargets(targets).forEach(target => {
-      if (target <= baseValue) return;
-      const neededReps = Math.max(1, Math.ceil(sessionTarget(target)));
-      candidates.push({
-        key: `${keyPrefix}-${target}`,
-        target,
-        neededReps,
-        title: title(target),
-        short: short(target),
-        detail,
-        tone,
-        icon,
-        priority
-      });
+  const pushCandidate = ({ key, target, title, short, detail, tone, icon, cost, currentValue, priority }) => {
+    candidates.push({
+      key, target, title, short, detail, tone, icon, priority,
+      milestoneCost: Math.max(1, Math.ceil(cost)),
+      currentValue: Math.max(0, currentValue),
+      passed: currentValue >= target,
+      remaining: Math.max(0, Math.ceil(target - currentValue)),
+      progressFraction: clamp(target > 0 ? currentValue / target : 1, 0, 1)
     });
   };
 
-  const totalTargets = SKILL_NODES.filter(node => node.metric === "total").map(node => node.target);
-  const maxTargets = SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target);
-  const weekTargets = SKILL_NODES.filter(node => node.metric === "week").map(node => node.target);
-
-  // Gesamt- und Wochenziele wachsen mit jeder Wiederholung dieses Trainings.
-  addSeries({
-    targets: totalTargets,
-    baseValue: progress.pushupTotal,
-    sessionTarget: target => target - progress.pushupTotal,
-    keyPrefix: "total",
-    title: target => `${target} insgesamt`,
-    short: target => `${target}`,
-    detail: "Gesamt",
-    tone: "total",
-    icon: getMetricIconSvg("total"),
-    priority: 0
+  const totalTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "total").map(node => node.target));
+  totalTargets.forEach(target => {
+    if (target <= progress.pushupTotal) return;
+    pushCandidate({
+      key: `total-${target}`, target,
+      title: `${target} insgesamt`, short: `${target}`, detail: "Gesamt", tone: "total",
+      icon: getMetricIconSvg("total"), priority: 0,
+      cost: target - progress.pushupTotal,
+      currentValue: progress.pushupTotal + currentSessionTotal
+    });
   });
 
-  if (variant === "standard") {
-    // Ein Rekordziel wird erst erreicht, wenn die aktuelle Serie selbst den Zielwert erreicht.
-    addSeries({
-      targets: maxTargets,
-      baseValue: progress.pushupMax,
-      sessionTarget: target => target,
-      keyPrefix: "max",
-      title: target => `${target} am Stück`,
-      short: target => `${target}`,
-      detail: "Rekord",
-      tone: "max",
-      icon: getMetricIconSvg("max"),
-      priority: 1
+  const weekBase = getCurrentWeekTotal();
+  const weekTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "week").map(node => node.target));
+  weekTargets.forEach(target => {
+    if (target <= weekBase) return;
+    pushCandidate({
+      key: `week-${target}`, target,
+      title: `${target} in 7 Tagen`, short: `${target}`, detail: "7 Tage", tone: "week",
+      icon: getMetricIconSvg("week"), priority: 2,
+      cost: target - weekBase,
+      currentValue: weekBase + currentSessionTotal
     });
+  });
 
-    const weekBase = getCurrentWeekTotal();
-    addSeries({
-      targets: weekTargets,
-      baseValue: weekBase,
-      sessionTarget: target => target - weekBase,
-      keyPrefix: "week",
-      title: target => `${target} in 7 Tagen`,
-      short: target => `${target}`,
-      detail: "7 Tage",
-      tone: "week",
-      icon: getMetricIconSvg("week"),
-      priority: 2
+  const stats = getVariantStats(variant);
+  const sessionVariantTotal = getSessionVariantTotal(variant);
+  const sessionVariantMax = getSessionVariantMax(variant);
+
+  if (variant === "standard") {
+    const maxTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target));
+    maxTargets.forEach(target => {
+      if (target <= progress.pushupMax) return;
+      pushCandidate({
+        key: `max-${target}`, target,
+        title: `${target} am Stück`, short: `${target}`, detail: "Rekord", tone: "max",
+        icon: getMetricIconSvg("max"), priority: 1,
+        cost: target,
+        currentValue: Math.max(progress.pushupMax, sessionVariantMax)
+      });
     });
   } else {
-    const stats = getVariantStats(variant);
-    addSeries({
-      targets: VARIANT_TREE_MILESTONES.max,
-      baseValue: stats.max,
-      sessionTarget: target => target,
-      keyPrefix: `${variant}-max`,
-      title: target => `${target} ${meta.label} am Stück`,
-      short: target => `${target}`,
-      detail: `${meta.label} Rekord`,
-      tone: "variant",
-      icon: getVariantIconSvg(variant),
-      priority: 1
+    uniqueSortedTargets(VARIANT_TREE_MILESTONES.max).forEach(target => {
+      if (target <= stats.max) return;
+      pushCandidate({
+        key: `${variant}-max-${target}`, target,
+        title: `${target} ${meta.label} am Stück`, short: `${target}`, detail: `${meta.label} Rekord`, tone: "variant",
+        icon: getVariantIconSvg(variant), priority: 1,
+        cost: target,
+        currentValue: Math.max(stats.max, sessionVariantMax)
+      });
     });
-    addSeries({
-      targets: VARIANT_TREE_MILESTONES.total,
-      baseValue: stats.total,
-      sessionTarget: target => target - stats.total,
-      keyPrefix: `${variant}-total`,
-      title: target => `${target} ${meta.label} gesamt`,
-      short: target => `${target}`,
-      detail: `${meta.label} Gesamt`,
-      tone: "variant-soft",
-      icon: getVariantIconSvg(variant),
-      priority: 2
+    uniqueSortedTargets(VARIANT_TREE_MILESTONES.total).forEach(target => {
+      if (target <= stats.total) return;
+      pushCandidate({
+        key: `${variant}-total-${target}`, target,
+        title: `${target} ${meta.label} gesamt`, short: `${target}`, detail: `${meta.label} Gesamt`, tone: "variant-soft",
+        icon: getVariantIconSvg(variant), priority: 2,
+        cost: target - stats.total,
+        currentValue: stats.total + sessionVariantTotal
+      });
     });
   }
 
-  return candidates.sort((a, b) => a.neededReps - b.neededReps || a.priority - b.priority || a.target - b.target);
+  return candidates;
 }
 
 function getLiveMilestoneState() {
   const all = getLiveMilestoneCandidates();
-  const passed = all.filter(goal => repCount >= goal.neededReps);
-  const upcoming = all.filter(goal => repCount < goal.neededReps);
+  const passed = all.filter(goal => goal.passed)
+    .sort((a, b) => a.milestoneCost - b.milestoneCost || a.priority - b.priority);
+  const upcoming = all.filter(goal => !goal.passed)
+    .sort((a, b) => a.remaining - b.remaining || a.priority - b.priority || a.target - b.target);
   const lastPassed = passed.length ? passed[passed.length - 1] : null;
   const next = upcoming[0] || null;
-  const segmentStart = lastPassed ? lastPassed.neededReps : 0;
-  const segmentEnd = next ? next.neededReps : Math.max(segmentStart + 1, repCount);
-  const segmentProgress = next
-    ? clamp((repCount - segmentStart) / Math.max(1, segmentEnd - segmentStart), 0, 1)
-    : 1;
-
+  const segmentProgress = next ? next.progressFraction : 1;
   return { all, passed, upcoming, lastPassed, next, segmentProgress };
 }
 
 function renderLiveGoals() {
   if (!liveGoalsList) return;
-
   const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
   const state = getLiveMilestoneState();
   const previousNextKey = lastRailNextKey;
   lastRailNextKey = state.next?.key || null;
+  const setNo = workoutSets.length + 1;
 
-  liveGoalsVariantHint.textContent = `${meta.label} · ${repCount}`;
-
+  liveGoalsVariantHint.textContent = `${meta.label} · Set ${setNo}`;
   if (liveGoalText) {
     if (state.next) {
-      const remaining = Math.max(0, state.next.neededReps - repCount);
+      const remaining = state.next.remaining;
       liveGoalText.textContent = `Noch ${remaining} Push-up${remaining === 1 ? "" : "s"} bis ${state.next.title}`;
     } else {
       liveGoalText.textContent = "Alle sichtbaren Ziele in diesem Bereich geschafft.";
@@ -958,10 +992,7 @@ function renderLiveGoals() {
 
   const firstGoalPosition = 64;
   const upcomingPositions = [firstGoalPosition, 82, 95];
-  const fillEnd = state.next
-    ? 5 + state.segmentProgress * (firstGoalPosition - 5)
-    : 96;
-
+  const fillEnd = state.next ? 5 + state.segmentProgress * (firstGoalPosition - 5) : 96;
   const parts = [
     '<div class="milestone-track-line" aria-hidden="true"></div>',
     `<div class="milestone-track-fill" style="left:5%;width:${Math.max(0, fillEnd - 5)}%" aria-hidden="true"></div>`
@@ -973,32 +1004,21 @@ function renderLiveGoals() {
         <span class="milestone-emblem-icon">${state.lastPassed.icon}</span>
         <span class="milestone-check">✓</span>
         <small>${state.lastPassed.short}</small>
-      </div>
-    `);
+      </div>`);
   } else {
     parts.push('<div class="milestone-start-dot" style="left:5%" aria-hidden="true"></div>');
   }
 
   state.upcoming.slice(0, 3).forEach((goal, index) => {
-    const position = upcomingPositions[index];
     parts.push(`
-      <div class="milestone-emblem ${index === 0 ? "next" : "future"} tone-${goal.tone}" data-milestone-key="${goal.key}" style="left:${position}%" aria-label="${goal.title}">
+      <div class="milestone-emblem ${index === 0 ? "next" : "future"} tone-${goal.tone}" data-milestone-key="${goal.key}" style="left:${upcomingPositions[index]}%" aria-label="${goal.title}">
         <span class="milestone-emblem-icon">${goal.icon}</span>
         <small>${goal.short}</small>
-      </div>
-    `);
+      </div>`);
   });
 
   liveGoalsList.innerHTML = parts.join("");
-
-  // Wenn genau der bisher nächste Meilenstein erreicht wurde, wandert sein
-  // Emblem sichtbar an den linken Rand. Diese Animation läuft nur beim
-  // Meilenstein selbst und belastet den normalen Trainingsbetrieb nicht.
-  if (
-    previousNextKey &&
-    previousNextKey !== lastRailNextKey &&
-    state.lastPassed?.key === previousNextKey
-  ) {
+  if (previousNextKey && previousNextKey !== lastRailNextKey && state.lastPassed?.key === previousNextKey) {
     const completed = liveGoalsList.querySelector(`[data-milestone-key="${previousNextKey}"]`);
     if (completed?.animate) {
       completed.animate(
@@ -1061,14 +1081,16 @@ function renderHistory() {
     when.textContent = formatWorkoutDate(item.date);
 
     const details = document.createElement("span");
-    const duration = Number.isFinite(Number(item.durationSeconds))
-      ? formatTime(Math.max(0, Number(item.durationSeconds)))
-      : "–";
-    const mode = String(item.mode || "").startsWith("face-quick")
-      ? "Quick Mode"
-      : "Manuell";
-    const variant = VARIANT_META[item?.variant]?.label || "Standard";
-    details.textContent = `${variant} · ${mode} · ${duration}`;
+    const sets = Array.isArray(item.sets) ? item.sets : [];
+    if (sets.length) {
+      const variants = [...new Set(sets.map(set => VARIANT_META[set.variant]?.label || "Standard"))];
+      const setText = `${sets.length} ${sets.length === 1 ? "Set" : "Sets"}`;
+      details.textContent = `${setText} · ${variants.join(", ")}`;
+    } else {
+      const mode = String(item.mode || "").startsWith("face-quick") ? "Quick Mode" : "Manuell";
+      const variant = VARIANT_META[item?.variant]?.label || "Standard";
+      details.textContent = `${variant} · ${mode}`;
+    }
 
     main.append(when, details);
 
@@ -1113,27 +1135,22 @@ function formatWorkoutDate(isoString) {
 // ---------- Training Modal ----------
 function showStep(stepName) {
   [exerciseStep, variantStep, quickStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
-  trainingModal.classList.toggle("selection-theme", stepName === "exercise" || stepName === "variant");
+  trainingModal.classList.toggle("selection-theme", stepName === "exercise");
   trainingModal.classList.toggle("quick-theme", stepName === "quick");
 
   if (stepName === "exercise") {
     exerciseStep.classList.remove("hidden");
-    trainingTitle.textContent = "Übung auswählen";
+    trainingTitle.textContent = "Training auswählen";
     backBtn.classList.add("hidden");
-  }
-  if (stepName === "variant") {
-    variantStep.classList.remove("hidden");
-    trainingTitle.textContent = "Variante wählen";
-    backBtn.classList.remove("hidden");
   }
   if (stepName === "quick") {
     quickStep.classList.remove("hidden");
-    trainingTitle.textContent = `${VARIANT_META[currentTrainingVariant]?.label || "Push-up"} Training`;
+    trainingTitle.textContent = "Push-up Workout";
     backBtn.classList.remove("hidden");
   }
   if (stepName === "result") {
     resultStep.classList.remove("hidden");
-    trainingTitle.textContent = "Training prüfen";
+    trainingTitle.textContent = "Workout prüfen";
     backBtn.classList.remove("hidden");
   }
   if (stepName === "success") {
@@ -1154,7 +1171,9 @@ function closeTraining() {
   workoutActive = false;
   countdownActive = false;
   autoCountdownPending = false;
+  trainingPhase = "prep";
   stopTimer();
+  stopPauseTimer();
   stopDetectionLoop();
   stopCamera();
   trainingModal.classList.add("hidden");
@@ -1171,8 +1190,50 @@ function updateQuickVariantPill() {
 function setSelectedTrainingVariant(variant) {
   currentTrainingVariant = VARIANT_META[variant] ? variant : "standard";
   variantCards.forEach(card => card.classList.toggle("selected", card.dataset.variant === currentTrainingVariant));
+  workoutVariantButtons.forEach(button => button.classList.toggle("selected", button.dataset.workoutVariant === currentTrainingVariant));
   updateQuickVariantPill();
   renderLiveGoals();
+  if (trainingPhase === "pause") {
+    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · geh wieder in die obere Position.`;
+  }
+}
+
+function showPrepUI() {
+  trainingPhase = "prep";
+  setPrepPanel.classList.remove("hidden");
+  activeSetPanel.classList.add("hidden");
+  pausePanel.classList.add("hidden");
+  pauseSetBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0);
+  manualModeBtn.classList.remove("hidden");
+  setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
+}
+
+function showActiveUI() {
+  setPrepPanel.classList.add("hidden");
+  pausePanel.classList.add("hidden");
+  activeSetPanel.classList.remove("hidden");
+  manualModeBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0 && !workoutActive);
+  pauseSetBtn.classList.toggle("hidden", !workoutActive);
+  setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
+}
+
+function showPauseUI() {
+  trainingPhase = "pause";
+  setPrepPanel.classList.add("hidden");
+  activeSetPanel.classList.add("hidden");
+  pausePanel.classList.remove("hidden");
+  pauseSetBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.remove("hidden");
+  manualModeBtn.classList.add("hidden");
+  setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
+  const lastSet = workoutSets[workoutSets.length - 1];
+  if (lastSet) {
+    lastSetSummary.textContent = `${VARIANT_META[lastSet.variant]?.label || "Standard"} · ${lastSet.reps} Push-up${lastSet.reps === 1 ? "" : "s"}`;
+  }
+  pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · wenn du wieder oben über dem Handy bist, startet der Countdown automatisch.`;
+  updatePauseTargetText();
 }
 
 function resetTrainingSession() {
@@ -1182,7 +1243,18 @@ function resetTrainingSession() {
   lastRailNextKey = null;
   manualMode = false;
   cameraWasStarted = false;
+  trainingPhase = "prep";
+  workoutSessionStartedAt = null;
+  workoutSets = [];
+  sessionTotalReps = 0;
+  currentSetStartedAt = null;
+  setEnding = false;
+  pauseStartedAt = null;
+  pauseSeconds = 0;
+  pauseTargetSeconds = 60;
+  pauseTargetNotified = false;
   stopTimer();
+  stopPauseTimer();
   stopDetectionLoop();
   stopCamera();
   setSelectedTrainingVariant("standard");
@@ -1211,11 +1283,13 @@ function resetTrainingSession() {
   lastRepAt = 0;
 
   liveRepCount.textContent = "0";
-  timerDisplay.textContent = "00:00";
-  motionCue.textContent = "Kamera wird vorbereitet …";
-  finalTime.textContent = "00:00";
-  detectedResult.textContent = "–";
+  motionCue.textContent = "Position einnehmen";
+  detectedResult.textContent = "0";
+  resultSetCount.textContent = "0";
+  resultSetsList.innerHTML = "";
   repInput.value = "";
+  setCompleteOverlay.classList.add("hidden");
+  countdownBox.classList.add("hidden");
 
   startCameraBtn.classList.add("hidden");
   startCameraBtn.disabled = false;
@@ -1223,13 +1297,84 @@ function resetTrainingSession() {
   startWorkoutBtn.classList.add("hidden");
   startWorkoutBtn.disabled = true;
   finishWorkoutBtn.classList.add("hidden");
+  pauseSetBtn.classList.add("hidden");
   manualModeBtn.classList.remove("hidden");
-  countdownBox.classList.add("hidden");
+  prepCameraHint.textContent = "Noch keine Variante ausgewählt.";
 
-  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Leg das Handy hin und geh in deine obere Push-up-Position.");
-  cameraStatus.textContent = "Kamera und Erkennung werden vorbereitet.";
+  restTargetButtons.forEach(button => button.classList.toggle("selected", Number(button.dataset.restTarget) === 60));
+  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Geh in deine obere Push-up-Position.");
+  cameraStatus.textContent = "Wähle zuerst eine Variante.";
+  showPrepUI();
+  renderStaticIcons();
   renderLiveGoals();
 }
+
+function selectWorkoutVariant(variant) {
+  setSelectedTrainingVariant(variant);
+  if (trainingPhase === "prep") {
+    showActiveUI();
+    prepCameraHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt. Kamera wird gestartet …`;
+    autoCountdownPending = true;
+    startCamera();
+    return;
+  }
+  if (trainingPhase === "pause") {
+    autoCountdownPending = true;
+    goodPositionSince = 0;
+  }
+}
+
+function updatePauseClock() {
+  if (!pauseStartedAt) return;
+  pauseSeconds = Math.floor((Date.now() - pauseStartedAt) / 1000);
+  pauseTimerDisplay.textContent = formatTime(pauseSeconds);
+  if (pauseTargetSeconds > 0 && pauseSeconds >= pauseTargetSeconds && !pauseTargetNotified) {
+    pauseTargetNotified = true;
+    pauseTargetText.textContent = "Pausenziel erreicht · du entscheidest, wann es weitergeht";
+    pausePanel.classList.add("target-reached");
+    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+  }
+}
+
+function updatePauseTargetText() {
+  pausePanel.classList.remove("target-reached");
+  pauseTargetNotified = pauseTargetSeconds > 0 && pauseSeconds >= pauseTargetSeconds;
+  if (pauseTargetSeconds <= 0) {
+    pauseTargetText.textContent = "Freie Pause";
+  } else if (pauseTargetNotified) {
+    pauseTargetText.textContent = "Pausenziel erreicht · du entscheidest, wann es weitergeht";
+    pausePanel.classList.add("target-reached");
+  } else {
+    pauseTargetText.textContent = `Ziel: ${formatTime(pauseTargetSeconds)}`;
+  }
+}
+
+function startPauseTimer() {
+  stopPauseTimer();
+  pauseStartedAt = Date.now();
+  pauseSeconds = 0;
+  pauseTargetNotified = false;
+  pauseTimerDisplay.textContent = "00:00";
+  updatePauseTargetText();
+  pauseInterval = window.setInterval(updatePauseClock, 250);
+}
+
+function stopPauseTimer() {
+  if (pauseInterval) clearInterval(pauseInterval);
+  pauseInterval = null;
+}
+
+function finalizePause() {
+  if (!pauseStartedAt) return 0;
+  updatePauseClock();
+  const seconds = pauseSeconds;
+  const lastSet = workoutSets[workoutSets.length - 1];
+  if (lastSet) lastSet.pauseAfterSeconds = seconds;
+  pauseStartedAt = null;
+  stopPauseTimer();
+  return seconds;
+}
+
 // ---------- Face Detector ----------
 async function ensureMediaPipeModule() {
   if (FaceDetector && FilesetResolver) return;
@@ -1459,7 +1604,9 @@ function processFaceResult(result, now) {
   }
 
   if (!workoutActive) {
-    updateSetupGuidance(currentFace, now);
+    if (trainingPhase === "prep" || trainingPhase === "pause" || trainingPhase === "countdown") {
+      updateSetupGuidance(currentFace, now);
+    }
     return;
   }
 
@@ -1483,8 +1630,10 @@ function handleFaceLoss(now) {
     readyForCountdown = false;
     startWorkoutBtn.disabled = true;
     goodPositionSince = 0;
-    setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Beug dich etwas über das Handy oder schieb es näher zu deinem Gesicht.");
-    motionCue.textContent = "Gesicht ins Blickfeld bringen";
+    if (trainingPhase === "prep" || trainingPhase === "countdown") {
+      setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Beug dich etwas über das Handy oder schieb es näher zu deinem Gesicht.");
+      motionCue.textContent = "Gesicht ins Blickfeld bringen";
+    }
     return;
   }
 
@@ -1522,7 +1671,12 @@ function handleFaceLoss(now) {
     return;
   }
 
-  setPositionStatus("warn", "🟨", "Kopf wieder über das Handy", "Die Bewegung bleibt noch kurz gespeichert.");
+  setPositionStatus("warn", "🟨", "Kopf wieder über das Handy", "Wenn du das Set beenden willst, geh vollständig aus dem Kamerablickfeld.");
+
+  if (repCount > 0 && lostFor >= QUICK_CONFIG.autoSetEndLossMs && !setEnding) {
+    endCurrentSetToPause("face-left");
+    return;
+  }
 
   if (lostFor > QUICK_CONFIG.hardResetLossMs) {
     downFrames = 0;
@@ -1581,6 +1735,7 @@ function updateSetupGuidance(face, now) {
   if (autoCountdownPending && !countdownActive) {
     autoCountdownPending = false;
     setPositionStatus("good", "🟩", "Bereit", "Der Countdown startet automatisch – oben bleiben.");
+    if (trainingPhase === "pause") pauseReadyHint.textContent = "Position erkannt · Countdown startet …";
     motionCue.textContent = "COUNTDOWN";
     queueMicrotask(() => startCountdown());
     return;
@@ -1612,6 +1767,8 @@ function setPositionStatus(state, emoji, title, hint) {
 async function startCountdown() {
   if (!readyForCountdown || !currentFace || countdownActive) return;
 
+  const cameFromPause = trainingPhase === "pause";
+  trainingPhase = "countdown";
   countdownActive = true;
   autoCountdownPending = false;
   manualModeBtn.classList.add("hidden");
@@ -1621,6 +1778,7 @@ async function startCountdown() {
   inferredBottomFromLoss = false;
   lastRepAt = 0;
   startWorkoutBtn.disabled = true;
+  showActiveUI();
   countdownBox.classList.remove("hidden");
   motionCue.textContent = "Oben bleiben";
 
@@ -1640,15 +1798,21 @@ async function startCountdown() {
     autoCountdownPending = true;
     goodPositionSince = 0;
     countdownBox.classList.add("hidden");
-    manualModeBtn.classList.remove("hidden");
-    setPositionStatus("bad", "🟥", "Noch einmal positionieren", "Sobald du wieder stabil oben bist, startet der Countdown automatisch neu.");
-    startWorkoutBtn.disabled = false;
+    if (cameFromPause) {
+      showPauseUI();
+      pauseReadyHint.textContent = "Noch einmal sauber oben positionieren – dann startet der Countdown erneut.";
+    } else {
+      trainingPhase = "prep";
+      showActiveUI();
+      setPositionStatus("bad", "🟥", "Noch einmal positionieren", "Sobald du wieder stabil oben bist, startet der Countdown automatisch neu.");
+    }
     motionCue.textContent = "Obere Position finden";
     return;
   }
 
   baselineTopMetric = median(usableSamples);
   calculateThresholds();
+  if (cameFromPause || pauseStartedAt) finalizePause();
 
   countdownActive = false;
   countdownBox.classList.add("hidden");
@@ -1668,7 +1832,10 @@ function beginWorkout() {
   autoCountdownPending = false;
   workoutActive = true;
   manualMode = false;
-  workoutStartedAt = Date.now();
+  trainingPhase = "active";
+  workoutSessionStartedAt = workoutSessionStartedAt || Date.now();
+  currentSetStartedAt = Date.now();
+  workoutStartedAt = currentSetStartedAt;
   elapsedSeconds = 0;
   repCount = 0;
   phase = "up";
@@ -1678,18 +1845,65 @@ function beginWorkout() {
   maxMetricSinceTop = currentFace?.metric ?? baselineTopMetric;
   inferredBottomFromLoss = false;
   lastRepAt = 0;
+  setEnding = false;
   liveRepCount.textContent = "0";
 
-  startWorkoutBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.remove("hidden");
-  manualModeBtn.classList.add("hidden");
-
-  setPositionStatus("good", "🟩", "Training läuft", "Du musst nicht auf die Kamera schauen – nur auf Zahl und Ampel.");
+  showActiveUI();
+  pauseSetBtn.classList.remove("hidden");
+  setPositionStatus("good", "🟩", "Set läuft", "Kurzes Verschwinden unten ist okay. Ganz aus dem Bild gehen beendet das Set automatisch.");
   motionCue.textContent = "RUNTER";
   renderLiveGoals();
+}
 
-  updateTimer();
-  timerInterval = window.setInterval(updateTimer, 250);
+function commitCurrentSet() {
+  if (!workoutActive && trainingPhase !== "active") return null;
+  const now = Date.now();
+  const set = {
+    setNumber: workoutSets.length + 1,
+    variant: currentTrainingVariant,
+    reps: Math.max(0, repCount),
+    durationSeconds: currentSetStartedAt ? Math.max(0, Math.floor((now - currentSetStartedAt) / 1000)) : 0,
+    autoDetectedReps: manualMode ? null : Math.max(0, repCount),
+    pauseAfterSeconds: 0
+  };
+  workoutSets.push(set);
+  sessionTotalReps = getCompletedSessionReps();
+  workoutActive = false;
+  currentSetStartedAt = null;
+  return set;
+}
+
+function endCurrentSetToPause(reason = "manual") {
+  if (!workoutActive || setEnding) return;
+  if (repCount <= 0 && reason === "face-left") return;
+  setEnding = true;
+  const set = commitCurrentSet();
+  if (!set) { setEnding = false; return; }
+
+  trainingPhase = "transition";
+  autoCountdownPending = false;
+  pauseSetBtn.classList.add("hidden");
+  setCompleteReps.textContent = String(set.reps);
+  setCompleteLabel.textContent = `${VARIANT_META[set.variant]?.label || "Standard"} Push-ups`;
+  setCompleteOverlay.classList.remove("hidden");
+  if (navigator.vibrate) navigator.vibrate(45);
+
+  window.setTimeout(() => {
+    if (trainingPhase !== "transition") return;
+    setCompleteOverlay.classList.add("hidden");
+    repCount = 0;
+    liveRepCount.textContent = "0";
+    phase = "up";
+    downFrames = 0;
+    upFrames = 0;
+    goodPositionSince = 0;
+    readyForCountdown = false;
+    setEnding = false;
+    showPauseUI();
+    startPauseTimer();
+    autoCountdownPending = true;
+    renderLiveGoals();
+  }, 900);
 }
 
 function updateRepState(metric, now) {
@@ -1795,59 +2009,71 @@ function startManualMode() {
   stopCamera();
   manualMode = true;
   cameraWasStarted = false;
-  workoutActive = true;
-  workoutStartedAt = Date.now();
-  elapsedSeconds = 0;
-  repCount = 0;
+  workoutActive = false;
+  trainingPhase = "result";
+  workoutSets = [];
+  resultSetCount.textContent = "1";
+  detectedResult.textContent = "Manuell";
+  resultSetsList.innerHTML = '<div class="result-set-row"><span>Manuelles Set</span><strong>Wiederholungen unten eingeben</strong></div>';
+  manualRepWrap.classList.remove("hidden");
+  autoResultNote.classList.add("hidden");
+  showStep("result");
+  setTimeout(() => repInput.focus(), 50);
+}
 
-  startCameraBtn.classList.add("hidden");
-  startWorkoutBtn.classList.add("hidden");
-  manualModeBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.remove("hidden");
-
-  setPositionStatus("neutral", "✍️", "Manueller Modus", "Nach dem Training gibst du die Wiederholungszahl selbst ein.");
-  motionCue.textContent = "Training läuft";
-  renderLiveGoals();
-
-  updateTimer();
-  timerInterval = window.setInterval(updateTimer, 250);
+function renderWorkoutResult() {
+  const total = workoutSets.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+  resultSetCount.textContent = String(workoutSets.length);
+  detectedResult.textContent = String(total);
+  resultSetsList.innerHTML = "";
+  workoutSets.forEach((set, index) => {
+    const row = document.createElement("div");
+    row.className = "result-set-row";
+    const left = document.createElement("span");
+    left.textContent = `Set ${index + 1} · ${VARIANT_META[set.variant]?.label || "Standard"}`;
+    const right = document.createElement("strong");
+    const pause = Number(set.pauseAfterSeconds) || 0;
+    right.textContent = pause > 0 && index < workoutSets.length - 1
+      ? `${set.reps} · Pause ${formatTime(pause)}`
+      : `${set.reps} Push-ups`;
+    row.append(left, right);
+    resultSetsList.appendChild(row);
+  });
 }
 
 function finishWorkout() {
-  updateTimer();
-  workoutActive = false;
   countdownActive = false;
+  autoCountdownPending = false;
+  countdownBox.classList.add("hidden");
+
+  if (workoutActive && repCount > 0) {
+    commitCurrentSet();
+  }
+  if (pauseStartedAt) finalizePause();
+
+  workoutActive = false;
+  trainingPhase = "result";
   stopTimer();
+  stopPauseTimer();
   stopDetectionLoop();
   stopCamera();
+  setCompleteOverlay.classList.add("hidden");
 
-  finalTime.textContent = formatTime(elapsedSeconds);
-
-  if (cameraWasStarted && !manualMode) {
-    detectedResult.textContent = String(repCount);
-    resultRepLabel.textContent = "Erkannt";
-    manualRepWrap.classList.add("hidden");
-    autoResultNote.classList.remove("hidden");
-    repInput.value = "";
-  } else {
-    detectedResult.textContent = "Manuell";
-    resultRepLabel.textContent = "Modus";
+  if (manualMode) {
     manualRepWrap.classList.remove("hidden");
     autoResultNote.classList.add("hidden");
-    repInput.value = "";
+  } else {
+    manualRepWrap.classList.add("hidden");
+    autoResultNote.classList.remove("hidden");
+    renderWorkoutResult();
   }
 
   showStep("result");
-
-  if (manualMode) {
-    setTimeout(() => repInput.focus(), 50);
-  }
 }
 
 function updateTimer() {
-  if (!workoutStartedAt) return;
-  elapsedSeconds = Math.floor((Date.now() - workoutStartedAt) / 1000);
-  timerDisplay.textContent = formatTime(elapsedSeconds);
+  if (!workoutSessionStartedAt) return;
+  elapsedSeconds = Math.floor((Date.now() - workoutSessionStartedAt) / 1000);
 }
 
 function stopTimer() {
@@ -1863,44 +2089,52 @@ function formatTime(seconds) {
 
 // ---------- Training speichern ----------
 function saveTrainingResult() {
-  const reps = cameraWasStarted && !manualMode
-    ? repCount
-    : Math.floor(Number(repInput.value));
-
-  if (!Number.isFinite(reps) || reps < 0) {
-    alert("Bitte gib eine gültige Wiederholungszahl ein.");
-    return;
-  }
-
-  if (reps === 0 && !confirm("0 Wiederholungen speichern?")) return;
-
-  const variant = currentTrainingVariant;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
 
-  progress.variantStats = progress.variantStats || createEmptyVariantStats();
-  if (!progress.variantStats[variant]) progress.variantStats[variant] = { max: 0, total: 0 };
-
-  progress.variantStats[variant].max = Math.max(progress.variantStats[variant].max, reps);
-  progress.variantStats[variant].total += reps;
-
-  if (variant === "standard") {
-    progress.pushupMax = Math.max(progress.pushupMax, reps);
+  if (manualMode) {
+    const reps = Math.floor(Number(repInput.value));
+    if (!Number.isFinite(reps) || reps < 0) {
+      alert("Bitte gib eine gültige Wiederholungszahl ein.");
+      return;
+    }
+    if (reps === 0 && !confirm("0 Wiederholungen speichern?")) return;
+    workoutSets = [{ setNumber: 1, variant: currentTrainingVariant, reps, durationSeconds: 0, autoDetectedReps: null, pauseAfterSeconds: 0 }];
   }
 
-  progress.pushupTotal += reps;
+  const sets = workoutSets.filter(set => Number.isFinite(Number(set.reps)) && Number(set.reps) >= 0);
+  const totalReps = sets.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+  if (!sets.length) {
+    alert("Es gibt noch kein abgeschlossenes Set zum Speichern.");
+    return;
+  }
+  if (totalReps === 0 && !confirm("Workout mit 0 Wiederholungen speichern?")) return;
+
+  progress.variantStats = progress.variantStats || createEmptyVariantStats();
+  sets.forEach(set => {
+    const variant = VARIANT_META[set.variant] ? set.variant : "standard";
+    const reps = Math.max(0, Math.floor(Number(set.reps) || 0));
+    if (!progress.variantStats[variant]) progress.variantStats[variant] = { max: 0, total: 0 };
+    progress.variantStats[variant].max = Math.max(progress.variantStats[variant].max, reps);
+    progress.variantStats[variant].total += reps;
+    if (variant === "standard") progress.pushupMax = Math.max(progress.pushupMax, reps);
+  });
+
+  progress.pushupTotal += totalReps;
   progress.lastTrainingDate = localDateString(new Date());
+  const totalPauseSeconds = sets.reduce((sum, set) => sum + Math.max(0, Number(set.pauseAfterSeconds) || 0), 0);
+  const sessionDurationSeconds = workoutSessionStartedAt ? Math.max(0, Math.floor((Date.now() - workoutSessionStartedAt) / 1000)) : 0;
 
   progress.trainingHistory.unshift({
     exercise: "pushups",
-    variant,
-    reps,
-    autoDetectedReps: cameraWasStarted && !manualMode ? repCount : null,
-    durationSeconds: elapsedSeconds,
+    variant: sets.length === 1 ? sets[0].variant : "mixed",
+    reps: totalReps,
+    sets: sets.map(set => ({ ...set })),
+    pauseSeconds: totalPauseSeconds,
+    durationSeconds: sessionDurationSeconds,
     date: new Date().toISOString(),
-    usedCamera: cameraWasStarted,
-    mode: cameraWasStarted && !manualMode ? "face-quick-v06-engine" : "manual",
-    calibrationTopMetric: baselineTopMetric
+    usedCamera: !manualMode,
+    mode: manualMode ? "manual" : "multi-set-face-v0109"
   });
 
   const todayTotal = getTodayTotal();
@@ -1912,25 +2146,17 @@ function saveTrainingResult() {
   render();
 
   const newRank = getCurrentRankName();
-  const isNewRecord = variant === "standard" && reps > oldMax;
   const rankUp = newRank !== oldRank;
-  const variantStats = getVariantStats(variant);
+  const newStandardRecord = progress.pushupMax > oldMax;
 
   successDetails.innerHTML = "";
-  addSuccessLine(`${reps} ${VARIANT_META[variant]?.label || "Push-up"}-Push-ups gespeichert`);
+  addSuccessLine(`${sets.length} ${sets.length === 1 ? "Set" : "Sets"} · ${totalReps} Push-ups gespeichert`);
+  sets.forEach((set, index) => addSuccessLine(`Set ${index + 1}: ${set.reps} ${VARIANT_META[set.variant]?.label || "Standard"}`));
   addSuccessLine(`Heute: ${todayTotal} Push-ups`);
-  addSuccessLine(`Diese Woche: ${weekTotal} Push-ups`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
-  addSuccessLine(`${VARIANT_META[variant]?.label || "Variante"}: ${variantStats.max} max · ${variantStats.total} gesamt`);
-
-  if (variant === "standard") {
-    if (isNewRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
-    else addSuccessLine(`Standard-Rekord bleibt bei ${progress.pushupMax}`);
-  }
-
+  if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (rankUp) addSuccessLine(`⭐ Neuer Rang: ${newRank}`, true);
   else addSuccessLine(`Rang: ${newRank}`);
-
   showStep("success");
 }
 
@@ -2002,18 +2228,23 @@ document.getElementById("openTrainingBtn").addEventListener("click", openTrainin
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
 
 document.querySelector('[data-exercise="pushups"]').addEventListener("click", () => {
-  showStep("variant");
+  showStep("quick");
+  showPrepUI();
+  renderStaticIcons();
 });
 
 variantCards.forEach(card => {
   card.addEventListener("click", () => setSelectedTrainingVariant(card.dataset.variant));
 });
-
-startSelectedVariantBtn.addEventListener("click", () => {
-  updateQuickVariantPill();
-  showStep("quick");
-  autoCountdownPending = true;
-  startCamera();
+workoutVariantButtons.forEach(button => {
+  button.addEventListener("click", () => selectWorkoutVariant(button.dataset.workoutVariant));
+});
+restTargetButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    pauseTargetSeconds = Math.max(0, Number(button.dataset.restTarget) || 0);
+    restTargetButtons.forEach(item => item.classList.toggle("selected", item === button));
+    updatePauseTargetText();
+  });
 });
 
 backBtn.addEventListener("click", () => {
@@ -2022,19 +2253,17 @@ backBtn.addEventListener("click", () => {
     return;
   }
   if (!quickStep.classList.contains("hidden")) {
-    const selectedVariant = currentTrainingVariant;
+    if (workoutSets.length || workoutActive || trainingPhase === "pause") {
+      if (!confirm("Aktuelles Workout wirklich verlassen? Noch nicht gespeicherte Sets gehen verloren.")) return;
+    }
     workoutActive = false;
     countdownActive = false;
     autoCountdownPending = false;
-    stopTimer();
+    stopPauseTimer();
     stopDetectionLoop();
     stopCamera();
     cameraWasStarted = false;
-    setSelectedTrainingVariant(selectedVariant);
-    showStep("variant");
-    return;
-  }
-  if (!variantStep.classList.contains("hidden")) {
+    resetTrainingSession();
     showStep("exercise");
     return;
   }
@@ -2044,6 +2273,7 @@ backBtn.addEventListener("click", () => {
 
 startCameraBtn.addEventListener("click", () => startCamera());
 startWorkoutBtn.addEventListener("click", startCountdown);
+pauseSetBtn.addEventListener("click", () => endCurrentSetToPause("manual"));
 finishWorkoutBtn.addEventListener("click", finishWorkout);
 manualModeBtn.addEventListener("click", startManualMode);
 document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
