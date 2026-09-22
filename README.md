@@ -1,6 +1,6 @@
-# Skill Tree App v0.10.13
+# Skill Tree App v0.10.14
 
-## v0.10.13
+## v0.10.14
 
 - Abgeschlossene Skill-Tree-Knoten sind jetzt einheitlich grün.
 - Pro Fortschrittslinie ist nur das aktuelle Ziel vollständig offen; das nächste Ziel ist sichtbar + gesperrt, spätere Zwischenziele erscheinen als ?.
@@ -8,7 +8,7 @@
 - Zukünftige Varianten mit Unlock-Knoten werden im Training erst angezeigt, wenn ihr Skill-Tree-Knoten erreichbar/freigeschaltet ist.
 - Erste geheime Ziele nach Silber wurden vorbereitet, damit die ?-Logik auch am oberen Ende des aktuellen Trees sichtbar bleibt.
 
-## v0.10.12
+## v0.10.14
 
 - Grüner, automatisch verschwindender Toast „Training gespeichert“ nach dem Beenden und Speichern eines Kamera-Workouts.
 - Alter CSS-Konflikt entfernt, der „Nächstes Set starten“ trotz neuer Pausenlogik unsichtbar gemacht hat. Der Button heißt jetzt „Training fortsetzen“ und sitzt sichtbar direkt im Pausenbereich.
