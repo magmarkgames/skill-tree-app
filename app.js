@@ -1,5 +1,6 @@
-const STORAGE_KEY = "skillTreeAppProgressV09";
+const STORAGE_KEY = "skillTreeAppProgressV010";
 const OLD_STORAGE_KEYS = [
+  "skillTreeAppProgressV09",
   "skillTreeAppProgressV08",
   "skillTreeAppProgressV07",
   "skillTreeAppProgressV06",
@@ -54,12 +55,12 @@ const DEFAULT_PROGRESS = {
 };
 
 const VARIANT_META = {
-  standard: { label: "Standard", icon: "⬆️", shortLabel: "Standard" },
-  wide: { label: "Wide", icon: "↔️", shortLabel: "Wide" },
-  diamond: { label: "Diamond", icon: "🔷", shortLabel: "Diamond" },
-  pike: { label: "Pike", icon: "🔺", shortLabel: "Pike" },
-  incline: { label: "Incline", icon: "🟦", shortLabel: "Incline" },
-  decline: { label: "Decline", icon: "🟪", shortLabel: "Decline" }
+  standard: { label: "Standard", shortLabel: "Standard", color: "#4A90FF" },
+  wide: { label: "Wide", shortLabel: "Wide", color: "#8B6CFF" },
+  diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F05C82" },
+  pike: { label: "Pike", shortLabel: "Pike", color: "#43C889" },
+  incline: { label: "Incline", shortLabel: "Incline", color: "#F3A94F" },
+  decline: { label: "Decline", shortLabel: "Decline", color: "#35BFE6" }
 };
 
 const VARIANT_TREE_MILESTONES = {
@@ -67,7 +68,7 @@ const VARIANT_TREE_MILESTONES = {
   total: [10, 25, 75, 150, 300]
 };
 
-const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze"];
+const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber"];
 
 function createEmptyVariantStats() {
   return Object.fromEntries(
@@ -75,38 +76,182 @@ function createEmptyVariantStats() {
   );
 }
 
-// v0.8: neuer Push-up Tree mit Rang-Knoten + großen Varianten-Knoten.
+
+// ---------- v0.10 SVG Icon System ----------
+function iconSvg(content, className = "") {
+  return `<svg class="app-svg-icon ${className}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">${content}</svg>`;
+}
+
+function getVariantIconSvg(variant, className = "") {
+  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
+  const bodyFill = `fill="currentColor" stroke="none"`;
+
+  switch (variant) {
+    case "wide":
+      return iconSvg(`
+        <circle cx="48" cy="23" r="5" ${bodyFill}/>
+        <path d="M14 24 L42 27 L51 31" ${common}/>
+        <path d="M18 24 L12 43 M39 27 L46 45" ${common}/>
+        <path d="M8 51 H56" ${common}/>
+        <path d="M18 56 H7 M7 56 L12 52 M7 56 L12 60" ${common}/>
+        <path d="M46 56 H57 M57 56 L52 52 M57 56 L52 60" ${common}/>
+      `, className);
+    case "diamond":
+      return iconSvg(`
+        <circle cx="48" cy="22" r="5" ${bodyFill}/>
+        <path d="M14 24 L42 27 L51 31" ${common}/>
+        <path d="M17 25 L22 44 M40 27 L36 44" ${common}/>
+        <path d="M8 51 H56" ${common}/>
+        <path d="M29 46 L34 41 L39 46 L34 51 Z" ${common}/>
+      `, className);
+    case "pike":
+      return iconSvg(`
+        <circle cx="50" cy="43" r="5" ${bodyFill}/>
+        <path d="M11 45 L29 18 L48 40" ${common}/>
+        <path d="M13 45 L8 51 M48 40 L54 51" ${common}/>
+        <path d="M6 52 H58" ${common}/>
+        <path d="M32 55 V45 M32 45 L27 50 M32 45 L37 50" ${common}/>
+      `, className);
+    case "incline":
+      return iconSvg(`
+        <circle cx="48" cy="24" r="5" ${bodyFill}/>
+        <path d="M12 34 L43 29 L50 31" ${common}/>
+        <path d="M16 34 L10 49 M43 30 L48 39" ${common}/>
+        <rect x="44" y="39" width="14" height="13" rx="2" ${common}/>
+        <path d="M7 53 H60" ${common}/>
+      `, className);
+    case "decline":
+      return iconSvg(`
+        <circle cx="50" cy="35" r="5" ${bodyFill}/>
+        <path d="M14 26 L44 32 L51 35" ${common}/>
+        <path d="M43 32 L48 49 M51 36 L55 49" ${common}/>
+        <rect x="5" y="17" width="15" height="13" rx="2" ${common}/>
+        <path d="M7 53 H59" ${common}/>
+      `, className);
+    case "standard":
+    default:
+      return iconSvg(`
+        <circle cx="49" cy="24" r="5" ${bodyFill}/>
+        <path d="M13 25 L42 28 L51 32" ${common}/>
+        <path d="M16 25 L11 45 M40 28 L47 46" ${common}/>
+        <path d="M7 52 H57" ${common}/>
+      `, className);
+  }
+}
+
+function getMetricIconSvg(metric, className = "") {
+  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
+  switch (metric) {
+    case "total":
+      return iconSvg(`
+        <ellipse cx="32" cy="17" rx="17" ry="7" ${common}/>
+        <path d="M15 17 V29 C15 33 23 36 32 36 C41 36 49 33 49 29 V17" ${common}/>
+        <path d="M15 29 V41 C15 45 23 48 32 48 C41 48 49 45 49 41 V29" ${common}/>
+      `, className);
+    case "day":
+      return iconSvg(`
+        <circle cx="30" cy="31" r="20" ${common}/>
+        <path d="M30 19 V31 L39 36" ${common}/>
+        <text x="43" y="53" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor">24</text>
+      `, className);
+    case "week":
+      return iconSvg(`
+        <rect x="11" y="15" width="42" height="38" rx="6" ${common}/>
+        <path d="M11 26 H53 M21 10 V20 M43 10 V20" ${common}/>
+        <text x="32" y="45" text-anchor="middle" font-size="18" font-weight="900" fill="currentColor">7</text>
+      `, className);
+    case "max":
+    default:
+      return iconSvg(`
+        <path d="M10 48 H54" ${common}/>
+        <path d="M14 44 L26 33 L35 38 L50 19" ${common}/>
+        <path d="M41 19 H50 V28" ${common}/>
+        <path d="M16 47 V39 M29 47 V42 M42 47 V34" ${common}/>
+      `, className);
+  }
+}
+
+function getRankIconSvg(rank, className = "") {
+  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
+  switch (rank) {
+    case "Stein":
+      return iconSvg(`
+        <path d="M8 49 L23 26 L31 38 L39 18 L56 49 Z" ${common}/>
+        <path d="M18 49 L31 38 L40 49" ${common}/>
+      `, className);
+    case "Bronze":
+      return iconSvg(`<path d="M32 9 L39 24 L55 26 L43 38 L46 55 L32 47 L18 55 L21 38 L9 26 L25 24 Z" ${common}/>`, className);
+    case "Silber":
+      return iconSvg(`
+        <path d="M12 24 L22 36 L32 18 L42 36 L52 24 L48 50 H16 Z" ${common}/>
+        <path d="M18 50 H46" ${common}/>
+      `, className);
+    case "Holz":
+    default:
+      return iconSvg(`
+        <path d="M32 9 L20 26 H27 L16 40 H26 L18 51 H46 L38 40 H48 L37 26 H44 Z" ${common}/>
+        <path d="M32 43 V56" ${common}/>
+      `, className);
+  }
+}
+
+function renderStaticIcons() {
+  document.querySelectorAll("[data-variant-icon]").forEach(el => {
+    const variant = el.dataset.variantIcon || "standard";
+    el.innerHTML = getVariantIconSvg(variant);
+  });
+  document.querySelectorAll("[data-metric-icon]").forEach(el => {
+    const metric = el.dataset.metricIcon || "max";
+    el.innerHTML = getMetricIconSvg(metric);
+  });
+}
+
+// v0.10: vertikaler Hauptbaum mit fünf Fortschrittsrichtungen.
 const SKILL_NODES = [
-  { id: "standard1", type: "metric", metric: "standardMax", branch: "max", target: 1, x: 276, y: 1410 },
-  { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", x: 267, y: 1278, parents: ["standard1"], requirementCount: 1 },
+  { id: "standard1", type: "metric", metric: "standardMax", branch: "max", target: 1, x: 328, y: 1630 },
+  { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", x: 315, y: 1472, parents: ["standard1"], requirementCount: 1 },
 
-  { id: "standard3", type: "metric", metric: "standardMax", branch: "max", target: 3, x: 102, y: 1136, parents: ["woodRank"] },
-  { id: "total8", type: "metric", metric: "total", branch: "total", target: 8, x: 275, y: 1118, parents: ["woodRank"] },
-  { id: "wide2", type: "metric", metric: "variantMax", variant: "wide", branch: "variant", target: 2, x: 446, y: 1136, parents: ["woodRank"] },
-  { id: "stoneRank", type: "rank", branch: "rank", rank: "Stein", x: 267, y: 988, parents: ["standard3", "total8", "wide2"], requirementCount: 1 },
+  // Holz -> Stein: drei gleichwertige Wege
+  { id: "standard3", type: "metric", metric: "standardMax", branch: "max", target: 3, x: 92, y: 1325, parents: ["woodRank"] },
+  { id: "total8", type: "metric", metric: "total", branch: "total", target: 8, x: 328, y: 1308, parents: ["woodRank"] },
+  { id: "wide2", type: "metric", metric: "variantMax", variant: "wide", branch: "variant", target: 2, x: 564, y: 1325, parents: ["woodRank"] },
+  { id: "stoneRank", type: "rank", branch: "rank", rank: "Stein", x: 315, y: 1150, parents: ["standard3", "total8", "wide2"], requirementCount: 1 },
 
-  { id: "standard8", type: "metric", metric: "standardMax", branch: "max", target: 8, x: 92, y: 890, parents: ["stoneRank"] },
-  { id: "standard12", type: "metric", metric: "standardMax", branch: "max", target: 12, x: 72, y: 742, parents: ["standard8"] },
+  // Stein -> Bronze: fünf Richtungen
+  { id: "standard8", type: "metric", metric: "standardMax", branch: "max", target: 8, x: 52, y: 1010, parents: ["stoneRank"] },
+  { id: "standard12", type: "metric", metric: "standardMax", branch: "max", target: 12, x: 52, y: 860, parents: ["standard8"] },
 
-  { id: "total20", type: "metric", metric: "total", branch: "total", target: 20, x: 274, y: 866, parents: ["stoneRank"] },
-  { id: "total75", type: "metric", metric: "total", branch: "total", target: 75, x: 274, y: 718, parents: ["total20"] },
+  { id: "day25", type: "metric", metric: "day", branch: "day", target: 25, x: 188, y: 1000, parents: ["stoneRank"] },
+  { id: "day50", type: "metric", metric: "day", branch: "day", target: 50, x: 188, y: 850, parents: ["day25"] },
 
-  { id: "week50", type: "metric", metric: "week", branch: "week", target: 50, x: 450, y: 880, parents: ["stoneRank"] },
-  { id: "week150", type: "metric", metric: "week", branch: "week", target: 150, x: 468, y: 730, parents: ["week50"] },
+  { id: "total20", type: "metric", metric: "total", branch: "total", target: 20, x: 328, y: 995, parents: ["stoneRank"] },
+  { id: "total75", type: "metric", metric: "total", branch: "total", target: 75, x: 328, y: 845, parents: ["total20"] },
 
-  { id: "wideSkill", type: "skill", metric: "variantPoints", variant: "wide", branch: "variant", target: 1, x: 24, y: 604, parents: ["stoneRank"] },
-  { id: "wideStage2", type: "metric", metric: "variantPoints", variant: "wide", branch: "variant", target: 3, x: 136, y: 602, parents: ["wideSkill"] },
+  { id: "week50", type: "metric", metric: "week", branch: "week", target: 50, x: 468, y: 1000, parents: ["stoneRank"] },
+  { id: "week150", type: "metric", metric: "week", branch: "week", target: 150, x: 468, y: 850, parents: ["week50"] },
 
-  { id: "bronzeRank", type: "rank", branch: "rank", rank: "Bronze", x: 267, y: 456, parents: ["standard12", "total75", "week150", "wideStage2"], requirementCount: 1 },
+  { id: "wideSkill", type: "skill", metric: "variantPoints", variant: "wide", branch: "variant", target: 1, x: 595, y: 985, parents: ["stoneRank"] },
+  { id: "wideStage2", type: "metric", metric: "variantPoints", variant: "wide", branch: "variant", target: 3, x: 596, y: 840, parents: ["wideSkill"] },
 
-  { id: "standard20", type: "metric", metric: "standardMax", branch: "max", target: 20, x: 94, y: 268, parents: ["bronzeRank"] },
-  { id: "standard50", type: "metric", metric: "standardMax", branch: "max", target: 50, x: 72, y: 120, parents: ["standard20"] },
+  { id: "bronzeRank", type: "rank", branch: "rank", rank: "Bronze", x: 315, y: 675, parents: ["standard12", "day50", "total75", "week150", "wideStage2"], requirementCount: 1 },
 
-  { id: "diamondSkill", type: "skill", metric: "variantPoints", variant: "diamond", branch: "variant", target: 1, x: 454, y: 598, parents: ["bronzeRank"] },
-  { id: "diamondStage2", type: "metric", metric: "variantPoints", variant: "diamond", branch: "variant", target: 3, x: 454, y: 446, parents: ["diamondSkill"] },
+  // Bronze -> Silber: langfristigere Ziele + Diamond
+  { id: "standard20", type: "metric", metric: "standardMax", branch: "max", target: 20, x: 52, y: 520, parents: ["bronzeRank"] },
+  { id: "standard50", type: "metric", metric: "standardMax", branch: "max", target: 50, x: 52, y: 360, parents: ["standard20"] },
 
-  { id: "week250", type: "metric", metric: "week", branch: "week", target: 250, x: 468, y: 272, parents: ["bronzeRank"] },
-  { id: "week500", type: "metric", metric: "week", branch: "week", target: 500, x: 468, y: 124, parents: ["week250"] }
+  { id: "day100", type: "metric", metric: "day", branch: "day", target: 100, x: 188, y: 520, parents: ["bronzeRank"] },
+  { id: "day200", type: "metric", metric: "day", branch: "day", target: 200, x: 188, y: 360, parents: ["day100"] },
+
+  { id: "total250", type: "metric", metric: "total", branch: "total", target: 250, x: 328, y: 520, parents: ["bronzeRank"] },
+  { id: "total1000", type: "metric", metric: "total", branch: "total", target: 1000, x: 328, y: 360, parents: ["total250"] },
+
+  { id: "week250", type: "metric", metric: "week", branch: "week", target: 250, x: 468, y: 520, parents: ["bronzeRank"] },
+  { id: "week500", type: "metric", metric: "week", branch: "week", target: 500, x: 468, y: 360, parents: ["week250"] },
+
+  { id: "diamondSkill", type: "skill", metric: "variantPoints", variant: "diamond", branch: "variant", target: 1, x: 595, y: 510, parents: ["bronzeRank"] },
+  { id: "diamondStage2", type: "metric", metric: "variantPoints", variant: "diamond", branch: "variant", target: 3, x: 596, y: 355, parents: ["diamondSkill"] },
+
+  { id: "silverRank", type: "rank", branch: "rank", rank: "Silber", x: 315, y: 170, parents: ["standard50", "day200", "total1000", "week500", "diamondStage2"], requirementCount: 1 }
 ];
 
 let progress = loadProgress();
@@ -338,6 +483,7 @@ function showView(name) {
 }
 
 function render() {
+  renderStaticIcons();
   const todayTotal = getTodayTotal();
   const weekTotal = getCurrentWeekTotal();
   const rankName = getCurrentRankName();
@@ -371,6 +517,7 @@ function render() {
 }
 
 function getCurrentRankName() {
+  if (isNodeDone(getNode("silverRank"))) return "Silber";
   if (isNodeDone(getNode("bronzeRank"))) return "Bronze";
   if (isNodeDone(getNode("stoneRank"))) return "Stein";
   if (isNodeDone(getNode("woodRank"))) return "Holz";
@@ -460,6 +607,8 @@ function nodeValue(node) {
       return progress.pushupMax;
     case "total":
       return progress.pushupTotal;
+    case "day":
+      return progress.pushupBestDay;
     case "week":
       return progress.pushupBestWeek;
     case "variantMax":
@@ -497,17 +646,11 @@ function isNodeAvailable(node) {
 function getNodeTitle(node) {
   if (node.metric === "standardMax") return "am Stück";
   if (node.metric === "total") return "gesamt";
-  if (node.metric === "week") return "in 1 Woche";
+  if (node.metric === "day") return "in 24h";
+  if (node.metric === "week") return "in 7 Tagen";
   if (node.metric === "variantMax") return VARIANT_META[node.variant]?.shortLabel || "Variante";
   if (node.metric === "variantPoints") return `${VARIANT_META[node.variant]?.shortLabel || "Variante"} Stufe`;
   return "";
-}
-
-function getRankIcon(rank) {
-  if (rank === "Holz") return "🪵";
-  if (rank === "Stein") return "🪨";
-  if (rank === "Bronze") return "🥉";
-  return "⭐";
 }
 
 function getRankDescription(node) {
@@ -536,7 +679,8 @@ function getNodeRequirementLabel(node) {
   }
   if (node.metric === "standardMax") return `${node.target} Push-ups am Stück`;
   if (node.metric === "total") return `${node.target} Push-ups gesamt`;
-  if (node.metric === "week") return `${node.target} Push-ups in 1 Woche`;
+  if (node.metric === "day") return `${node.target} Push-ups in 24h`;
+  if (node.metric === "week") return `${node.target} Push-ups in 7 Tagen`;
   return `${node.target}`;
 }
 
@@ -560,6 +704,9 @@ function renderTree() {
     el.className = `skill-node branch-${node.branch}`;
     el.style.left = `${node.x}px`;
     el.style.top = `${node.y}px`;
+    if (node.variant && VARIANT_META[node.variant]) {
+      el.style.setProperty("--branch", VARIANT_META[node.variant].color);
+    }
 
     const done = isNodeDone(node);
     const available = isNodeAvailable(node);
@@ -570,7 +717,7 @@ function renderTree() {
     if (node.type === "rank") {
       el.classList.add("rank-node", `rank-${node.rank.toLowerCase()}`);
       el.innerHTML = `
-        <span class="rank-emoji">${getRankIcon(node.rank)}</span>
+        <span class="rank-symbol">${getRankIconSvg(node.rank)}</span>
         <span class="node-target">${node.rank.toUpperCase()}</span>
         <span class="node-label">RANG</span>
       `;
@@ -580,13 +727,14 @@ function renderTree() {
     }
 
     if (node.type === "skill") {
-      const meta = VARIANT_META[node.variant] || { label: node.variant, icon: "✨" };
+      const meta = VARIANT_META[node.variant] || { label: node.variant, color: "#8B6CFF" };
       const progressCount = getVariantMilestoneCount(node.variant);
-      el.classList.add("variant-skill-node");
+      el.classList.add("variant-skill-node", `variant-${node.variant}`);
+      el.style.setProperty("--variant-color", meta.color);
       el.innerHTML = `
-        <span class="variant-skill-node-icon">${meta.icon}</span>
+        <span class="variant-skill-node-icon">${getVariantIconSvg(node.variant)}</span>
         <span class="node-target">${meta.label.toUpperCase()}</span>
-        <span class="node-label">${progressCount}/10 Meilensteine</span>
+        <span class="node-label">${progressCount}/10</span>
         ${!done && !available ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>'}
       `;
       el.addEventListener("click", () => openVariantModal(node.variant));
@@ -597,7 +745,11 @@ function renderTree() {
     const current = nodeValue(node);
     const title = getNodeTitle(node);
     const progress = Math.max(0, Math.min(100, Math.round((current / Math.max(1, node.target)) * 100)));
+    const metricIcon = node.metric === "variantMax"
+      ? getVariantIconSvg(node.variant)
+      : getMetricIconSvg(node.metric === "standardMax" ? "max" : node.metric);
     el.innerHTML = `
+      <span class="node-icon">${metricIcon}</span>
       <span class="node-target">${node.target}</span>
       <span class="node-label">${title}</span>
       <span class="node-progress"><span style="width:${progress}%"></span></span>
@@ -623,12 +775,13 @@ Große Varianten-Knoten antippen, um die einzelnen Unter-Meilensteine zu sehen.`
 }
 
 function openVariantModal(variant) {
-  const meta = VARIANT_META[variant] || { label: variant, icon: "✨" };
+  const meta = VARIANT_META[variant] || { label: variant, color: "#8B6CFF" };
   const stats = getVariantStats(variant);
   const milestoneCount = getVariantMilestoneCount(variant);
 
   variantModalTitle.textContent = `${meta.label} Push-Up`;
-  variantModalIcon.textContent = meta.icon;
+  variantModalIcon.innerHTML = getVariantIconSvg(variant); 
+  variantModalIcon.style.setProperty("--variant-color", meta.color);
   variantModalSubtitle.textContent = `Unter-Skill-Tree für ${meta.label}. Hauptbaum zeigt später nur den großen Knoten, hier drin liegen die Einzel-Meilensteine.`;
   variantModalProgress.textContent = `${milestoneCount} / 10`;
 
@@ -718,16 +871,16 @@ function getLiveGoalCards() {
 
   if (variant === "standard") {
     return [
-      getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", "🏆"),
-      getNextArrayGoal(metrics.standardMax, SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target), "neuem Rekord", "max", "📈"),
-      getNextArrayGoal(metrics.week, SKILL_NODES.filter(node => node.metric === "week").map(node => node.target), "Wochen-Knoten", "week", "📅")
+      getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", getMetricIconSvg("total")),
+      getNextArrayGoal(metrics.standardMax, SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target), "neuem Rekord", "max", getMetricIconSvg("max")),
+      getNextArrayGoal(metrics.week, SKILL_NODES.filter(node => node.metric === "week").map(node => node.target), "Wochen-Knoten", "week", getMetricIconSvg("week"))
     ];
   }
 
   return [
-    getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", "🏆"),
-    getNextArrayGoal(metrics.variantMax, VARIANT_TREE_MILESTONES.max, `${meta.label} am Stück`, "variant", meta.icon),
-    getNextArrayGoal(metrics.variantTotal, VARIANT_TREE_MILESTONES.total, `${meta.label} gesamt`, "variant-soft", "⭐")
+    getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", getMetricIconSvg("total")),
+    getNextArrayGoal(metrics.variantMax, VARIANT_TREE_MILESTONES.max, `${meta.label} am Stück`, "variant", getVariantIconSvg(variant)),
+    getNextArrayGoal(metrics.variantTotal, VARIANT_TREE_MILESTONES.total, `${meta.label} gesamt`, "variant-soft", getMetricIconSvg("total"))
   ];
 }
 
@@ -754,9 +907,9 @@ function renderLiveGoals() {
 }
 
 function getNodeDimensions(node) {
-  if (node.type === "rank") return { width: 116, height: 104 };
-  if (node.type === "skill") return { width: 112, height: 98 };
-  return { width: 98, height: 98 };
+  if (node.type === "rank") return { width: 130, height: 114 };
+  if (node.type === "skill") return { width: 126, height: 112 };
+  return { width: 104, height: 104 };
 }
 
 function createConnector(from, to) {
@@ -909,7 +1062,8 @@ function closeTraining() {
 
 function updateQuickVariantPill() {
   const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
-  quickVariantPill.textContent = `⚡ ${meta.label.toUpperCase()} PUSH-UP`;
+  quickVariantPill.innerHTML = `${getVariantIconSvg(currentTrainingVariant)}<span>${meta.label.toUpperCase()} PUSH-UP</span>`;
+  quickVariantPill.style.setProperty("--variant-color", meta.color);
 }
 
 function setSelectedTrainingVariant(variant) {

@@ -1124,3 +1124,494 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .button-stack {
   margin-top: 14px;
 }
+
+/* ======================================================================
+   v0.10 DESIGN PASS — Hybrid Icons + Light Skill Tree
+   ====================================================================== */
+.app-svg-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ----- Light Push-Up Tree shell ----- */
+.tree-view {
+  --blue: #4a90ff;
+  --red: #f0647d;
+  --green: #43c889;
+  --yellow: #f3b94f;
+  --text: #17365f;
+  --muted: #71839e;
+  --line: #d8e4f2;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 85% 4%, rgba(74,144,255,.14), transparent 22%),
+    radial-gradient(circle at 8% 20%, rgba(67,200,137,.08), transparent 23%),
+    linear-gradient(180deg, #f9fcff 0%, #eef6ff 100%);
+}
+
+.tree-view .eyebrow { color: #5f7aa2; }
+.tree-view .icon-btn {
+  background: rgba(255,255,255,.9);
+  color: #17365f;
+  border: 1px solid #d8e4f2;
+  box-shadow: 0 8px 22px rgba(54,91,137,.10);
+}
+.tree-view .rank-pill {
+  border-color: #d8e4f2;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 8px 22px rgba(54,91,137,.08);
+}
+.tree-view .rank-pill span { color: #71839e; }
+.tree-view .rank-pill strong { color: #17365f; }
+
+.tree-view .tree-stats {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tree-view .tree-stats article {
+  min-height: 72px;
+  padding: 8px 5px 7px;
+  border-color: #d8e4f2;
+  border-radius: 16px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 7px 20px rgba(55,91,133,.07);
+}
+.tree-view .tree-stats article > span:not(.tree-stat-icon) {
+  color: #71839e;
+  font-size: 9px;
+}
+.tree-view .tree-stats strong {
+  color: #17365f;
+  font-size: 15px;
+}
+.tree-stat-icon {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 3px;
+}
+.tree-stats .stat-max .tree-stat-icon { color: #4a90ff; }
+.tree-stats .stat-day .tree-stat-icon { color: #f0647d; }
+.tree-stats .stat-week .tree-stat-icon { color: #43c889; }
+.tree-stats .stat-total .tree-stat-icon { color: #f3b94f; }
+
+.tree-view .tree-legend {
+  color: #70829b;
+  font-size: 10px;
+}
+.tree-view .legend-max { color: #397fdc; }
+.tree-view .legend-total { color: #c68d23; }
+.tree-view .legend-day { color: #d84d68; }
+.tree-view .legend-week { color: #2ba96c; }
+.tree-view .legend-variant { color: #8260df; }
+.tree-view .legend-rank { color: #8d6a49; }
+.tree-view .tree-helper-note {
+  color: #6c809d;
+  margin: 4px 2px 12px;
+  font-size: 11px;
+}
+
+.tree-view .tree-scroll {
+  border: 1px solid #d8e4f2;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(241,248,255,.95));
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.7),
+    0 14px 38px rgba(54,91,137,.10);
+}
+
+.tree-v10 {
+  position: relative;
+  width: 760px;
+  height: 1785px;
+  isolation: isolate;
+  overflow: hidden;
+}
+.tree-v10::before,
+.tree-v10::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.tree-v10::before {
+  left: -40px;
+  right: -40px;
+  bottom: 0;
+  height: 250px;
+  background: linear-gradient(180deg, rgba(176,211,242,.22), rgba(176,211,242,.5));
+  clip-path: polygon(0 74%, 10% 56%, 19% 67%, 30% 38%, 41% 64%, 52% 44%, 62% 62%, 73% 31%, 84% 62%, 94% 48%, 100% 62%, 100% 100%, 0 100%);
+}
+.tree-v10::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 135px;
+  opacity: .48;
+  background:
+    radial-gradient(ellipse at 10% 100%, #b9d7ed 0 22%, transparent 23%),
+    radial-gradient(ellipse at 28% 100%, #c7e0f2 0 18%, transparent 19%),
+    radial-gradient(ellipse at 76% 100%, #b9d7ed 0 22%, transparent 23%),
+    radial-gradient(ellipse at 94% 100%, #c7e0f2 0 18%, transparent 19%);
+}
+
+/* ----- Tree connectors ----- */
+.tree-v10 .connector {
+  z-index: 1;
+  height: 4px;
+  background: #c7d4e4;
+  box-shadow: 0 1px 0 rgba(255,255,255,.8);
+  opacity: .96;
+}
+.tree-v10 .connector.active {
+  opacity: .78;
+}
+.tree-v10 .connector.active.branch-max { background: color-mix(in srgb, #4a90ff 45%, #c7d4e4); }
+.tree-v10 .connector.active.branch-day { background: color-mix(in srgb, #f0647d 45%, #c7d4e4); }
+.tree-v10 .connector.active.branch-total { background: color-mix(in srgb, #f3b94f 45%, #c7d4e4); }
+.tree-v10 .connector.active.branch-week { background: color-mix(in srgb, #43c889 45%, #c7d4e4); }
+.tree-v10 .connector.active.branch-variant { background: color-mix(in srgb, #8b6cff 45%, #c7d4e4); }
+.tree-v10 .connector.done.branch-max { background: #4a90ff; }
+.tree-v10 .connector.done.branch-day { background: #f0647d; }
+.tree-v10 .connector.done.branch-total { background: #f3b94f; }
+.tree-v10 .connector.done.branch-week { background: #43c889; }
+.tree-v10 .connector.done.branch-variant { background: #8b6cff; }
+.tree-v10 .connector.done.branch-rank { background: #9c7755; }
+
+/* ----- Small milestone nodes ----- */
+.tree-v10 .skill-node {
+  width: 104px;
+  height: 104px;
+  z-index: 2;
+  padding: 7px 7px 8px;
+  border: 3px solid #cbd8e8;
+  background: rgba(255,255,255,.96);
+  color: #17365f;
+  box-shadow:
+    0 9px 22px rgba(48,82,124,.13),
+    inset 0 1px 0 rgba(255,255,255,.9);
+  transition: transform .16s ease, box-shadow .16s ease, opacity .2s ease, filter .2s ease;
+  animation: v10NodeIn .34s ease both;
+}
+.tree-v10 .skill-node:active { transform: scale(.96); }
+.tree-v10 .skill-node.branch-max { --branch: #4a90ff; }
+.tree-v10 .skill-node.branch-day { --branch: #f0647d; }
+.tree-v10 .skill-node.branch-total { --branch: #f3b94f; }
+.tree-v10 .skill-node.branch-week { --branch: #43c889; }
+.tree-v10 .skill-node.branch-variant { --branch: #8b6cff; }
+
+.tree-v10 .skill-node.done {
+  border-color: var(--branch);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--branch) 13%, white), white 74%);
+}
+.tree-v10 .skill-node.done::after {
+  content: "✓";
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--branch);
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--branch) 30%, transparent);
+}
+.tree-v10 .skill-node.next {
+  border-color: var(--branch);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--branch) 14%, transparent),
+    0 12px 26px rgba(48,82,124,.14);
+}
+.tree-v10 .skill-node.locked {
+  opacity: .48;
+  filter: grayscale(.75) saturate(.45);
+  background: #f3f6f9;
+}
+.tree-v10 .skill-node.locked .node-lock {
+  color: #8a99ac;
+}
+
+.tree-v10 .node-icon {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1px;
+  color: var(--branch);
+}
+.tree-v10 .skill-node .node-target {
+  color: #17365f;
+  font-size: 19px;
+  font-weight: 950;
+}
+.tree-v10 .skill-node .node-label {
+  margin-top: 2px;
+  color: #5d708d;
+  font-size: 9px;
+  font-weight: 850;
+}
+.tree-v10 .skill-node .node-progress {
+  width: 70%;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #e6edf5;
+  overflow: hidden;
+}
+.tree-v10 .skill-node .node-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--branch);
+}
+.tree-v10 .skill-node .node-lock {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  margin: 0;
+  font-size: 10px;
+}
+
+/* ----- Rank badges ----- */
+.tree-v10 .rank-node {
+  width: 130px;
+  height: 114px;
+  padding: 13px 12px 10px;
+  border: 0;
+  clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  color: #fff;
+  box-shadow: none;
+  filter: drop-shadow(0 12px 13px rgba(51,72,95,.18));
+}
+.tree-v10 .rank-node::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  clip-path: inherit;
+  border: 2px solid rgba(255,255,255,.38);
+  pointer-events: none;
+}
+.tree-v10 .rank-node.done::after {
+  right: 10px;
+  bottom: 11px;
+  width: 21px;
+  height: 21px;
+  background: rgba(255,255,255,.93);
+  color: #2d5a87;
+}
+.tree-v10 .rank-node.next {
+  box-shadow: none;
+  filter:
+    drop-shadow(0 12px 13px rgba(51,72,95,.18))
+    drop-shadow(0 0 9px rgba(74,144,255,.30));
+}
+.tree-v10 .rank-node.locked { opacity: .5; filter: grayscale(.65) drop-shadow(0 8px 10px rgba(51,72,95,.12)); }
+.tree-v10 .rank-symbol {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 2px;
+  color: rgba(255,255,255,.95);
+}
+.tree-v10 .rank-node .node-target {
+  color: #fff;
+  font-size: 16px;
+  letter-spacing: .03em;
+  text-shadow: 0 1px 2px rgba(0,0,0,.16);
+}
+.tree-v10 .rank-node .node-label {
+  color: rgba(255,255,255,.83);
+  font-size: 8px;
+  letter-spacing: .14em;
+}
+.tree-v10 .rank-node.rank-holz {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.16), transparent 34%),
+    repeating-linear-gradient(12deg, #aa6e42 0 7px, #8f5935 7px 14px);
+}
+.tree-v10 .rank-node.rank-stein {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.18), transparent 28%),
+    linear-gradient(125deg, #8799ab 0 18%, #617487 18% 43%, #73879a 43% 70%, #52677b 70% 100%);
+}
+.tree-v10 .rank-node.rank-bronze {
+  background:
+    linear-gradient(125deg, rgba(255,255,255,.26), transparent 26%),
+    linear-gradient(145deg, #d59767 0%, #b66d42 45%, #8f4e2d 100%);
+}
+.tree-v10 .rank-node.rank-silber {
+  background:
+    linear-gradient(125deg, rgba(255,255,255,.55), transparent 28%),
+    linear-gradient(145deg, #bfcddb 0%, #8395aa 48%, #5d7188 100%);
+}
+
+/* ----- Large hybrid variant badges ----- */
+.tree-v10 .variant-skill-node {
+  --variant-color: #8b6cff;
+  width: 126px;
+  height: 112px;
+  padding: 12px 10px 10px;
+  border: 0;
+  clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  color: #15355d;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.76), rgba(255,255,255,.34)),
+    color-mix(in srgb, var(--variant-color) 35%, #eef5ff);
+  box-shadow: none;
+  filter: drop-shadow(0 11px 12px rgba(55,76,106,.18));
+}
+.tree-v10 .variant-skill-node::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  clip-path: inherit;
+  border: 2px solid color-mix(in srgb, var(--variant-color) 72%, white);
+  pointer-events: none;
+}
+.tree-v10 .variant-skill-node.done {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.58), rgba(255,255,255,.14)),
+    color-mix(in srgb, var(--variant-color) 56%, #eef5ff);
+}
+.tree-v10 .variant-skill-node.next {
+  filter:
+    drop-shadow(0 11px 12px rgba(55,76,106,.18))
+    drop-shadow(0 0 10px color-mix(in srgb, var(--variant-color) 45%, transparent));
+}
+.tree-v10 .variant-skill-node-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--variant-color) 72%, #15355d);
+}
+.tree-v10 .variant-skill-node .node-target {
+  color: #18385e;
+  font-size: 13px;
+  margin-top: 2px;
+}
+.tree-v10 .variant-skill-node .node-label {
+  color: #607492;
+  font-size: 9px;
+}
+.tree-v10 .variant-skill-node .node-plus {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--variant-color);
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@keyframes v10NodeIn {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ----- Hybrid icons in training selection ----- */
+.variant-card {
+  --variant-color: #4a90ff;
+  min-height: 122px;
+  display: grid;
+  grid-template-columns: 66px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+}
+.variant-card[data-variant="standard"] { --variant-color: #4a90ff; }
+.variant-card[data-variant="wide"] { --variant-color: #8b6cff; }
+.variant-card[data-variant="diamond"] { --variant-color: #f05c82; }
+.variant-card[data-variant="pike"] { --variant-color: #43c889; }
+.variant-card[data-variant="incline"] { --variant-color: #f3a94f; }
+.variant-card[data-variant="decline"] { --variant-color: #35bfe6; }
+.variant-card .variant-icon {
+  grid-row: 1 / 3;
+  width: 62px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 10px;
+  border: 2px solid color-mix(in srgb, var(--variant-color) 78%, white);
+  border-radius: 0;
+  clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.2), transparent),
+    color-mix(in srgb, var(--variant-color) 35%, #172131);
+  color: #f7fbff;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--variant-color) 20%, transparent);
+}
+.variant-card strong {
+  align-self: end;
+  font-size: 15px;
+}
+.variant-card small {
+  align-self: start;
+}
+.variant-card.selected {
+  border-color: var(--variant-color);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--variant-color) 15%, #151b26), #151b26);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--variant-color) 18%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--variant-color) 9%, transparent);
+}
+
+.quick-variant-pill {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 7px;
+  border: 1px solid color-mix(in srgb, var(--variant-color, #4a90ff) 55%, transparent);
+  background: color-mix(in srgb, var(--variant-color, #4a90ff) 16%, #101722);
+  color: #eff6ff;
+}
+.quick-variant-pill .app-svg-icon {
+  width: 24px;
+  height: 24px;
+  color: color-mix(in srgb, var(--variant-color, #4a90ff) 74%, white);
+}
+.quick-variant-pill span {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.variant-skill-icon {
+  --variant-color: #8b6cff;
+  border-radius: 0;
+  clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  background: color-mix(in srgb, var(--variant-color) 28%, #192333);
+  color: color-mix(in srgb, var(--variant-color) 70%, white);
+  padding: 10px;
+}
+
+/* Live goal SVG sizing */
+.live-goal-icon .app-svg-icon {
+  width: 27px;
+  height: 27px;
+}
+
+/* Keep the mobile tree roomy without changing the actual layout scale. */
+@media (max-width: 620px) {
+  .tree-v10 { width: 760px; }
+  .tree-view { padding-left: 12px; padding-right: 12px; }
+  .tree-view .tree-stats { gap: 5px; }
+  .tree-view .tree-stats article { min-height: 68px; padding-left: 2px; padding-right: 2px; }
+  .variant-card { min-height: 104px; }
+}
