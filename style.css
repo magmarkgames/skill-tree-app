@@ -2365,3 +2365,155 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .tree-v10 .app-asset-icon {
   backface-visibility: hidden;
 }
+
+/* ======================================================================
+   v0.10.7 — Rank chapters + unmistakable completion state
+   The node purpose is still communicated by its icon. The node material now
+   communicates the rank chapter, so the tree reads as Holz -> Stein -> Bronze
+   -> Silber without adding extra labels or visual noise.
+   ====================================================================== */
+
+/* Rank material palette. Keep these static and cheap to paint while scrolling. */
+.tree-v10 .tier-holz {
+  --tier-main: #9b6643;
+  --tier-mid: #d8b18f;
+  --tier-soft: #f4e7db;
+  --tier-ink: #684126;
+}
+.tree-v10 .tier-stein {
+  --tier-main: #6f8192;
+  --tier-mid: #b7c3cd;
+  --tier-soft: #e8edf1;
+  --tier-ink: #425463;
+}
+.tree-v10 .tier-bronze {
+  --tier-main: #b86e43;
+  --tier-mid: #dda27e;
+  --tier-soft: #f5e1d4;
+  --tier-ink: #774126;
+}
+.tree-v10 .tier-silber {
+  --tier-main: #71879b;
+  --tier-mid: #c9d4de;
+  --tier-soft: #edf2f6;
+  --tier-ink: #40576b;
+}
+
+/* Milestones inherit the material of their rank chapter. The branch icon still
+   tells the player whether the goal is max reps, total, day/week, etc. */
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node) {
+  border-color: var(--tier-mid);
+  background: linear-gradient(180deg, #fff 0%, var(--tier-soft) 100%);
+}
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node) .node-target {
+  color: var(--tier-ink);
+}
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node) .node-progress {
+  background: color-mix(in srgb, var(--tier-mid) 58%, white);
+}
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node) .node-progress span {
+  background: var(--tier-main);
+}
+
+/* The next reachable node is clear, but intentionally not flashy. */
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node).next {
+  border-color: var(--tier-main);
+  outline: 2px solid color-mix(in srgb, var(--tier-main) 18%, transparent);
+  outline-offset: 2px;
+}
+
+/* A completed node changes as a whole: stronger material fill + double ring.
+   This is much easier to read than a tiny checkmark and uses no animated glow. */
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node).done {
+  border-color: var(--tier-main) !important;
+  background: linear-gradient(155deg, #fff 0 22%, var(--tier-soft) 22% 100%) !important;
+  outline: 3px solid var(--tier-main);
+  outline-offset: 2px;
+}
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node).done .node-progress {
+  background: var(--tier-mid);
+}
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node).done .node-progress span {
+  background: var(--tier-main);
+}
+
+/* Remove the old tiny corner check. The completion pill is the status signal. */
+.tree-v10 .skill-node.done::after {
+  display: none !important;
+}
+
+.tree-v10 .node-complete-pill,
+.tree-v10 .rank-complete-pill {
+  position: absolute;
+  left: 50%;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 92px;
+  min-height: 16px;
+  padding: 3px 7px 2px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--tier-main);
+  color: #fff;
+  font-size: 7px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: .055em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Standard circular milestones: status sits just below the circle, so the goal
+   itself remains readable even on a 360px-wide phone. */
+.tree-v10 .skill-node:not(.rank-node):not(.variant-skill-node) .node-complete-pill {
+  bottom: -12px;
+}
+
+/* Variant badges also get the same chapter material as a slim completion seal. */
+.tree-v10 .variant-skill-node.done .node-target {
+  border: 2px solid var(--tier-main);
+}
+.tree-v10 .variant-skill-node .node-complete-pill {
+  bottom: -8px;
+  background: var(--tier-main);
+}
+.tree-v10 .variant-skill-node.done .node-plus {
+  display: none;
+}
+
+/* Rank completion gets its own stronger, wider seal. Generated rank artwork is
+   left untouched, preserving the hybrid badge look from the design pass. */
+.tree-v10 .rank-node.done .rank-symbol {
+  opacity: 1;
+}
+.tree-v10 .rank-node.done .node-target {
+  border: 2px solid rgba(255,255,255,.9);
+  background: rgba(18,35,58,.94);
+}
+.tree-v10 .rank-node .rank-complete-pill {
+  bottom: -11px;
+  min-height: 18px;
+  padding-left: 9px;
+  padding-right: 9px;
+  background: var(--tier-main);
+  font-size: 7px;
+}
+
+/* Locked goals stay quiet. Their rank material becomes fully visible only when
+   they are reachable/completed, keeping the tree readable rather than noisy. */
+.tree-v10 .skill-node.locked:not(.rank-node):not(.variant-skill-node) {
+  border-color: #cfd8e2;
+  background: #f2f5f8;
+  outline: none;
+}
+
+@media (min-width: 430px) {
+  .tree-v10 .node-complete-pill,
+  .tree-v10 .rank-complete-pill {
+    font-size: 8px;
+  }
+}

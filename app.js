@@ -605,6 +605,18 @@ ${finished}/${requirementCount} Wege geschafft
 ${lines.join("\n")}`;
 }
 
+function getNodeRankTier(node) {
+  if (!node) return "holz";
+  if (node.type === "rank" && node.rank) return node.rank.toLowerCase();
+
+  // The tree is built in vertical rank chapters. A milestone inherits the
+  // material/style of the rank chapter it belongs to, independent of branch.
+  if ((node.y ?? 9999) < 170) return "silber";
+  if ((node.y ?? 9999) < 675) return "bronze";
+  if ((node.y ?? 9999) < 1150) return "stein";
+  return "holz";
+}
+
 function getNodeRequirementLabel(node) {
   if (!node) return "";
   if (node.type === "skill") {
@@ -667,6 +679,7 @@ function renderTree() {
     const el = document.createElement("button");
     el.type = "button";
     el.className = `skill-node branch-${node.branch}`;
+    el.classList.add(`tier-${getNodeRankTier(node)}`);
     if (node.variant && VARIANT_META[node.variant]) {
       el.style.setProperty("--branch", VARIANT_META[node.variant].color);
     }
@@ -683,6 +696,7 @@ function renderTree() {
         <span class="rank-symbol">${getRankIconSvg(node.rank)}</span>
         <span class="node-target">${node.rank.toUpperCase()}</span>
         <span class="node-label">RANG</span>
+        ${done ? '<span class="rank-complete-pill">RANG ERREICHT</span>' : ''}
       `;
       el.addEventListener("click", () => alert(getRankDescription(node)));
     } else if (node.type === "skill") {
@@ -694,7 +708,7 @@ function renderTree() {
         <span class="variant-skill-node-icon">${getVariantIconSvg(node.variant)}</span>
         <span class="node-target">${meta.label.toUpperCase()}</span>
         <span class="node-label">${progressCount}/10</span>
-        ${!done && !available ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>'}
+        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (!available ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>')}
       `;
       el.addEventListener("click", () => openVariantModal(node.variant));
     } else {
@@ -709,7 +723,7 @@ function renderTree() {
         <span class="node-target">${node.target}</span>
         <span class="node-label">${title}</span>
         <span class="node-progress"><span style="width:${progress}%"></span></span>
-        ${!done && !available ? '<span class="node-lock">🔒</span>' : ''}
+        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (!available ? '<span class="node-lock">🔒</span>' : '')}
       `;
 
       el.addEventListener("click", () => {

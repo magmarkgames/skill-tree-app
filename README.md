@@ -39,3 +39,9 @@ Die PNG-Dateien müssen auf derselben Ebene wie `index.html` liegen.
 - Knoten skalieren automatisch je nach Bildschirmbreite.
 - Rang-Knoten bleiben etwas größer, da sie allein in ihrer Reihe stehen.
 - Verbindungslinien werden anhand der tatsächlichen responsiven Knotengrößen berechnet.
+
+## v0.10.7
+- Knoten übernehmen jetzt die Materialsprache ihres Rang-Kapitels (Holz, Stein, Bronze, Silber).
+- Abgeschlossene Knoten wechseln vollständig in einen Erfolgszustand statt nur einen kleinen Haken zu zeigen.
+- Unter abgeschlossenen Meilensteinen erscheint `GESCHAFFT`, unter Rang-Badges `RANG ERREICHT`.
+- Keine zusätzlichen Animationen/Blur-Effekte; die Performance-Optimierungen aus v0.10.6 bleiben erhalten.
