@@ -1,4 +1,12 @@
-# Skill Tree App v0.10.11
+# Skill Tree App v0.10.12
+
+## v0.10.12
+
+- Grüner, automatisch verschwindender Toast „Training gespeichert“ nach dem Beenden und Speichern eines Kamera-Workouts.
+- Alter CSS-Konflikt entfernt, der „Nächstes Set starten“ trotz neuer Pausenlogik unsichtbar gemacht hat. Der Button heißt jetzt „Training fortsetzen“ und sitzt sichtbar direkt im Pausenbereich.
+- Im Pausenmenü werden die drei aktuell nächstgelegenen Challenges kompakt untereinander mit Fortschrittsbalken angezeigt.
+- Varianten-Symbole innerhalb der vorhandenen Buttons vergrößert, ohne die Buttons selbst größer zu machen.
+- One-Screen-Workout und 30-Sekunden-Vibrationshinweis bleiben erhalten.
 
 ## v0.10.11
 - Pausenziel-Buttons (30/60/90/Frei) entfernt; die Pause zählt nur noch hoch.

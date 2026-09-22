@@ -2842,11 +2842,6 @@ h2 { margin-bottom: 0; font-size: 21px; }
   font-size: 13px;
 }
 
-/* There is no manual second-start interaction anymore. Keep the old DOM node
-   only for backwards-safe JS references. */
-#trainingModal.quick-theme #startWorkoutBtn {
-  display: none !important;
-}
 
 #trainingModal.quick-theme .countdown-box {
   border-radius: 22px;
@@ -3114,4 +3109,194 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 #trainingModal.quick-theme .pause-panel .pause-next-set-btn.hidden {
   display: none !important;
+}
+
+
+/* ======================================================================
+   v0.10.12 — pause challenges, visible continue action + save toast
+   ====================================================================== */
+
+/* Keep the variant buttons the same size, but make the artwork itself larger. */
+.workout-variant-btn > span {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1px;
+}
+.workout-variant-grid.compact .workout-variant-btn > span {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0;
+}
+
+/* The old v0.10.8 rule hid this button with !important. In pause it must be
+   an explicit, always-visible action until the user arms the next set. */
+#trainingModal.quick-theme .pause-panel #startWorkoutBtn.pause-next-set-btn {
+  display: block !important;
+  min-height: 46px;
+  margin-top: 1px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 950;
+}
+#trainingModal.quick-theme .pause-panel #startWorkoutBtn.pause-next-set-btn.hidden {
+  display: none !important;
+}
+
+.pause-challenges {
+  flex: 0 0 auto;
+  padding: 7px 8px 8px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  background: rgba(255,255,255,.028);
+}
+.pause-challenges-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.pause-challenges-head strong {
+  color: #dbe5f4;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.pause-challenges-head small {
+  color: #7789a3;
+  font-size: 8px;
+  font-weight: 800;
+  text-align: right;
+}
+.pause-challenges-list {
+  display: grid;
+  gap: 4px;
+}
+.pause-challenge-row {
+  min-width: 0;
+  min-height: 31px;
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+}
+.pause-challenge-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 50%;
+  background: #151f2f;
+}
+.pause-challenge-icon .app-asset-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pause-challenge-copy { min-width: 0; }
+.pause-challenge-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  min-width: 0;
+}
+.pause-challenge-line strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #eef3fa;
+  font-size: 9px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pause-challenge-line small {
+  flex: 0 0 auto;
+  color: #9fb0c8;
+  font-size: 8px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.pause-challenge-progress {
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.075);
+}
+.pause-challenge-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #70a2ff;
+}
+.pause-challenge-row.tone-total .pause-challenge-progress span { background: #d6aa57; }
+.pause-challenge-row.tone-max .pause-challenge-progress span { background: #6caee6; }
+.pause-challenge-row.tone-week .pause-challenge-progress span { background: #50c987; }
+.pause-challenge-row.tone-variant .pause-challenge-progress span,
+.pause-challenge-row.tone-variant-soft .pause-challenge-progress span { background: #cf82ef; }
+.pause-challenge-empty {
+  padding: 8px;
+  color: #78d69d;
+  font-size: 9px;
+  font-weight: 900;
+  text-align: center;
+}
+
+/* Slightly denser pause layout so all information still stays on one screen. */
+#trainingModal.quick-theme .pause-panel {
+  gap: 6px;
+}
+#trainingModal.quick-theme .pause-clock-wrap > strong {
+  font-size: clamp(48px, 10svh, 72px);
+}
+#trainingModal.quick-theme .pause-next-copy small {
+  margin-top: 1px;
+}
+#trainingModal.quick-theme .pause-ready-hint {
+  padding: 6px 8px;
+}
+
+/* Small confirmation after the automatic save + jump to the Skill Tree. */
+.app-toast {
+  position: fixed;
+  z-index: 9999;
+  left: 50%;
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+  max-width: calc(100vw - 28px);
+  padding: 11px 16px;
+  border: 1px solid rgba(80,205,135,.36);
+  border-radius: 14px;
+  background: rgba(22,128,72,.96);
+  color: #f3fff7;
+  box-shadow: 0 10px 26px rgba(0,0,0,.20);
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: .01em;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 14px) scale(.98);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.app-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+@media (max-height: 720px) {
+  .workout-variant-btn > span { width: 48px; height: 48px; }
+  .workout-variant-grid.compact .workout-variant-btn > span { width: 40px; height: 40px; }
+  .pause-challenges { padding: 5px 6px 6px; }
+  .pause-challenges-head { margin-bottom: 3px; }
+  .pause-challenge-row { min-height: 27px; grid-template-columns: 25px minmax(0,1fr); padding: 2px 4px; }
+  .pause-challenge-icon { width: 24px; height: 24px; }
+  .pause-challenge-progress { margin-top: 2px; }
+  #trainingModal.quick-theme .pause-ready-hint { display: none; }
+  #trainingModal.quick-theme .pause-panel #startWorkoutBtn.pause-next-set-btn { min-height: 40px; }
 }

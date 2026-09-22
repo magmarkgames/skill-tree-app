@@ -295,6 +295,8 @@ const prepCameraHint = document.getElementById("prepCameraHint");
 const pauseTimerDisplay = document.getElementById("pauseTimerDisplay");
 const lastSetSummary = document.getElementById("lastSetSummary");
 const pauseReadyHint = document.getElementById("pauseReadyHint");
+const pauseChallengesList = document.getElementById("pauseChallengesList");
+const appToast = document.getElementById("appToast");
 const setCompleteOverlay = document.getElementById("setCompleteOverlay");
 const setCompleteReps = document.getElementById("setCompleteReps");
 const setCompleteLabel = document.getElementById("setCompleteLabel");
@@ -1026,6 +1028,44 @@ function renderLiveGoals() {
   }
 }
 
+function renderPauseChallenges() {
+  if (!pauseChallengesList) return;
+  const state = getLiveMilestoneState();
+  const goals = state.upcoming.slice(0, 3);
+
+  if (!goals.length) {
+    pauseChallengesList.innerHTML = '<div class="pause-challenge-empty">Alle sichtbaren Challenges geschafft.</div>';
+    return;
+  }
+
+  pauseChallengesList.innerHTML = goals.map(goal => {
+    const pct = Math.round(clamp(goal.progressFraction, 0, 1) * 100);
+    const remaining = Math.max(0, Math.ceil(goal.remaining));
+    return `
+      <div class="pause-challenge-row tone-${goal.tone}">
+        <span class="pause-challenge-icon">${goal.icon}</span>
+        <div class="pause-challenge-copy">
+          <div class="pause-challenge-line">
+            <strong>${goal.title}</strong>
+            <small>Noch ${remaining}</small>
+          </div>
+          <div class="pause-challenge-progress" aria-label="${pct}% Fortschritt">
+            <span style="width:${pct}%"></span>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+let toastTimer = null;
+function showAppToast(message = "Training gespeichert") {
+  if (!appToast) return;
+  window.clearTimeout(toastTimer);
+  appToast.textContent = message;
+  appToast.classList.add("show");
+  toastTimer = window.setTimeout(() => appToast.classList.remove("show"), 2800);
+}
+
 function createConnector(from, to, nodeElements) {
   const fromEl = nodeElements.get(from.id);
   const toEl = nodeElements.get(to.id);
@@ -1191,7 +1231,8 @@ function setSelectedTrainingVariant(variant) {
   updateQuickVariantPill();
   renderLiveGoals();
   if (trainingPhase === "pause") {
-    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · starte das nächste Set, wenn du bereit bist.`;
+    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
+    renderPauseChallenges();
   }
 }
 
@@ -1232,12 +1273,13 @@ function showPauseUI() {
     lastSetSummary.textContent = "Noch kein Set gespeichert";
   }
 
-  startWorkoutBtn.textContent = "Nächstes Set starten";
+  startWorkoutBtn.textContent = "Training fortsetzen";
   startWorkoutBtn.disabled = false;
   startWorkoutBtn.classList.toggle("hidden", autoCountdownPending);
   pauseReadyHint.textContent = autoCountdownPending
     ? "Jetzt in die obere Push-up-Position gehen · der Countdown startet automatisch, sobald du stabil liegst."
-    : `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · starte das nächste Set, wenn du bereit bist.`;
+    : `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · Training fortsetzen, wenn du bereit bist.`;
+  renderPauseChallenges();
 }
 
 function resetTrainingSession() {
@@ -1324,10 +1366,11 @@ function selectWorkoutVariant(variant) {
     // Variantenwechsel während der Pause startet bewusst noch kein neues Set.
     autoCountdownPending = false;
     goodPositionSince = 0;
-    startWorkoutBtn.textContent = "Nächstes Set starten";
+    startWorkoutBtn.textContent = "Training fortsetzen";
     startWorkoutBtn.disabled = false;
     startWorkoutBtn.classList.remove("hidden");
-    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · starte das nächste Set, wenn du bereit bist.`;
+    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
+    renderPauseChallenges();
   }
 }
 
@@ -1911,7 +1954,7 @@ function endCurrentSetToPause(reason = "manual") {
     if (workoutSets.length > 0) {
       showPauseUI();
       startPauseTimer();
-      pauseReadyHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert. Starte das nächste Set, wenn du bereit bist.";
+      pauseReadyHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert. Training fortsetzen, wenn du bereit bist.";
     } else {
       showPrepUI();
       prepCameraHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert. Wähle eine Variante für dein erstes Set.";
@@ -2105,9 +2148,10 @@ function finishWorkout() {
   // Kamera-Workouts werden beim Beenden sofort gespeichert und führen direkt zum Skill Tree.
   if (!manualMode) {
     const completedSets = workoutSets.filter(set => Number(set?.reps) >= 1);
-    if (completedSets.length > 0) saveTrainingResult({ showSuccess: false });
+    const saved = completedSets.length > 0 ? saveTrainingResult({ showSuccess: false }) : false;
     closeTraining();
     showView("tree");
+    if (saved) showAppToast("Training gespeichert");
     return;
   }
 
@@ -2179,7 +2223,7 @@ function saveTrainingResult(options = {}) {
     durationSeconds: sessionDurationSeconds,
     date: new Date().toISOString(),
     usedCamera: !manualMode,
-    mode: manualMode ? "manual" : "multi-set-face-v0111"
+    mode: manualMode ? "manual" : "multi-set-face-v0112"
   });
 
   const todayTotal = getTodayTotal();
