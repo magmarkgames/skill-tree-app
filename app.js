@@ -238,6 +238,7 @@ const dayStat = document.getElementById("dayStat");
 const weekStat = document.getElementById("weekStat");
 const totalStat = document.getElementById("totalStat");
 const rankStat = document.getElementById("rankStat");
+const treeStatsSheet = document.getElementById("treeStatsSheet");
 
 const homePushMeta = document.getElementById("homePushMeta");
 const homeTodayStat = document.getElementById("homeTodayStat");
@@ -946,6 +947,7 @@ function formatWorkoutDate(isoString) {
 // ---------- Training Modal ----------
 function showStep(stepName) {
   [exerciseStep, variantStep, quickStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
+  trainingModal.classList.toggle("selection-theme", stepName === "exercise" || stepName === "variant");
 
   if (stepName === "exercise") {
     exerciseStep.classList.remove("hidden");
@@ -1756,9 +1758,24 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function openTreeStats() {
+  treeStatsSheet.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeTreeStats() {
+  treeStatsSheet.classList.add("hidden");
+  document.body.style.overflow = trainingModal.classList.contains("hidden") && variantModal.classList.contains("hidden") ? "" : "hidden";
+}
+
 // ---------- Events ----------
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
+document.getElementById("openTreeStatsBtn").addEventListener("click", openTreeStats);
+document.getElementById("closeTreeStatsBtn").addEventListener("click", closeTreeStats);
+treeStatsSheet.addEventListener("click", (event) => {
+  if (event.target === treeStatsSheet) closeTreeStats();
+});
 document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
 document.getElementById("historyBackBtn").addEventListener("click", () => showView("home"));
 

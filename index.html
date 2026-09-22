@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0f16" />
-  <title>Skill Tree – v0.10.1</title>
+  <meta name="theme-color" content="#f4f9ff" />
+  <title>Skill Tree – v0.10.3</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
     <section id="homeView" class="view home-view">
       <header class="home-header">
         <div>
-          <p class="eyebrow">SKILL TREE · v0.10.1</p>
+          <p class="eyebrow">SKILL TREE · v0.10.3</p>
           <h1>Deine Skills</h1>
           <p class="home-subtitle">Trainieren, Fortschritt sammeln und neue Äste freischalten.</p>
         </div>
@@ -135,26 +135,11 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="treeTitle">Push-up Skill Tree</h1>
         </div>
-        <div class="rank-pill"><span>Rang</span><strong id="rankStat">Starter</strong></div>
+        <button id="openTreeStatsBtn" class="tree-stats-btn" type="button" aria-label="Stats öffnen">
+          <span class="tree-stats-btn-icon">▥</span>
+          <span>Stats</span>
+        </button>
       </header>
-
-      <section class="tree-stats" aria-label="Push-up Fortschritt">
-        <article class="stat-max"><span class="tree-stat-icon" data-metric-icon="max"></span><span>Rekord</span><strong id="maxStat">0</strong></article>
-        <article class="stat-day"><span class="tree-stat-icon" data-metric-icon="day"></span><span>Heute</span><strong id="dayStat">0</strong></article>
-        <article class="stat-week"><span class="tree-stat-icon" data-metric-icon="week"></span><span>7 Tage</span><strong id="weekStat">0</strong></article>
-        <article class="stat-total"><span class="tree-stat-icon" data-metric-icon="total"></span><span>Gesamt</span><strong id="totalStat">0</strong></article>
-      </section>
-
-      <div class="tree-legend" aria-label="Skill Tree Legende">
-        <span class="legend-max">● Standard</span>
-        <span class="legend-total">● Gesamt</span>
-        <span class="legend-day">● 24h</span>
-        <span class="legend-week">● 7 Tage</span>
-        <span class="legend-variant">● Variante</span>
-        <span class="legend-rank">⬢ Rang</span>
-      </div>
-
-      <div class="tree-helper-note">Große Varianten-Knoten antippen, um den Unter-Skill-Tree zu öffnen.</div>
 
       <section id="treeScroll" class="tree-scroll tree-scroll-light" aria-label="Scrollbarer Push-up Skill Tree">
         <div class="tree tree-v10" id="skillTree" aria-label="Push-up Skill Tree"></div>
@@ -183,6 +168,32 @@
       </div>
     </section>
   </main>
+
+
+  <!-- TREE STATS SHEET -->
+  <div id="treeStatsSheet" class="sheet tree-stats-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="treeStatsTitle">
+    <div class="sheet-panel tree-stats-panel">
+      <div class="tree-stats-sheet-head">
+        <div>
+          <p class="eyebrow">POWER PUSH</p>
+          <h2 id="treeStatsTitle">Deine Stats</h2>
+        </div>
+        <button id="closeTreeStatsBtn" class="icon-btn" type="button" aria-label="Stats schließen">✕</button>
+      </div>
+
+      <div class="tree-rank-card">
+        <span>Aktueller Rang</span>
+        <strong id="rankStat">Starter</strong>
+      </div>
+
+      <section class="tree-stats tree-stats-sheet-grid" aria-label="Push-up Fortschritt">
+        <article class="stat-max"><span class="tree-stat-icon" data-metric-icon="max"></span><span>Rekord</span><strong id="maxStat">0</strong></article>
+        <article class="stat-day"><span class="tree-stat-icon" data-metric-icon="day"></span><span>Heute</span><strong id="dayStat">0</strong></article>
+        <article class="stat-week"><span class="tree-stat-icon" data-metric-icon="week"></span><span>7 Tage</span><strong id="weekStat">0</strong></article>
+        <article class="stat-total"><span class="tree-stat-icon" data-metric-icon="total"></span><span>Gesamt</span><strong id="totalStat">0</strong></article>
+      </section>
+    </div>
+  </div>
 
   <!-- TRAINING MODAL -->
   <div id="trainingModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="trainingTitle">
