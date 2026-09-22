@@ -1,47 +1,18 @@
-# Skill Tree App v0.10.6
+# Skill Tree v0.10.8
 
-Auf Basis von v0.10.2 mit dem nächsten Design-Pass.
+## Workout redesign
+- Workout screen is locked to one viewport: no vertical scrolling during the active training screen.
+- The three separate live goal cards were replaced with one sliding milestone rail.
+- The rail combines the next reachable milestones for the active push-up variant and sorts them by how many session reps are still needed.
+- When a milestone is reached, its emblem moves to the completed position on the left and the next milestones advance.
+- The text above the rail always shows the exact remaining reps to the nearest milestone.
+- Variant confirmation is now the single **Training starten** action.
+- Camera and face detection start from that same click. As soon as the top position is stable, the 3-second countdown starts automatically.
+- No second countdown/start button is required.
+- If calibration fails, automatic countdown is re-armed once the user is positioned correctly again.
+- Camera retry and manual mode remain available as fallbacks.
 
-## Neu in v0.10.3
-- Skill Tree nutzt jetzt den kompletten restlichen Bildschirm unter der Kopfzeile.
-- Die vier Fortschrittswerte sind nicht mehr dauerhaft über dem Tree sichtbar.
-- Neuer **Stats-Button** oben rechts öffnet Rang, Rekord, Heute, 7 Tage und Gesamt.
-- Skill-Tree-Legende und Hinweistext wurden entfernt.
-- Home Screen auf das helle Blau/Weiß-Design umgestellt.
-- Übungs- und Varianten-Auswahl im Training ebenfalls hell gestaltet.
-- Der eigentliche Workout-/Kamera-Bildschirm bleibt bewusst dunkel für guten Kontrast.
-
-## Hochladen
-Lade weiterhin **alle Dateien aus diesem Ordner gemeinsam in den Hauptordner deines GitHub-Repositories**.
-
-Dazu gehören:
-- `index.html`
-- `style.css`
-- `app.js`
-- alle `variant-*.png`
-- alle `metric-*.png`
-- alle `rank-*.png`
-
-Die PNG-Dateien müssen auf derselben Ebene wie `index.html` liegen.
-
-## v0.10.4 Performance
-- Bild-Assets auf passende mobile Auflösungen verkleinert und als WebP gespeichert.
-- Skill Tree wird erst gerendert, wenn er tatsächlich geöffnet wird.
-- Verdeckte History/Tree-Ansichten werden nicht mehr bei jedem allgemeinen Render neu aufgebaut.
-- Teure Drop-Shadow/Blur/Grayscale-Filter und Tree-Eintrittsanimationen reduziert.
-- Lazy/async Decoding für Bild-Assets aktiviert.
-
-
-## v0.10.6 Responsive Skill Tree
-- Horizontales Scrollen im Haupt-Skill-Tree entfernt.
-- Der Tree nutzt jetzt fünf responsive Spalten und passt vollständig in die Displaybreite.
-- Es wird ausschließlich vertikal gescrollt.
-- Knoten skalieren automatisch je nach Bildschirmbreite.
-- Rang-Knoten bleiben etwas größer, da sie allein in ihrer Reihe stehen.
-- Verbindungslinien werden anhand der tatsächlichen responsiven Knotengrößen berechnet.
-
-## v0.10.7
-- Knoten übernehmen jetzt die Materialsprache ihres Rang-Kapitels (Holz, Stein, Bronze, Silber).
-- Abgeschlossene Knoten wechseln vollständig in einen Erfolgszustand statt nur einen kleinen Haken zu zeigen.
-- Unter abgeschlossenen Meilensteinen erscheint `GESCHAFFT`, unter Rang-Badges `RANG ERREICHT`.
-- Keine zusätzlichen Animationen/Blur-Effekte; die Performance-Optimierungen aus v0.10.6 bleiben erhalten.
+## Performance / existing behavior
+- v0.10.6 Android scroll/render fixes are retained.
+- v0.10.7 rank material/completion styling is retained.
+- Push-up counting thresholds and core Quick Mode detection logic were not changed.

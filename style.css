@@ -2517,3 +2517,416 @@ h2 { margin-bottom: 0; font-size: 21px; }
     font-size: 8px;
   }
 }
+
+/* ======================================================================
+   v0.10.8 — One-screen workout + single sliding milestone rail
+   ====================================================================== */
+
+/* The active workout is a fixed one-screen surface. Selection/result screens
+   can still use the normal modal scrolling behavior. */
+#trainingModal.quick-theme {
+  overflow: hidden;
+}
+
+#trainingModal.quick-theme .modal-panel {
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  max-height: 100vh;
+  max-height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
+}
+
+#trainingModal.quick-theme .modal-head {
+  flex: 0 0 auto;
+  margin-bottom: 7px;
+}
+
+#trainingModal.quick-theme .modal-head .eyebrow {
+  display: none;
+}
+
+#trainingModal.quick-theme .modal-head h2 {
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+#trainingModal.quick-theme #quickStep {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#trainingModal.quick-theme #quickStep:not(.hidden) {
+  display: flex;
+  flex-direction: column;
+}
+
+#trainingModal.quick-theme .quick-stage {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  padding: 10px 11px 9px;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+#trainingModal.quick-theme .quick-meta {
+  flex: 0 0 auto;
+  min-height: 28px;
+}
+
+#trainingModal.quick-theme .quick-variant-pill {
+  max-width: 72%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#trainingModal.quick-theme .rep-hero {
+  flex: 1 1 auto;
+  min-height: 112px;
+  padding: 2px 0;
+}
+
+#trainingModal.quick-theme .rep-hero strong {
+  font-size: clamp(86px, 21svh, 158px);
+  line-height: .84;
+}
+
+#trainingModal.quick-theme .rep-hero span {
+  margin-top: 7px;
+  font-size: 11px;
+  letter-spacing: .16em;
+}
+
+#trainingModal.quick-theme .motion-cue {
+  flex: 0 0 auto;
+  min-height: 30px;
+  margin: 0 auto 6px;
+  padding: 4px 10px;
+  font-size: 16px;
+}
+
+#trainingModal.quick-theme .position-status {
+  flex: 0 0 auto;
+  min-height: 54px;
+  grid-template-columns: 34px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+}
+
+#trainingModal.quick-theme .position-status > span {
+  font-size: 21px;
+}
+
+#trainingModal.quick-theme .position-status strong {
+  font-size: 13px;
+}
+
+#trainingModal.quick-theme .position-status small {
+  margin-top: 1px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+/* Camera status remains available to assistive tech but no longer consumes
+   vertical space on the workout screen. */
+#trainingModal.quick-theme .quick-status {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ---------- Single milestone rail ---------- */
+.milestone-rail-panel {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding: 9px 10px 7px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 17px;
+  background: rgba(255,255,255,.035);
+}
+
+.milestone-rail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+  min-width: 0;
+}
+
+.milestone-rail-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.milestone-rail-head strong,
+.milestone-rail-head small {
+  display: block;
+}
+
+.milestone-rail-head strong {
+  font-size: 11px;
+  color: #c4cfdf;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.milestone-rail-head small {
+  margin-top: 2px;
+  color: #f2f6fc;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.milestone-rail-head > span {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(95,141,255,.12);
+  color: #bfd2ff;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.milestone-track {
+  position: relative;
+  width: 100%;
+  height: 62px;
+  margin-top: 3px;
+  overflow: visible;
+}
+
+.milestone-track-line,
+.milestone-track-fill {
+  position: absolute;
+  top: 26px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.milestone-track-line {
+  left: 5%;
+  right: 4%;
+  background: rgba(255,255,255,.09);
+}
+
+.milestone-track-fill {
+  z-index: 1;
+  background: linear-gradient(90deg, #5f8dff, #75b9ff);
+  transition: width .18s linear;
+}
+
+.milestone-start-dot {
+  position: absolute;
+  z-index: 2;
+  top: 23px;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #9bb8ff;
+  border-radius: 50%;
+  background: #111a28;
+  transform: translateX(-50%);
+}
+
+.milestone-emblem {
+  position: absolute;
+  z-index: 3;
+  top: 5px;
+  width: 42px;
+  transform: translateX(-50%);
+  text-align: center;
+  transition: left .32s cubic-bezier(.2,.8,.2,1), opacity .2s ease, transform .2s ease;
+}
+
+.milestone-emblem-icon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid #6e91cb;
+  border-radius: 50%;
+  background: #152033;
+  box-shadow: 0 2px 6px rgba(0,0,0,.18);
+}
+
+.milestone-emblem-icon .app-asset-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.milestone-emblem > small {
+  display: block;
+  margin-top: 2px;
+  color: #d5deea;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.milestone-emblem.next {
+  transform: translateX(-50%) scale(1.08);
+}
+
+.milestone-emblem.next .milestone-emblem-icon {
+  border-color: #86a9ff;
+  box-shadow: 0 0 0 3px rgba(95,141,255,.12);
+}
+
+.milestone-emblem.future {
+  opacity: .48;
+  transform: translateX(-50%) scale(.86);
+}
+
+.milestone-emblem.completed .milestone-emblem-icon {
+  border-color: #55cf8c;
+  background: #163022;
+}
+
+.milestone-emblem.completed > small {
+  color: #75dfa2;
+}
+
+.milestone-check {
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #111a28;
+  border-radius: 50%;
+  background: #39c978;
+  color: #07130c;
+  font-size: 8px;
+  font-weight: 1000;
+}
+
+.milestone-emblem.tone-total .milestone-emblem-icon { border-color: #d6aa57; }
+.milestone-emblem.tone-max .milestone-emblem-icon { border-color: #6caee6; }
+.milestone-emblem.tone-week .milestone-emblem-icon { border-color: #50c987; }
+.milestone-emblem.tone-variant .milestone-emblem-icon,
+.milestone-emblem.tone-variant-soft .milestone-emblem-icon { border-color: #cf82ef; }
+
+/* ---------- Bottom action area ---------- */
+#trainingModal.quick-theme .quick-workout-actions {
+  flex: 0 0 auto;
+  margin-top: 7px;
+  gap: 6px;
+}
+
+#trainingModal.quick-theme .quick-workout-actions .primary-btn,
+#trainingModal.quick-theme .quick-workout-actions .secondary-btn,
+#trainingModal.quick-theme .quick-workout-actions .danger-btn {
+  min-height: 46px;
+  border-radius: 13px;
+  font-size: 13px;
+}
+
+/* There is no manual second-start interaction anymore. Keep the old DOM node
+   only for backwards-safe JS references. */
+#trainingModal.quick-theme #startWorkoutBtn {
+  display: none !important;
+}
+
+#trainingModal.quick-theme .countdown-box {
+  border-radius: 22px;
+  backdrop-filter: none;
+  background: rgba(5,8,13,.95);
+}
+
+#trainingModal.quick-theme .countdown-box strong {
+  font-size: clamp(104px, 24svh, 160px);
+}
+
+/* Very short browser viewports still keep every control on-screen. */
+@media (max-height: 720px) {
+  #trainingModal.quick-theme .modal-panel {
+    padding-top: max(7px, env(safe-area-inset-top));
+    padding-bottom: max(7px, env(safe-area-inset-bottom));
+  }
+  #trainingModal.quick-theme .modal-head {
+    margin-bottom: 4px;
+  }
+  #trainingModal.quick-theme .modal-head h2 {
+    font-size: 16px;
+  }
+  #trainingModal.quick-theme .quick-stage {
+    padding: 7px 9px;
+    border-radius: 18px;
+  }
+  #trainingModal.quick-theme .rep-hero {
+    min-height: 88px;
+  }
+  #trainingModal.quick-theme .rep-hero strong {
+    font-size: clamp(72px, 18svh, 112px);
+  }
+  #trainingModal.quick-theme .rep-hero span {
+    margin-top: 3px;
+  }
+  #trainingModal.quick-theme .motion-cue {
+    min-height: 25px;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+  #trainingModal.quick-theme .position-status {
+    min-height: 43px;
+    padding: 6px 8px;
+  }
+  #trainingModal.quick-theme .position-status small {
+    display: none;
+  }
+  .milestone-rail-panel {
+    margin-top: 5px;
+    padding: 6px 8px 4px;
+  }
+  .milestone-track {
+    height: 51px;
+  }
+  .milestone-track-line,
+  .milestone-track-fill {
+    top: 22px;
+    height: 5px;
+  }
+  .milestone-start-dot {
+    top: 19px;
+  }
+  .milestone-emblem {
+    top: 3px;
+    width: 36px;
+  }
+  .milestone-emblem-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .milestone-emblem > small {
+    font-size: 8px;
+  }
+  #trainingModal.quick-theme .quick-workout-actions {
+    margin-top: 4px;
+  }
+  #trainingModal.quick-theme .quick-workout-actions .primary-btn,
+  #trainingModal.quick-theme .quick-workout-actions .secondary-btn,
+  #trainingModal.quick-theme .quick-workout-actions .danger-btn {
+    min-height: 40px;
+  }
+}

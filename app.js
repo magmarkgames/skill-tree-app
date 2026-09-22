@@ -217,6 +217,8 @@ let workoutActive = false;
 let cameraWasStarted = false;
 let manualMode = false;
 let countdownActive = false;
+let autoCountdownPending = false;
+let lastRailNextKey = null;
 
 let repCount = 0;
 let phase = "up";
@@ -304,6 +306,7 @@ const variantModalProgress = document.getElementById("variantModalProgress");
 const variantMaxMilestones = document.getElementById("variantMaxMilestones");
 const variantTotalMilestones = document.getElementById("variantTotalMilestones");
 const liveGoalsList = document.getElementById("liveGoalsList");
+const liveGoalText = document.getElementById("liveGoalText");
 const liveGoalsVariantHint = document.getElementById("liveGoalsVariantHint");
 
 // ---------- Daten ----------
@@ -815,78 +818,195 @@ function getProjectedVariantMilestoneCount(projectedMax, projectedTotal) {
     VARIANT_TREE_MILESTONES.total.filter(target => projectedTotal >= target).length;
 }
 
-function getNextArrayGoal(currentValue, targets, label, tone, icon) {
-  const sorted = [...targets].sort((a, b) => a - b);
-  const nextTarget = sorted.find(target => target > currentValue);
-  const previousTarget = [...sorted].reverse().find(target => target <= currentValue) || 0;
-
-  if (!nextTarget) {
-    return {
-      done: true,
-      tone,
-      icon,
-      title: `${label} abgeschlossen`,
-      subtitle: `Alles in diesem Bereich geschafft`,
-      current: currentValue,
-      target: currentValue || sorted[sorted.length - 1] || 1,
-      progress: 100
-    };
-  }
-
-  const span = Math.max(1, nextTarget - previousTarget);
-  const progress = Math.max(4, Math.min(100, Math.round(((currentValue - previousTarget) / span) * 100)));
-  return {
-    done: false,
-    tone,
-    icon,
-    title: `Noch ${nextTarget - currentValue} bis ${label}`,
-    subtitle: `${currentValue} / ${nextTarget}`,
-    current: currentValue,
-    target: nextTarget,
-    progress
-  };
+function uniqueSortedTargets(targets) {
+  return [...new Set(targets.filter(Number.isFinite))].sort((a, b) => a - b);
 }
 
-function getLiveGoalCards() {
+function getLiveMilestoneCandidates() {
   const variant = currentTrainingVariant;
   const meta = VARIANT_META[variant] || VARIANT_META.standard;
-  const metrics = getProjectedMetrics(variant, repCount);
+  const candidates = [];
+
+  const addSeries = ({ targets, baseValue, sessionTarget, keyPrefix, title, short, detail, tone, icon, priority = 0 }) => {
+    uniqueSortedTargets(targets).forEach(target => {
+      if (target <= baseValue) return;
+      const neededReps = Math.max(1, Math.ceil(sessionTarget(target)));
+      candidates.push({
+        key: `${keyPrefix}-${target}`,
+        target,
+        neededReps,
+        title: title(target),
+        short: short(target),
+        detail,
+        tone,
+        icon,
+        priority
+      });
+    });
+  };
+
+  const totalTargets = SKILL_NODES.filter(node => node.metric === "total").map(node => node.target);
+  const maxTargets = SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target);
+  const weekTargets = SKILL_NODES.filter(node => node.metric === "week").map(node => node.target);
+
+  // Gesamt- und Wochenziele wachsen mit jeder Wiederholung dieses Trainings.
+  addSeries({
+    targets: totalTargets,
+    baseValue: progress.pushupTotal,
+    sessionTarget: target => target - progress.pushupTotal,
+    keyPrefix: "total",
+    title: target => `${target} insgesamt`,
+    short: target => `${target}`,
+    detail: "Gesamt",
+    tone: "total",
+    icon: getMetricIconSvg("total"),
+    priority: 0
+  });
 
   if (variant === "standard") {
-    return [
-      getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", getMetricIconSvg("total")),
-      getNextArrayGoal(metrics.standardMax, SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target), "neuem Rekord", "max", getMetricIconSvg("max")),
-      getNextArrayGoal(metrics.week, SKILL_NODES.filter(node => node.metric === "week").map(node => node.target), "Wochen-Knoten", "week", getMetricIconSvg("week"))
-    ];
+    // Ein Rekordziel wird erst erreicht, wenn die aktuelle Serie selbst den Zielwert erreicht.
+    addSeries({
+      targets: maxTargets,
+      baseValue: progress.pushupMax,
+      sessionTarget: target => target,
+      keyPrefix: "max",
+      title: target => `${target} am Stück`,
+      short: target => `${target}`,
+      detail: "Rekord",
+      tone: "max",
+      icon: getMetricIconSvg("max"),
+      priority: 1
+    });
+
+    const weekBase = getCurrentWeekTotal();
+    addSeries({
+      targets: weekTargets,
+      baseValue: weekBase,
+      sessionTarget: target => target - weekBase,
+      keyPrefix: "week",
+      title: target => `${target} in 7 Tagen`,
+      short: target => `${target}`,
+      detail: "7 Tage",
+      tone: "week",
+      icon: getMetricIconSvg("week"),
+      priority: 2
+    });
+  } else {
+    const stats = getVariantStats(variant);
+    addSeries({
+      targets: VARIANT_TREE_MILESTONES.max,
+      baseValue: stats.max,
+      sessionTarget: target => target,
+      keyPrefix: `${variant}-max`,
+      title: target => `${target} ${meta.label} am Stück`,
+      short: target => `${target}`,
+      detail: `${meta.label} Rekord`,
+      tone: "variant",
+      icon: getVariantIconSvg(variant),
+      priority: 1
+    });
+    addSeries({
+      targets: VARIANT_TREE_MILESTONES.total,
+      baseValue: stats.total,
+      sessionTarget: target => target - stats.total,
+      keyPrefix: `${variant}-total`,
+      title: target => `${target} ${meta.label} gesamt`,
+      short: target => `${target}`,
+      detail: `${meta.label} Gesamt`,
+      tone: "variant-soft",
+      icon: getVariantIconSvg(variant),
+      priority: 2
+    });
   }
 
-  return [
-    getNextArrayGoal(metrics.total, SKILL_NODES.filter(node => node.metric === "total").map(node => node.target), "Gesamt-Knoten", "total", getMetricIconSvg("total")),
-    getNextArrayGoal(metrics.variantMax, VARIANT_TREE_MILESTONES.max, `${meta.label} am Stück`, "variant", getVariantIconSvg(variant)),
-    getNextArrayGoal(metrics.variantTotal, VARIANT_TREE_MILESTONES.total, `${meta.label} gesamt`, "variant-soft", getMetricIconSvg("total"))
-  ];
+  return candidates.sort((a, b) => a.neededReps - b.neededReps || a.priority - b.priority || a.target - b.target);
+}
+
+function getLiveMilestoneState() {
+  const all = getLiveMilestoneCandidates();
+  const passed = all.filter(goal => repCount >= goal.neededReps);
+  const upcoming = all.filter(goal => repCount < goal.neededReps);
+  const lastPassed = passed.length ? passed[passed.length - 1] : null;
+  const next = upcoming[0] || null;
+  const segmentStart = lastPassed ? lastPassed.neededReps : 0;
+  const segmentEnd = next ? next.neededReps : Math.max(segmentStart + 1, repCount);
+  const segmentProgress = next
+    ? clamp((repCount - segmentStart) / Math.max(1, segmentEnd - segmentStart), 0, 1)
+    : 1;
+
+  return { all, passed, upcoming, lastPassed, next, segmentProgress };
 }
 
 function renderLiveGoals() {
   if (!liveGoalsList) return;
-  const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
-  liveGoalsVariantHint.textContent = `${meta.label} · ${repCount} Reps`;
-  const cards = getLiveGoalCards();
-  liveGoalsList.innerHTML = "";
 
-  cards.forEach(card => {
-    const item = document.createElement("article");
-    item.className = `live-goal-card tone-${card.tone}${card.done ? " goal-done" : ""}`;
-    item.innerHTML = `
-      <div class="live-goal-icon">${card.icon}</div>
-      <div class="live-goal-copy">
-        <strong>${card.title}</strong>
-        <div class="live-goal-progress"><span style="width:${card.progress}%"></span></div>
-        <small>${card.subtitle}</small>
+  const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
+  const state = getLiveMilestoneState();
+  const previousNextKey = lastRailNextKey;
+  lastRailNextKey = state.next?.key || null;
+
+  liveGoalsVariantHint.textContent = `${meta.label} · ${repCount}`;
+
+  if (liveGoalText) {
+    if (state.next) {
+      const remaining = Math.max(0, state.next.neededReps - repCount);
+      liveGoalText.textContent = `Noch ${remaining} Push-up${remaining === 1 ? "" : "s"} bis ${state.next.title}`;
+    } else {
+      liveGoalText.textContent = "Alle sichtbaren Ziele in diesem Bereich geschafft.";
+    }
+  }
+
+  const firstGoalPosition = 64;
+  const upcomingPositions = [firstGoalPosition, 82, 95];
+  const fillEnd = state.next
+    ? 5 + state.segmentProgress * (firstGoalPosition - 5)
+    : 96;
+
+  const parts = [
+    '<div class="milestone-track-line" aria-hidden="true"></div>',
+    `<div class="milestone-track-fill" style="left:5%;width:${Math.max(0, fillEnd - 5)}%" aria-hidden="true"></div>`
+  ];
+
+  if (state.lastPassed) {
+    parts.push(`
+      <div class="milestone-emblem completed tone-${state.lastPassed.tone}" data-milestone-key="${state.lastPassed.key}" style="left:5%">
+        <span class="milestone-emblem-icon">${state.lastPassed.icon}</span>
+        <span class="milestone-check">✓</span>
+        <small>${state.lastPassed.short}</small>
       </div>
-    `;
-    liveGoalsList.appendChild(item);
+    `);
+  } else {
+    parts.push('<div class="milestone-start-dot" style="left:5%" aria-hidden="true"></div>');
+  }
+
+  state.upcoming.slice(0, 3).forEach((goal, index) => {
+    const position = upcomingPositions[index];
+    parts.push(`
+      <div class="milestone-emblem ${index === 0 ? "next" : "future"} tone-${goal.tone}" data-milestone-key="${goal.key}" style="left:${position}%" aria-label="${goal.title}">
+        <span class="milestone-emblem-icon">${goal.icon}</span>
+        <small>${goal.short}</small>
+      </div>
+    `);
   });
+
+  liveGoalsList.innerHTML = parts.join("");
+
+  // Wenn genau der bisher nächste Meilenstein erreicht wurde, wandert sein
+  // Emblem sichtbar an den linken Rand. Diese Animation läuft nur beim
+  // Meilenstein selbst und belastet den normalen Trainingsbetrieb nicht.
+  if (
+    previousNextKey &&
+    previousNextKey !== lastRailNextKey &&
+    state.lastPassed?.key === previousNextKey
+  ) {
+    const completed = liveGoalsList.querySelector(`[data-milestone-key="${previousNextKey}"]`);
+    if (completed?.animate) {
+      completed.animate(
+        [{ left: "64%", transform: "translateX(-50%) scale(1.05)" }, { left: "5%", transform: "translateX(-50%) scale(1)" }],
+        { duration: 380, easing: "cubic-bezier(.2,.8,.2,1)" }
+      );
+    }
+  }
 }
 
 function createConnector(from, to, nodeElements) {
@@ -994,6 +1114,7 @@ function formatWorkoutDate(isoString) {
 function showStep(stepName) {
   [exerciseStep, variantStep, quickStep, resultStep, successStep].forEach(el => el.classList.add("hidden"));
   trainingModal.classList.toggle("selection-theme", stepName === "exercise" || stepName === "variant");
+  trainingModal.classList.toggle("quick-theme", stepName === "quick");
 
   if (stepName === "exercise") {
     exerciseStep.classList.remove("hidden");
@@ -1032,6 +1153,7 @@ function openTraining() {
 function closeTraining() {
   workoutActive = false;
   countdownActive = false;
+  autoCountdownPending = false;
   stopTimer();
   stopDetectionLoop();
   stopCamera();
@@ -1056,6 +1178,8 @@ function setSelectedTrainingVariant(variant) {
 function resetTrainingSession() {
   workoutActive = false;
   countdownActive = false;
+  autoCountdownPending = false;
+  lastRailNextKey = null;
   manualMode = false;
   cameraWasStarted = false;
   stopTimer();
@@ -1088,22 +1212,22 @@ function resetTrainingSession() {
 
   liveRepCount.textContent = "0";
   timerDisplay.textContent = "00:00";
-  motionCue.textContent = "Handy hinlegen und Kamera starten";
+  motionCue.textContent = "Kamera wird vorbereitet …";
   finalTime.textContent = "00:00";
   detectedResult.textContent = "–";
   repInput.value = "";
 
-  startCameraBtn.classList.remove("hidden");
+  startCameraBtn.classList.add("hidden");
   startCameraBtn.disabled = false;
-  startCameraBtn.textContent = "Kamera starten";
+  startCameraBtn.textContent = "Kamera erneut versuchen";
   startWorkoutBtn.classList.add("hidden");
   startWorkoutBtn.disabled = true;
   finishWorkoutBtn.classList.add("hidden");
   manualModeBtn.classList.remove("hidden");
   countdownBox.classList.add("hidden");
 
-  setPositionStatus("neutral", "⬜", "Kamera noch nicht aktiv", "Display nach oben, ungefähr unter bzw. leicht vor deinem Gesicht.");
-  cameraStatus.textContent = "Kein Kamerabild auf dem Screen: Zähler, Variante und nächste Ziele stehen im Fokus.";
+  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Leg das Handy hin und geh in deine obere Push-up-Position.");
+  cameraStatus.textContent = "Kamera und Erkennung werden vorbereitet.";
   renderLiveGoals();
 }
 // ---------- Face Detector ----------
@@ -1171,14 +1295,20 @@ async function initFaceDetector() {
 }
 
 async function startCamera() {
+  autoCountdownPending = true;
+  startCameraBtn.classList.add("hidden");
+
   if (!navigator.mediaDevices?.getUserMedia) {
+    autoCountdownPending = false;
     setPositionStatus("bad", "🟥", "Kamera nicht verfügbar", "Du kannst unten in den manuellen Modus wechseln.");
+    startCameraBtn.classList.remove("hidden");
+    startCameraBtn.textContent = "Kamera erneut versuchen";
     return;
   }
 
-  startCameraBtn.disabled = true;
-  startCameraBtn.textContent = "Wird geladen …";
   cameraStatus.textContent = "Frontkamera und Gesichtserkennung werden gestartet …";
+  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Leg das Handy schon in Position – der Countdown startet automatisch.");
+  motionCue.textContent = "Position einnehmen";
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1192,8 +1322,6 @@ async function startCamera() {
 
     const track = cameraStream.getVideoTracks()[0];
 
-    // Wenn das Gerät einen echten Zoom-Regler anbietet, nutzen wir den kleinsten Zoom.
-    // Das reduziert unnötiges digitales Reinzoomen auf unterstützten Smartphones.
     try {
       const caps = track.getCapabilities?.();
       if (caps?.zoom && Number.isFinite(caps.zoom.min)) {
@@ -1205,23 +1333,35 @@ async function startCamera() {
 
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
-    cameraWasStarted = true;
 
-    setPositionStatus("warn", "🟨", "Erkennung wird geladen", "Bleib kurz über dem Handy.");
+    if (!autoCountdownPending || manualMode || quickStep.classList.contains("hidden")) {
+      stopCamera();
+      return;
+    }
+
+    cameraWasStarted = true;
+    setPositionStatus("warn", "🟨", "Erkennung wird geladen", "Bleib kurz in der oberen Push-up-Position.");
     await initFaceDetector();
 
+    if (!autoCountdownPending || manualMode || quickStep.classList.contains("hidden")) {
+      stopCamera();
+      return;
+    }
+
     startCameraBtn.classList.add("hidden");
-    startWorkoutBtn.classList.remove("hidden");
-    manualModeBtn.classList.add("hidden");
-    cameraStatus.textContent = "Leg das Handy flach hin. Sobald die Ampel grün ist, kannst du direkt den 3‑Sekunden-Countdown starten.";
-    motionCue.textContent = "Bring dein Gesicht über das Handy";
+    startWorkoutBtn.classList.add("hidden");
+    cameraStatus.textContent = "Sobald deine obere Position erkannt ist, startet automatisch der 3‑Sekunden-Countdown.";
+    motionCue.textContent = "Obere Position finden";
 
     startDetectionLoop();
   } catch (error) {
     console.error("Kamera/FaceDetector konnte nicht gestartet werden:", error);
+    stopCamera();
+    autoCountdownPending = false;
     setPositionStatus("bad", "🟥", "Kamera konnte nicht gestartet werden", "Berechtigung prüfen oder manuellen Modus verwenden.");
     cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder die Gesichtserkennung konnte nicht geladen werden.";
     startCameraBtn.disabled = false;
+    startCameraBtn.classList.remove("hidden");
     startCameraBtn.textContent = "Kamera erneut versuchen";
   }
 }
@@ -1437,7 +1577,16 @@ function updateSetupGuidance(face, now) {
 
   readyForCountdown = true;
   startWorkoutBtn.disabled = false;
-  setPositionStatus("good", "🟩", "Bereit", "Start drücken – im Countdown einfach oben bleiben.");
+
+  if (autoCountdownPending && !countdownActive) {
+    autoCountdownPending = false;
+    setPositionStatus("good", "🟩", "Bereit", "Der Countdown startet automatisch – oben bleiben.");
+    motionCue.textContent = "COUNTDOWN";
+    queueMicrotask(() => startCountdown());
+    return;
+  }
+
+  setPositionStatus("good", "🟩", "Bereit", "Obere Position erkannt.");
   motionCue.textContent = "Bereit";
 }
 
@@ -1464,6 +1613,8 @@ async function startCountdown() {
   if (!readyForCountdown || !currentFace || countdownActive) return;
 
   countdownActive = true;
+  autoCountdownPending = false;
+  manualModeBtn.classList.add("hidden");
   calibrationSamples = [];
   lastMetric = null;
   maxMetricSinceTop = null;
@@ -1486,9 +1637,13 @@ async function startCountdown() {
   const usableSamples = calibrationSamples.filter(Number.isFinite);
   if (usableSamples.length < 4) {
     countdownActive = false;
+    autoCountdownPending = true;
+    goodPositionSince = 0;
     countdownBox.classList.add("hidden");
-    setPositionStatus("bad", "🟥", "Kalibrierung nicht geklappt", "Gesicht war im Countdown nicht stabil sichtbar. Versuch es direkt nochmal.");
+    manualModeBtn.classList.remove("hidden");
+    setPositionStatus("bad", "🟥", "Noch einmal positionieren", "Sobald du wieder stabil oben bist, startet der Countdown automatisch neu.");
     startWorkoutBtn.disabled = false;
+    motionCue.textContent = "Obere Position finden";
     return;
   }
 
@@ -1510,6 +1665,7 @@ function calculateThresholds() {
 }
 
 function beginWorkout() {
+  autoCountdownPending = false;
   workoutActive = true;
   manualMode = false;
   workoutStartedAt = Date.now();
@@ -1633,6 +1789,8 @@ function pulseCounter() {
 }
 
 function startManualMode() {
+  autoCountdownPending = false;
+  countdownActive = false;
   stopDetectionLoop();
   stopCamera();
   manualMode = true;
@@ -1854,6 +2012,8 @@ variantCards.forEach(card => {
 startSelectedVariantBtn.addEventListener("click", () => {
   updateQuickVariantPill();
   showStep("quick");
+  autoCountdownPending = true;
+  startCamera();
 });
 
 backBtn.addEventListener("click", () => {
@@ -1862,6 +2022,15 @@ backBtn.addEventListener("click", () => {
     return;
   }
   if (!quickStep.classList.contains("hidden")) {
+    const selectedVariant = currentTrainingVariant;
+    workoutActive = false;
+    countdownActive = false;
+    autoCountdownPending = false;
+    stopTimer();
+    stopDetectionLoop();
+    stopCamera();
+    cameraWasStarted = false;
+    setSelectedTrainingVariant(selectedVariant);
     showStep("variant");
     return;
   }
@@ -1873,7 +2042,7 @@ backBtn.addEventListener("click", () => {
   showStep("exercise");
 });
 
-startCameraBtn.addEventListener("click", startCamera);
+startCameraBtn.addEventListener("click", () => startCamera());
 startWorkoutBtn.addEventListener("click", startCountdown);
 finishWorkoutBtn.addEventListener("click", finishWorkout);
 manualModeBtn.addEventListener("click", startManualMode);
