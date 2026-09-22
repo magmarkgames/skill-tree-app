@@ -379,6 +379,19 @@ const homeTodayStat = document.getElementById("homeTodayStat");
 const homeWeekStat = document.getElementById("homeWeekStat");
 const homeTotalStat = document.getElementById("homeTotalStat");
 const historyHomeHint = document.getElementById("historyHomeHint");
+const homeRankIcon = document.getElementById("homeRankIcon");
+const homeRankName = document.getElementById("homeRankName");
+const homeNextGoalTitle = document.getElementById("homeNextGoalTitle");
+const homeNextGoalText = document.getElementById("homeNextGoalText");
+const homeNextGoalValue = document.getElementById("homeNextGoalValue");
+const homeNextGoalProgress = document.getElementById("homeNextGoalProgress");
+const homeNextRankLabel = document.getElementById("homeNextRankLabel");
+const homeDayGoalValue = document.getElementById("homeDayGoalValue");
+const homeDayGoalBar = document.getElementById("homeDayGoalBar");
+const homeDayGoalHint = document.getElementById("homeDayGoalHint");
+const homeWeekGoalValue = document.getElementById("homeWeekGoalValue");
+const homeWeekGoalBar = document.getElementById("homeWeekGoalBar");
+const homeWeekGoalHint = document.getElementById("homeWeekGoalHint");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -581,6 +594,7 @@ function render() {
   homeTodayStat.textContent = todayTotal;
   homeWeekStat.textContent = weekTotal;
   homeTotalStat.textContent = progress.pushupTotal;
+  renderHomeDashboard(todayTotal, weekTotal, rankName);
 
   historyTodayStat.textContent = todayTotal;
   historyWeekStat.textContent = weekTotal;
@@ -598,6 +612,105 @@ function render() {
   if (!treeView.classList.contains("hidden")) renderTree();
   if (!historyView.classList.contains("hidden")) renderHistory();
   renderLiveGoals();
+}
+
+function renderHomeDashboard(todayTotal, weekTotal, rankName) {
+  if (!homeRankIcon) return;
+
+  homeRankName.textContent = rankName;
+  homeRankIcon.innerHTML = rankName === "Starter"
+    ? getVariantIconSvg("standard", "home-starter-icon")
+    : getRankIconSvg(rankName, "home-rank-asset");
+
+  const nextRank = getNextRankName(rankName);
+  homeNextRankLabel.textContent = nextRank || "Endgame";
+
+  const goalNode = getHomeNextGoalNode();
+  if (goalNode) {
+    const current = Math.max(0, nodeValue(goalNode));
+    const target = Math.max(1, Number(goalNode.target) || 1);
+    const percent = Math.max(0, Math.min(100, current / target * 100));
+    homeNextGoalTitle.textContent = getNodeRequirementLabel(goalNode);
+    homeNextGoalValue.textContent = `${Math.min(current, target)} / ${target}`;
+    homeNextGoalProgress.style.width = `${percent}%`;
+    homeNextGoalText.textContent = getHomeGoalHint(goalNode, current, target);
+  } else {
+    homeNextGoalTitle.textContent = "Push-up Tree gemeistert";
+    homeNextGoalValue.textContent = "100 %";
+    homeNextGoalProgress.style.width = "100%";
+    homeNextGoalText.textContent = "Alle aktuell eingebauten Push-up Ziele sind abgeschlossen.";
+  }
+
+  renderHomeTimedGoal("day", todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
+  renderHomeTimedGoal("week", weekTotal, homeWeekGoalValue, homeWeekGoalBar, homeWeekGoalHint);
+}
+
+function getNextRankName(currentRank) {
+  const currentIndex = RANK_ORDER.indexOf(currentRank);
+  if (currentIndex < 0) return "Holz";
+  return RANK_ORDER[currentIndex + 1] || null;
+}
+
+function getHomeNextGoalNode() {
+  const candidates = SKILL_NODES.filter(node => {
+    if (!shouldRenderTreeNode(node) || isNodeDone(node) || node.type === "rank") return false;
+    return getNodeDiscoveryState(node) === "current";
+  });
+
+  const scoringValue = node => {
+    const target = Math.max(1, Number(node.target) || 1);
+    const value = Math.max(0, nodeValue(node));
+    return Math.max(0, (target - value) / target);
+  };
+
+  candidates.sort((a, b) => scoringValue(a) - scoringValue(b) || (a.target || 0) - (b.target || 0));
+  if (candidates.length) return candidates[0];
+
+  return SKILL_NODES.find(node => !isNodeDone(node) && (node.type === "skill" || node.type === "metric")) || null;
+}
+
+function getHomeGoalHint(node, current, target) {
+  const left = Math.max(0, target - current);
+  if (left <= 0) return "Ziel erreicht – der nächste Knoten wartet.";
+  if (node.metric === "standardMax") return `Noch ${left} bis zum nächsten Am-Stück-Meilenstein.`;
+  if (node.metric === "total") return `Noch ${left} Push-ups bis zum nächsten Gesamt-Meilenstein.`;
+  if (node.metric === "day") return `Noch ${left} Push-ups für dieses Tagesziel.`;
+  if (node.metric === "week") return `Noch ${left} Push-ups für dieses Wochenziel.`;
+  if (node.variant) return `Noch ${left} ${VARIANT_META[node.variant]?.label || "Varianten"}-Push-ups bis zum Unlock.`;
+  return `Noch ${left} bis zum nächsten Skill.`;
+}
+
+function getHomeTimedGoalNode(metric) {
+  const nodes = SKILL_NODES
+    .filter(node => node.type === "metric" && node.metric === metric)
+    .sort((a, b) => (a.target || 0) - (b.target || 0));
+  return nodes.find(node => !isNodeDone(node)) || nodes[nodes.length - 1] || null;
+}
+
+function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
+  if (!valueEl || !barEl || !hintEl) return;
+  const node = getHomeTimedGoalNode(metric);
+  if (!node) {
+    valueEl.textContent = `${currentValue}`;
+    barEl.style.width = "0%";
+    hintEl.textContent = "Noch kein Ziel angelegt.";
+    return;
+  }
+
+  const target = Math.max(1, Number(node.target) || 1);
+  const current = Math.max(0, Number(currentValue) || 0);
+  const percent = Math.max(0, Math.min(100, current / target * 100));
+  const left = Math.max(0, target - current);
+  valueEl.textContent = `${current} / ${target}`;
+  barEl.style.width = `${percent}%`;
+
+  if (left === 0) {
+    hintEl.textContent = metric === "day" ? "Tagesziel erreicht!" : "Wochenziel erreicht!";
+  } else {
+    hintEl.textContent = metric === "day"
+      ? `Noch ${left} Push-ups für heute.`
+      : `Noch ${left} Push-ups diese Woche.`;
+  }
 }
 
 function getCurrentRankName() {
@@ -2531,6 +2644,10 @@ treeStatsSheet.addEventListener("click", (event) => {
 });
 document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
 document.getElementById("historyBackBtn").addEventListener("click", () => showView("home"));
+document.getElementById("openHomeStatsBtn").addEventListener("click", openTreeStats);
+document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
+document.getElementById("homeNavHistoryBtn").addEventListener("click", () => showView("history"));
 
 document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);

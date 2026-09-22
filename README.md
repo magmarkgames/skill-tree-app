@@ -1,17 +1,28 @@
-# Skill Tree App v0.10.16
+# Power Push v0.10.17
 
-## Neu in v0.10.16
+## Neu in v0.10.17
 
-- Abgeschlossene normale Meilensteine bleiben komplett grün.
-- Abgeschlossene **Ränge und Varianten behalten ihr Original-Icon** und bekommen nur eine grüne Umrandung.
-- Neue Ränge: **Gold, Platin, Diamant**.
-- Der Skill Tree wurde deutlich nach oben erweitert.
-- Neue sichtbare Spezial-Skills: **Explosive, Archer, Handstand, Pseudo Planche**.
-- Diese Spezialvarianten erscheinen im Training erst, wenn ihr Skill-Knoten im Tree freigeschaltet wurde.
-- Kleine zukünftige Meilensteine nutzen weiterhin die Discovery-Logik: aktuell sichtbar → nächstes Ziel mit Schloss → weitere Ziele als Fragezeichen.
-- Gold/Platin/Diamant benötigen jeweils 3 von 5 Wegen, damit ein einzelner starker Ast den Rang nicht sofort komplett überspringt.
+- Startbildschirm komplett neu aufgebaut – im hellen Power-Push-Design.
+- **Skill Tree ist jetzt das Herz des Homescreens** und deutlich größer hervorgehoben.
+- Oben ist ein Disziplin-Wechsler vorbereitet:
+  - Push-up ist aktiv.
+  - Laufen, Klimmzüge und Core sind sichtbar, aber mit Schloss versehen und nicht anklickbar.
+- Der Homescreen zeigt live den **aktuellen Push-up Rang**, Rekord und das aktuell sinnvollste nächste Ziel.
+- Kompakte Skill-Tree-Vorschau mit aktuellem Fortschritt, nächstem Rang und verborgenem Folgeziel.
+- **Tagesziel und Wochenziel** werden direkt auf dem Homescreen angezeigt und aus dem bestehenden Push-up-Skill-Tree abgeleitet.
+- Der große CTA lautet **„Push-up Training starten“** und öffnet weiterhin den bereits funktionierenden Trainingsablauf.
+- Trainingshistorie und Statistiken sind direkt vom Homescreen erreichbar.
+- Bottom-Navigation ergänzt: Home, Skill Tree, Training, Historie; Profil bleibt sichtbar gesperrt.
+- Benachrichtigungen und Einstellungen sind ebenfalls nur als gesperrte Vorschau sichtbar.
+- Neues, komprimiertes Hero-Asset (`home-hero.webp`, ca. 50–60 KB) auf Basis des ausgewählten Designkonzepts.
 
-Hinweis: Die neuen Zielzahlen sind ein erster Balancing-Vorschlag und können später problemlos angepasst werden.
+## Weiterhin enthalten
 
+Alle Funktionen aus v0.10.16 bleiben bestehen, darunter:
 
-Feinschliff v0.10.16: Mystery-Knoten zeigen nur noch ?, neue Ränge benötigen ihre Spezialvariante, Folge-Knoten gesperrter Varianten bleiben verborgen, Reihen sind exakt ausgerichtet und erledigte Knoten zeigen keinen Fortschrittsbalken mehr.
+- flüssiger vertikaler Skill Tree ohne horizontales Scrollen
+- Discovery-System mit erledigt / aktuell / Schloss / ?
+- Ränge Holz bis Diamant
+- Spezialvarianten wie Explosive, Archer, Handstand und Pseudo Planche
+- Multi-Set-Workout mit automatischer Set-Erkennung und Pausenmodus
+- Workout-Historie und automatische Speicherung

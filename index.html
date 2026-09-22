@@ -7,127 +7,154 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Skill Tree – v0.10.16</title>
-  <link rel="stylesheet" href="style.css?v=0.10.16" />
+  <title>Power Push – v0.10.17</title>
+  <link rel="stylesheet" href="style.css?v=0.10.17" />
 </head>
 <body>
   <main class="app-shell">
     <!-- HOME -->
-    <section id="homeView" class="view home-view">
-      <header class="home-header">
-        <div>
-          <p class="eyebrow">SKILL TREE · v0.10.16</p>
-          <h1>Deine Skills</h1>
-          <p class="home-subtitle">Trainieren, Fortschritt sammeln und neue Äste freischalten.</p>
+    <section id="homeView" class="view home-view home-v17">
+      <header class="home-brandbar">
+        <div class="home-brand">
+          <span class="home-logo" aria-hidden="true"><span></span></span>
+          <div>
+            <p class="home-brand-title">Power Push</p>
+            <p class="home-brand-subtitle">Stärker. Jeden Tag.</p>
+          </div>
+        </div>
+        <div class="home-brand-actions" aria-label="Spätere Funktionen">
+          <button class="home-icon-action locked-feature" type="button" disabled aria-label="Benachrichtigungen – noch nicht verfügbar">♢<span class="home-action-lock">🔒</span></button>
+          <button class="home-icon-action locked-feature" type="button" disabled aria-label="Einstellungen – noch nicht verfügbar">⚙</button>
         </div>
       </header>
 
-      <section class="quick-actions" aria-label="Spätere Bereiche">
-        <button class="quick-action locked-feature" type="button" disabled>
-          <span class="quick-action-icon">⚙️</span>
-          <span>Einstellungen</span>
-          <small>🔒</small>
-        </button>
-        <button class="quick-action locked-feature" type="button" disabled>
-          <span class="quick-action-icon">👥</span>
-          <span>Freunde</span>
-          <small>🔒</small>
-        </button>
-        <button class="quick-action locked-feature" type="button" disabled>
-          <span class="quick-action-icon">🏆</span>
-          <span>Rangliste</span>
-          <small>🔒</small>
-        </button>
-        <button class="quick-action locked-feature" type="button" disabled>
-          <span class="quick-action-icon">👤</span>
-          <span>Profil</span>
-          <small>🔒</small>
-        </button>
-      </section>
-
-      <section class="home-section" aria-labelledby="treesHeading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">SKILL TREES</p>
-            <h2 id="treesHeading">Wähle einen Bereich</h2>
-          </div>
-          <span class="section-chip">1 aktiv</span>
-        </div>
-
-        <div class="tree-selector-grid">
-          <button id="openPushTreeBtn" class="tree-selector active-tree" type="button">
-            <span class="tree-selector-icon">⚡</span>
-            <span class="tree-selector-copy">
-              <strong>Power Push</strong>
-              <small>Push-up Skill Tree</small>
-              <span id="homePushMeta" class="tree-meta">Starter · Rekord 0</span>
-            </span>
-            <span class="tree-arrow">›</span>
-          </button>
-
-          <button class="tree-selector locked-feature" type="button" disabled>
-            <span class="tree-selector-icon">🏃</span>
-            <span class="tree-selector-copy">
-              <strong>Endurance</strong>
-              <small>Ausdauer & Kondition</small>
-            </span>
-            <span class="tree-lock">🔒</span>
-          </button>
-
-          <button class="tree-selector locked-feature" type="button" disabled>
-            <span class="tree-selector-icon">🧗</span>
-            <span class="tree-selector-copy">
-              <strong>Power Pull</strong>
-              <small>Ziehen & Griffkraft</small>
-            </span>
-            <span class="tree-lock">🔒</span>
-          </button>
-
-          <button class="tree-selector locked-feature" type="button" disabled>
-            <span class="tree-selector-icon">🎯</span>
-            <span class="tree-selector-copy">
-              <strong>Disziplin</strong>
-              <small>Weitere Challenges</small>
-            </span>
-            <span class="tree-lock">🔒</span>
-          </button>
+      <section class="home-hero-v17" aria-label="Power Push Motivation">
+        <div class="home-hero-copy">
+          <p class="home-kicker">DRANBLEIBEN.</p>
+          <h1>Stärker werden –<br>Liegestütz für Liegestütz.</h1>
+          <p>Heute besser als gestern.<br>Morgen stärker.</p>
         </div>
       </section>
 
-      <section class="home-section" aria-labelledby="actionsHeading">
-        <div class="section-heading">
+      <section class="home-tree-hub" aria-labelledby="homeTreeHeading">
+        <div class="home-tree-heading">
+          <span class="home-tree-mark" aria-hidden="true">⌁</span>
           <div>
-            <p class="eyebrow">WORKOUT</p>
-            <h2 id="actionsHeading">Los geht's</h2>
+            <h2 id="homeTreeHeading">Skill Tree</h2>
+            <p>Wähle deine Disziplin und wachse Schritt für Schritt.</p>
           </div>
         </div>
 
-        <button id="openTrainingBtn" class="training-home-btn" type="button">
-          <span class="training-home-icon">▶</span>
-          <span>
-            <strong>Training starten</strong>
-            <small>Übung und Variante wählen</small>
-          </span>
+        <div class="home-discipline-tabs" role="tablist" aria-label="Skill Trees">
+          <button class="home-discipline-tab active" type="button" aria-selected="true">
+            <span class="discipline-icon">◒</span><strong>Push-up</strong>
+          </button>
+          <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Laufen – noch gesperrt">
+            <span class="discipline-icon">🏃</span><span>Laufen</span><small>🔒</small>
+          </button>
+          <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Klimmzüge – noch gesperrt">
+            <span class="discipline-icon">⌁</span><span>Klimmzüge</span><small>🔒</small>
+          </button>
+          <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Core – noch gesperrt">
+            <span class="discipline-icon">◇</span><span>Core</span><small>🔒</small>
+          </button>
+        </div>
+
+        <div class="home-tree-preview">
+          <div class="home-rank-preview">
+            <div id="homeRankIcon" class="home-rank-icon"></div>
+            <div>
+              <span>Aktueller Rang</span>
+              <strong id="homeRankName">Starter</strong>
+              <small id="homePushMeta">Starter · Rekord 0</small>
+            </div>
+          </div>
+
+          <div class="home-next-goal">
+            <div class="home-next-goal-head">
+              <div>
+                <span>Nächstes Ziel</span>
+                <strong id="homeNextGoalTitle">Erstes Ziel freischalten</strong>
+              </div>
+              <span id="homeNextGoalValue" class="home-goal-fraction">0 / 1</span>
+            </div>
+            <p id="homeNextGoalText">Starte dein erstes Training und bring den Baum in Bewegung.</p>
+            <div class="home-progress-track"><span id="homeNextGoalProgress"></span></div>
+          </div>
+
+          <div class="home-mini-tree" aria-label="Vorschau auf den Push-up Skill Tree">
+            <div class="home-mini-node done"><span>✓</span><small>Start</small></div>
+            <div class="home-mini-link active"></div>
+            <div class="home-mini-node current"><span>●</span><small>Aktuell</small></div>
+            <div class="home-mini-link"></div>
+            <div class="home-mini-node locked"><span>🔒</span><small id="homeNextRankLabel">Nächster Rang</small></div>
+            <div class="home-mini-link"></div>
+            <div class="home-mini-node mystery"><span>?</span><small>Danach</small></div>
+          </div>
+
+          <button id="openPushTreeBtn" class="home-open-tree-btn" type="button">
+            <span>Zum Skill Tree</span><span>›</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="home-goals-grid" aria-label="Aktuelle Push-up Ziele">
+        <article class="home-goal-card">
+          <div class="home-goal-card-top">
+            <span class="home-goal-icon day">◎</span>
+            <div><span>Tagesziel</span><small>Push-ups</small></div>
+            <strong id="homeDayGoalValue">0 / 0</strong>
+          </div>
+          <div class="home-progress-track"><span id="homeDayGoalBar"></span></div>
+          <p id="homeDayGoalHint">Dein nächstes Tagesziel wird geladen.</p>
+        </article>
+        <article class="home-goal-card">
+          <div class="home-goal-card-top">
+            <span class="home-goal-icon week">▣</span>
+            <div><span>Wochenziel</span><small>Push-ups</small></div>
+            <strong id="homeWeekGoalValue">0 / 0</strong>
+          </div>
+          <div class="home-progress-track"><span id="homeWeekGoalBar"></span></div>
+          <p id="homeWeekGoalHint">Dein nächstes Wochenziel wird geladen.</p>
+        </article>
+      </section>
+
+      <button id="openTrainingBtn" class="home-training-cta" type="button">
+        <span class="home-training-play">▶</span>
+        <span class="home-training-copy">
+          <strong>Push-up Training starten</strong>
+          <small>Trainiere den aktuell gewählten Tree.</small>
+        </span>
+        <span class="home-training-arrow">›</span>
+      </button>
+
+      <section class="home-support-grid" aria-label="Weitere Bereiche">
+        <button id="openHistoryBtn" class="home-support-card" type="button">
+          <span class="home-support-icon history">▦</span>
+          <span><strong>Trainingshistorie</strong><small id="historyHomeHint">Noch kein Training gespeichert</small></span>
           <span>›</span>
         </button>
-
-        <button id="openHistoryBtn" class="history-home-btn" type="button">
-          <span class="history-home-icon">↺</span>
-          <span>
-            <strong>Workout-Historie</strong>
-            <small id="historyHomeHint">Noch kein Training gespeichert</small>
-          </span>
+        <button id="openHomeStatsBtn" class="home-support-card" type="button">
+          <span class="home-support-icon stats">▥</span>
+          <span><strong>Statistiken</strong><small><span id="homeTotalStat">0</span> Push-ups gesamt</small></span>
           <span>›</span>
         </button>
       </section>
 
-      <section class="today-card" aria-label="Aktueller Push-up Fortschritt">
-        <div><span>Heute</span><strong id="homeTodayStat">0</strong></div>
-        <div><span>Diese Woche</span><strong id="homeWeekStat">0</strong></div>
-        <div><span>Gesamt</span><strong id="homeTotalStat">0</strong></div>
-      </section>
+      <div class="home-compact-stats" aria-hidden="true">
+        <span id="homeTodayStat">0</span><span id="homeWeekStat">0</span>
+      </div>
 
+      <p class="home-quote">„Konstanz heute. Ein stärkeres Ich morgen.“</p>
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
+
+      <nav class="home-bottom-nav" aria-label="Hauptnavigation">
+        <button class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
+        <button id="homeNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
+        <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
+        <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
+        <button class="home-nav-item locked-feature" type="button" disabled><span>●</span><small>Profil 🔒</small></button>
+      </nav>
     </section>
 
     <!-- PUSH-UP TREE -->
@@ -438,6 +465,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.10.16"></script>
+  <script type="module" src="app.js?v=0.10.17"></script>
 </body>
 </html>
