@@ -1615,3 +1615,216 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .tree-view .tree-stats article { min-height: 68px; padding-left: 2px; padding-right: 2px; }
   .variant-card { min-height: 104px; }
 }
+
+/* ======================================================================
+   v0.10.1 — Generated Hybrid Badge Assets
+   ====================================================================== */
+.app-asset-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* The generated badge already contains its own hexagon, rim, glow and depth. */
+.tree-v10 .rank-node {
+  overflow: visible;
+  clip-path: none;
+  background: transparent !important;
+  filter: none;
+  padding: 0;
+  box-shadow: none;
+}
+.tree-v10 .rank-node::before { display: none; }
+.tree-v10 .rank-symbol {
+  position: absolute;
+  inset: -6px -2px 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  color: inherit;
+  z-index: 0;
+  filter: drop-shadow(0 10px 11px rgba(47,75,109,.20));
+}
+.tree-v10 .rank-node .node-target {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 72px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(18,35,58,.78);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+  backdrop-filter: blur(5px);
+}
+.tree-v10 .rank-node .node-label { display: none; }
+.tree-v10 .rank-node.next {
+  filter: drop-shadow(0 0 9px rgba(74,144,255,.28));
+}
+.tree-v10 .rank-node.locked {
+  opacity: .42;
+  filter: grayscale(.78) saturate(.5);
+}
+.tree-v10 .rank-node.done::after {
+  right: 4px;
+  bottom: 5px;
+  z-index: 4;
+}
+
+/* Full generated exercise badges for the large variant nodes. */
+.tree-v10 .variant-skill-node {
+  overflow: visible;
+  clip-path: none;
+  background: transparent !important;
+  filter: none;
+  padding: 0;
+  box-shadow: none;
+}
+.tree-v10 .variant-skill-node::before { display: none; }
+.tree-v10 .variant-skill-node-icon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 100px;
+  height: 100px;
+  transform: translateX(-50%);
+  color: inherit;
+  z-index: 0;
+  filter: drop-shadow(0 9px 10px rgba(46,71,104,.18));
+}
+.tree-v10 .variant-skill-node .node-target {
+  position: absolute;
+  left: 50%;
+  bottom: 15px;
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 68px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(18,35,58,.78);
+  color: white;
+  font-size: 10px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.tree-v10 .variant-skill-node .node-label {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  z-index: 2;
+  transform: translateX(-50%);
+  color: #536b8d;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.tree-v10 .variant-skill-node .node-plus {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  z-index: 3;
+}
+.tree-v10 .variant-skill-node .node-lock {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 3;
+}
+.tree-v10 .variant-skill-node.next {
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--variant-color) 40%, transparent));
+}
+.tree-v10 .variant-skill-node.locked {
+  opacity: .42;
+  filter: grayscale(.75) saturate(.5);
+}
+
+/* Generated skill icons inside the small milestone nodes. */
+.tree-v10 .node-icon {
+  width: 31px;
+  height: 31px;
+  margin-bottom: 1px;
+  overflow: visible;
+  color: inherit;
+}
+.tree-v10 .node-icon .app-asset-icon {
+  filter: drop-shadow(0 3px 4px rgba(45,77,116,.12));
+}
+
+/* Dashboard metric cards now use the same generated skill icon family. */
+.tree-stat-icon {
+  width: 34px !important;
+  height: 34px !important;
+  overflow: visible;
+  color: inherit !important;
+}
+.tree-stat-icon .app-asset-icon {
+  filter: drop-shadow(0 4px 5px rgba(45,77,116,.12));
+}
+
+/* Training selection: show the actual generated exercise badge, not a CSS hex. */
+.variant-card .variant-icon {
+  width: 78px;
+  height: 78px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.variant-card .variant-icon .app-asset-icon {
+  filter: drop-shadow(0 7px 8px color-mix(in srgb, var(--variant-color) 18%, transparent));
+}
+.variant-card.selected .variant-icon .app-asset-icon {
+  filter:
+    drop-shadow(0 8px 9px color-mix(in srgb, var(--variant-color) 24%, transparent))
+    drop-shadow(0 0 7px color-mix(in srgb, var(--variant-color) 24%, transparent));
+}
+
+/* Selected variant chip during the workout. */
+.quick-variant-pill .app-asset-icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.18));
+}
+
+/* Variant sub-tree header. */
+.variant-skill-icon {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: 0;
+  clip-path: none;
+  background: transparent;
+  overflow: visible;
+}
+.variant-skill-icon .app-asset-icon {
+  filter: drop-shadow(0 7px 8px rgba(44,69,101,.18));
+}
+
+/* Live goal cards can also use the generated badge assets. */
+.live-goal-icon .app-asset-icon {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 4px 5px rgba(0,0,0,.12));
+}
+
+@media (max-width: 620px) {
+  .variant-card {
+    grid-template-columns: 74px 1fr;
+  }
+  .variant-card .variant-icon {
+    width: 72px;
+    height: 72px;
+  }
+}

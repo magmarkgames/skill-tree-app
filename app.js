@@ -77,122 +77,54 @@ function createEmptyVariantStats() {
 }
 
 
-// ---------- v0.10 SVG Icon System ----------
-function iconSvg(content, className = "") {
-  return `<svg class="app-svg-icon ${className}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">${content}</svg>`;
+// ---------- v0.10.1 Generated Asset Icon System ----------
+const ASSET_PATHS = {
+  variants: {
+    standard: "assets/variant-standard.png",
+    wide: "assets/variant-wide.png",
+    diamond: "assets/variant-diamond.png",
+    pike: "assets/variant-pike.png",
+    incline: "assets/variant-incline.png",
+    decline: "assets/variant-decline.png"
+  },
+  metrics: {
+    max: "assets/metric-max.png",
+    total: "assets/metric-total.png",
+    day: "assets/metric-day.png",
+    week: "assets/metric-week.png"
+  },
+  ranks: {
+    Holz: "assets/rank-wood.png",
+    Stein: "assets/rank-stone.png",
+    Bronze: "assets/rank-bronze.png",
+    Silber: "assets/rank-silver.png"
+  }
+};
+
+function assetImg(src, alt = "", className = "") {
+  return `<img class="app-asset-icon ${className}" src="${src}" alt="${alt}" draggable="false" />`;
 }
 
 function getVariantIconSvg(variant, className = "") {
-  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
-  const bodyFill = `fill="currentColor" stroke="none"`;
-
-  switch (variant) {
-    case "wide":
-      return iconSvg(`
-        <circle cx="48" cy="23" r="5" ${bodyFill}/>
-        <path d="M14 24 L42 27 L51 31" ${common}/>
-        <path d="M18 24 L12 43 M39 27 L46 45" ${common}/>
-        <path d="M8 51 H56" ${common}/>
-        <path d="M18 56 H7 M7 56 L12 52 M7 56 L12 60" ${common}/>
-        <path d="M46 56 H57 M57 56 L52 52 M57 56 L52 60" ${common}/>
-      `, className);
-    case "diamond":
-      return iconSvg(`
-        <circle cx="48" cy="22" r="5" ${bodyFill}/>
-        <path d="M14 24 L42 27 L51 31" ${common}/>
-        <path d="M17 25 L22 44 M40 27 L36 44" ${common}/>
-        <path d="M8 51 H56" ${common}/>
-        <path d="M29 46 L34 41 L39 46 L34 51 Z" ${common}/>
-      `, className);
-    case "pike":
-      return iconSvg(`
-        <circle cx="50" cy="43" r="5" ${bodyFill}/>
-        <path d="M11 45 L29 18 L48 40" ${common}/>
-        <path d="M13 45 L8 51 M48 40 L54 51" ${common}/>
-        <path d="M6 52 H58" ${common}/>
-        <path d="M32 55 V45 M32 45 L27 50 M32 45 L37 50" ${common}/>
-      `, className);
-    case "incline":
-      return iconSvg(`
-        <circle cx="48" cy="24" r="5" ${bodyFill}/>
-        <path d="M12 34 L43 29 L50 31" ${common}/>
-        <path d="M16 34 L10 49 M43 30 L48 39" ${common}/>
-        <rect x="44" y="39" width="14" height="13" rx="2" ${common}/>
-        <path d="M7 53 H60" ${common}/>
-      `, className);
-    case "decline":
-      return iconSvg(`
-        <circle cx="50" cy="35" r="5" ${bodyFill}/>
-        <path d="M14 26 L44 32 L51 35" ${common}/>
-        <path d="M43 32 L48 49 M51 36 L55 49" ${common}/>
-        <rect x="5" y="17" width="15" height="13" rx="2" ${common}/>
-        <path d="M7 53 H59" ${common}/>
-      `, className);
-    case "standard":
-    default:
-      return iconSvg(`
-        <circle cx="49" cy="24" r="5" ${bodyFill}/>
-        <path d="M13 25 L42 28 L51 32" ${common}/>
-        <path d="M16 25 L11 45 M40 28 L47 46" ${common}/>
-        <path d="M7 52 H57" ${common}/>
-      `, className);
-  }
+  const meta = VARIANT_META[variant] || VARIANT_META.standard;
+  const src = ASSET_PATHS.variants[variant] || ASSET_PATHS.variants.standard;
+  return assetImg(src, `${meta.label} Push-up`, className);
 }
 
 function getMetricIconSvg(metric, className = "") {
-  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
-  switch (metric) {
-    case "total":
-      return iconSvg(`
-        <ellipse cx="32" cy="17" rx="17" ry="7" ${common}/>
-        <path d="M15 17 V29 C15 33 23 36 32 36 C41 36 49 33 49 29 V17" ${common}/>
-        <path d="M15 29 V41 C15 45 23 48 32 48 C41 48 49 45 49 41 V29" ${common}/>
-      `, className);
-    case "day":
-      return iconSvg(`
-        <circle cx="30" cy="31" r="20" ${common}/>
-        <path d="M30 19 V31 L39 36" ${common}/>
-        <text x="43" y="53" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor">24</text>
-      `, className);
-    case "week":
-      return iconSvg(`
-        <rect x="11" y="15" width="42" height="38" rx="6" ${common}/>
-        <path d="M11 26 H53 M21 10 V20 M43 10 V20" ${common}/>
-        <text x="32" y="45" text-anchor="middle" font-size="18" font-weight="900" fill="currentColor">7</text>
-      `, className);
-    case "max":
-    default:
-      return iconSvg(`
-        <path d="M10 48 H54" ${common}/>
-        <path d="M14 44 L26 33 L35 38 L50 19" ${common}/>
-        <path d="M41 19 H50 V28" ${common}/>
-        <path d="M16 47 V39 M29 47 V42 M42 47 V34" ${common}/>
-      `, className);
-  }
+  const key = ["max", "total", "day", "week"].includes(metric) ? metric : "max";
+  const labels = {
+    max: "Max Reps",
+    total: "Gesamt",
+    day: "24 Stunden",
+    week: "7 Tage"
+  };
+  return assetImg(ASSET_PATHS.metrics[key], labels[key], className);
 }
 
 function getRankIconSvg(rank, className = "") {
-  const common = `fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
-  switch (rank) {
-    case "Stein":
-      return iconSvg(`
-        <path d="M8 49 L23 26 L31 38 L39 18 L56 49 Z" ${common}/>
-        <path d="M18 49 L31 38 L40 49" ${common}/>
-      `, className);
-    case "Bronze":
-      return iconSvg(`<path d="M32 9 L39 24 L55 26 L43 38 L46 55 L32 47 L18 55 L21 38 L9 26 L25 24 Z" ${common}/>`, className);
-    case "Silber":
-      return iconSvg(`
-        <path d="M12 24 L22 36 L32 18 L42 36 L52 24 L48 50 H16 Z" ${common}/>
-        <path d="M18 50 H46" ${common}/>
-      `, className);
-    case "Holz":
-    default:
-      return iconSvg(`
-        <path d="M32 9 L20 26 H27 L16 40 H26 L18 51 H46 L38 40 H48 L37 26 H44 Z" ${common}/>
-        <path d="M32 43 V56" ${common}/>
-      `, className);
-  }
+  const src = ASSET_PATHS.ranks[rank] || ASSET_PATHS.ranks.Holz;
+  return assetImg(src, `${rank} Rang`, className);
 }
 
 function renderStaticIcons() {
