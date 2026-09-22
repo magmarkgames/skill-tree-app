@@ -3030,10 +3030,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .pause-clock-wrap { text-align: center; }
 .pause-clock-wrap > span { display: block; color: #91a9ce; font-size: 10px; font-weight: 950; letter-spacing: .18em; }
 .pause-clock-wrap > strong { display: block; margin-top: 1px; font-size: clamp(54px, 12svh, 88px); line-height: .95; font-variant-numeric: tabular-nums; }
-.pause-clock-wrap > small { display: block; margin-top: 5px; color: #9eabc0; font-size: 11px; font-weight: 800; }
-.pause-panel.target-reached .pause-clock-wrap > strong { color: #64d99a; }
-.pause-panel.target-reached .pause-clock-wrap > small { color: #71dca2; }
-
+.pause-panel.target-reached 
 .last-set-card {
   display: flex;
   align-items: center;
@@ -3047,17 +3044,6 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .last-set-card span { color: #7889a2; font-size: 9px; font-weight: 950; letter-spacing: .1em; }
 .last-set-card strong { font-size: 12px; text-align: right; }
 
-.rest-target-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.rest-target-btn {
-  min-height: 32px;
-  border: 1px solid #2b394c;
-  border-radius: 999px;
-  background: #111824;
-  color: #9eacc0;
-  font-size: 10px;
-  font-weight: 900;
-}
-.rest-target-btn.selected { border-color: #6f98f5; background: #17243d; color: #dce7ff; }
 .pause-next-copy { margin-top: 1px; }
 .pause-next-copy strong { color: #d8e2f0; font-size: 11px; letter-spacing: .06em; }
 .pause-next-copy small { margin-top: 2px; font-size: 9px; }
@@ -3114,4 +3100,18 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .workout-variant-grid.compact .workout-variant-btn { min-height: 55px; }
   .workout-variant-grid.compact .workout-variant-btn > span { width: 31px; height: 31px; }
   .prep-camera-hint, .pause-ready-hint { padding: 6px 8px; font-size: 9px; }
+}
+
+/* v0.10.11 — simplified pause + guaranteed next-set action */
+.pause-next-set-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+#trainingModal.quick-theme .pause-panel .pause-next-set-btn {
+  display: block;
+}
+#trainingModal.quick-theme .pause-panel .pause-next-set-btn.hidden {
+  display: none !important;
 }

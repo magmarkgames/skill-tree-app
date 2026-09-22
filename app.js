@@ -245,8 +245,7 @@ let setEnding = false;
 let pauseStartedAt = null;
 let pauseInterval = null;
 let pauseSeconds = 0;
-let pauseTargetSeconds = 60;
-let pauseTargetNotified = false;
+let lastPauseVibrationMark = 0;
 
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
@@ -285,7 +284,6 @@ const backBtn = document.getElementById("backBtn");
 const quickVariantPill = document.getElementById("quickVariantPill");
 const variantCards = Array.from(document.querySelectorAll(".variant-card[data-variant]"));
 const workoutVariantButtons = Array.from(document.querySelectorAll(".workout-variant-btn[data-workout-variant]"));
-const restTargetButtons = Array.from(document.querySelectorAll(".rest-target-btn[data-rest-target]"));
 
 const cameraVideo = document.getElementById("cameraVideo");
 const liveRepCount = document.getElementById("liveRepCount");
@@ -295,7 +293,6 @@ const activeSetPanel = document.getElementById("activeSetPanel");
 const pausePanel = document.getElementById("pausePanel");
 const prepCameraHint = document.getElementById("prepCameraHint");
 const pauseTimerDisplay = document.getElementById("pauseTimerDisplay");
-const pauseTargetText = document.getElementById("pauseTargetText");
 const lastSetSummary = document.getElementById("lastSetSummary");
 const pauseReadyHint = document.getElementById("pauseReadyHint");
 const setCompleteOverlay = document.getElementById("setCompleteOverlay");
@@ -1241,7 +1238,6 @@ function showPauseUI() {
   pauseReadyHint.textContent = autoCountdownPending
     ? "Jetzt in die obere Push-up-Position gehen · der Countdown startet automatisch, sobald du stabil liegst."
     : `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · starte das nächste Set, wenn du bereit bist.`;
-  updatePauseTargetText();
 }
 
 function resetTrainingSession() {
@@ -1259,8 +1255,7 @@ function resetTrainingSession() {
   setEnding = false;
   pauseStartedAt = null;
   pauseSeconds = 0;
-  pauseTargetSeconds = 60;
-  pauseTargetNotified = false;
+  lastPauseVibrationMark = 0;
   stopTimer();
   stopPauseTimer();
   stopDetectionLoop();
@@ -1309,7 +1304,6 @@ function resetTrainingSession() {
   manualModeBtn.classList.remove("hidden");
   prepCameraHint.textContent = "Noch keine Variante ausgewählt.";
 
-  restTargetButtons.forEach(button => button.classList.toggle("selected", Number(button.dataset.restTarget) === 60));
   setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Geh in deine obere Push-up-Position.");
   cameraStatus.textContent = "Wähle zuerst eine Variante.";
   showPrepUI();
@@ -1352,24 +1346,12 @@ function updatePauseClock() {
   if (!pauseStartedAt) return;
   pauseSeconds = Math.floor((Date.now() - pauseStartedAt) / 1000);
   pauseTimerDisplay.textContent = formatTime(pauseSeconds);
-  if (pauseTargetSeconds > 0 && pauseSeconds >= pauseTargetSeconds && !pauseTargetNotified) {
-    pauseTargetNotified = true;
-    pauseTargetText.textContent = "Pausenziel erreicht · du entscheidest, wann es weitergeht";
-    pausePanel.classList.add("target-reached");
-    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
-  }
-}
 
-function updatePauseTargetText() {
-  pausePanel.classList.remove("target-reached");
-  pauseTargetNotified = pauseTargetSeconds > 0 && pauseSeconds >= pauseTargetSeconds;
-  if (pauseTargetSeconds <= 0) {
-    pauseTargetText.textContent = "Freie Pause";
-  } else if (pauseTargetNotified) {
-    pauseTargetText.textContent = "Pausenziel erreicht · du entscheidest, wann es weitergeht";
-    pausePanel.classList.add("target-reached");
-  } else {
-    pauseTargetText.textContent = `Ziel: ${formatTime(pauseTargetSeconds)}`;
+  // Schlicht halten: kein Pausenziel, nur alle 30 Sekunden ein kurzer Vibrationshinweis.
+  const vibrationMark = Math.floor(pauseSeconds / 30);
+  if (vibrationMark > 0 && vibrationMark > lastPauseVibrationMark) {
+    lastPauseVibrationMark = vibrationMark;
+    if (navigator.vibrate) navigator.vibrate(45);
   }
 }
 
@@ -1377,9 +1359,8 @@ function startPauseTimer() {
   stopPauseTimer();
   pauseStartedAt = Date.now();
   pauseSeconds = 0;
-  pauseTargetNotified = false;
+  lastPauseVibrationMark = 0;
   pauseTimerDisplay.textContent = "00:00";
-  updatePauseTargetText();
   pauseInterval = window.setInterval(updatePauseClock, 250);
 }
 
@@ -2121,15 +2102,18 @@ function finishWorkout() {
   stopCamera();
   setCompleteOverlay.classList.add("hidden");
 
-  if (manualMode) {
-    manualRepWrap.classList.remove("hidden");
-    autoResultNote.classList.add("hidden");
-  } else {
-    manualRepWrap.classList.add("hidden");
-    autoResultNote.classList.remove("hidden");
-    renderWorkoutResult();
+  // Kamera-Workouts werden beim Beenden sofort gespeichert und führen direkt zum Skill Tree.
+  if (!manualMode) {
+    const completedSets = workoutSets.filter(set => Number(set?.reps) >= 1);
+    if (completedSets.length > 0) saveTrainingResult({ showSuccess: false });
+    closeTraining();
+    showView("tree");
+    return;
   }
 
+  // Der manuelle Fallback behält sein Eingabefeld.
+  manualRepWrap.classList.remove("hidden");
+  autoResultNote.classList.add("hidden");
   showStep("result");
 }
 
@@ -2150,7 +2134,8 @@ function formatTime(seconds) {
 }
 
 // ---------- Training speichern ----------
-function saveTrainingResult() {
+function saveTrainingResult(options = {}) {
+  const showSuccess = options.showSuccess !== false;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
 
@@ -2194,7 +2179,7 @@ function saveTrainingResult() {
     durationSeconds: sessionDurationSeconds,
     date: new Date().toISOString(),
     usedCamera: !manualMode,
-    mode: manualMode ? "manual" : "multi-set-face-v0110"
+    mode: manualMode ? "manual" : "multi-set-face-v0111"
   });
 
   const todayTotal = getTodayTotal();
@@ -2217,7 +2202,8 @@ function saveTrainingResult() {
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (rankUp) addSuccessLine(`⭐ Neuer Rang: ${newRank}`, true);
   else addSuccessLine(`Rang: ${newRank}`);
-  showStep("success");
+  if (showSuccess) showStep("success");
+  return true;
 }
 
 function addSuccessLine(text, good = false) {
@@ -2299,14 +2285,6 @@ variantCards.forEach(card => {
 workoutVariantButtons.forEach(button => {
   button.addEventListener("click", () => selectWorkoutVariant(button.dataset.workoutVariant));
 });
-restTargetButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    pauseTargetSeconds = Math.max(0, Number(button.dataset.restTarget) || 0);
-    restTargetButtons.forEach(item => item.classList.toggle("selected", item === button));
-    updatePauseTargetText();
-  });
-});
-
 backBtn.addEventListener("click", () => {
   if (!resultStep.classList.contains("hidden")) {
     showStep("quick");

@@ -1,4 +1,13 @@
-# Skill Tree App v0.10.10
+# Skill Tree App v0.10.11
+
+## v0.10.11
+- Pausenziel-Buttons (30/60/90/Frei) entfernt; die Pause zählt nur noch hoch.
+- Alle 30 Sekunden gibt es einen kurzen Vibrationshinweis.
+- „Nächstes Set starten“ sitzt jetzt direkt sichtbar in der Pausenansicht.
+- Kamera-Workouts werden bei „Training beenden“ automatisch gespeichert.
+- Danach wechselt die App direkt zum Skill Tree.
+- Der separate Speicherschritt entfällt für Kamera-Workouts.
+
 
 ## Neu: Multi-Set Push-up Workouts
 

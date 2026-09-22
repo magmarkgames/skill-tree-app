@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f4f9ff" />
-  <title>Skill Tree – v0.10.10</title>
-  <link rel="stylesheet" href="style.css?v=0.10.10" />
+  <title>Skill Tree – v0.10.11</title>
+  <link rel="stylesheet" href="style.css?v=0.10.11" />
 </head>
 <body>
   <main class="app-shell">
@@ -13,7 +13,7 @@
     <section id="homeView" class="view home-view">
       <header class="home-header">
         <div>
-          <p class="eyebrow">SKILL TREE · v0.10.10</p>
+          <p class="eyebrow">SKILL TREE · v0.10.11</p>
           <h1>Deine Skills</h1>
           <p class="home-subtitle">Trainieren, Fortschritt sammeln und neue Äste freischalten.</p>
         </div>
@@ -302,19 +302,11 @@
             <div class="pause-clock-wrap">
               <span>PAUSE</span>
               <strong id="pauseTimerDisplay">00:00</strong>
-              <small id="pauseTargetText">Ziel: 01:00</small>
             </div>
 
             <div id="lastSetCard" class="last-set-card">
               <span>LETZTES SET</span>
               <strong id="lastSetSummary">Standard · 0 Push-ups</strong>
-            </div>
-
-            <div class="rest-target-row" aria-label="Pausenziel">
-              <button class="rest-target-btn" data-rest-target="30" type="button">30s</button>
-              <button class="rest-target-btn selected" data-rest-target="60" type="button">60s</button>
-              <button class="rest-target-btn" data-rest-target="90" type="button">90s</button>
-              <button class="rest-target-btn" data-rest-target="0" type="button">Frei</button>
             </div>
 
             <div class="pause-next-copy">
@@ -330,11 +322,11 @@
               <button class="workout-variant-btn" data-workout-variant="decline" type="button"><span data-variant-icon="decline"></span><small>Decline</small></button>
             </div>
             <div id="pauseReadyHint" class="pause-ready-hint">Wähle deine Variante und starte das nächste Set, wenn du bereit bist.</div>
+            <button id="startWorkoutBtn" class="primary-btn pause-next-set-btn hidden" type="button" disabled>Nächstes Set starten</button>
           </section>
 
           <div class="button-stack quick-workout-actions">
             <button id="startCameraBtn" class="primary-btn hidden" type="button">Kamera erneut versuchen</button>
-            <button id="startWorkoutBtn" class="primary-btn hidden" type="button" disabled>3s Countdown starten</button>
             <button id="pauseSetBtn" class="secondary-btn hidden" type="button">Set pausieren</button>
             <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
             <button id="manualModeBtn" class="secondary-btn" type="button">Ohne Kamera trainieren</button>
@@ -378,7 +370,7 @@
 
         <span id="finalTime" class="hidden">00:00</span>
         <span id="resultRepLabel" class="hidden">Erkannt</span>
-        <button id="saveTrainingBtn" class="primary-btn" type="button">Workout speichern</button>
+        <button id="saveTrainingBtn" class="primary-btn" type="button">Manuelles Training speichern</button>
       </section>
 
       <section id="successStep" class="step hidden">
@@ -425,6 +417,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=0.10.10"></script>
+  <script type="module" src="app.js?v=0.10.11"></script>
 </body>
 </html>
