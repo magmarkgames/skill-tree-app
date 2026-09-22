@@ -1,8 +1,3 @@
-import {
-  FaceDetector,
-  FilesetResolver
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
-
 const STORAGE_KEY = "skillTreeAppProgressV09";
 const OLD_STORAGE_KEYS = [
   "skillTreeAppProgressV08",
@@ -117,6 +112,9 @@ const SKILL_NODES = [
 let progress = loadProgress();
 
 let cameraStream = null;
+let FaceDetector = null;
+let FilesetResolver = null;
+let mediaPipeModuleLoading = null;
 let faceDetector = null;
 let faceDetectorLoading = null;
 let detectionFrameId = null;
@@ -522,8 +520,7 @@ function getRankDescription(node) {
   return `${node.rank}-Rang
 
 ${finished}/${requirementCount} Wege geschafft
-${lines.join("
-")}`;
+${lines.join("\n")}`;
 }
 
 function getNodeRequirementLabel(node) {
@@ -611,9 +608,7 @@ function renderTree() {
       const currentValue = nodeValue(node);
       let detail = `${getNodeRequirementLabel(node)}
 Aktuell: ${currentValue}`;
-      if (node.metric === "week") detail += "
-
-Eine Woche läuft von Montag bis Sonntag.";
+      if (node.metric === "week") detail += `\n\nEine Woche läuft von Montag bis Sonntag.`;
       if (node.metric === "variantMax") detail += `
 
 Diese Wiederholungen zählen nur für ${VARIANT_META[node.variant]?.label || "diese Variante"}.`;
@@ -978,7 +973,28 @@ function resetTrainingSession() {
   renderLiveGoals();
 }
 // ---------- Face Detector ----------
+async function ensureMediaPipeModule() {
+  if (FaceDetector && FilesetResolver) return;
+  if (mediaPipeModuleLoading) return mediaPipeModuleLoading;
+
+  mediaPipeModuleLoading = import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm")
+    .then(module => {
+      FaceDetector = module.FaceDetector;
+      FilesetResolver = module.FilesetResolver;
+    })
+    .catch(error => {
+      console.error("MediaPipe konnte nicht geladen werden:", error);
+      throw new Error("Die Kamera-Erkennung konnte nicht geladen werden. Bitte prüfe kurz deine Internetverbindung und versuche es erneut.");
+    })
+    .finally(() => {
+      mediaPipeModuleLoading = null;
+    });
+
+  return mediaPipeModuleLoading;
+}
+
 async function initFaceDetector() {
+  await ensureMediaPipeModule();
   if (faceDetector) return faceDetector;
   if (faceDetectorLoading) return faceDetectorLoading;
 
