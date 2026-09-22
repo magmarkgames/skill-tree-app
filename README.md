@@ -1,4 +1,4 @@
-# Skill Tree App v0.10.9
+# Skill Tree App v0.10.10
 
 ## Neu: Multi-Set Push-up Workouts
 
@@ -20,3 +20,10 @@
 ## Sicherheits-Fallback
 
 Während eines aktiven Sets gibt es zusätzlich **Set pausieren**. Damit kann ein Set manuell abgeschlossen werden, falls die automatische Gesicht-aus-dem-Bild-Erkennung in einer besonderen Kameraposition nicht auslöst.
+
+
+## v0.10.10
+- Pause bleibt nach einem Set bewusst stehen; Kopf/Position startet kein neues Set mehr automatisch.
+- Neuer Button „Nächstes Set starten“ schaltet erst dann die automatische Positionserkennung für den Countdown scharf.
+- Sets mit 0 Wiederholungen werden verworfen und niemals gespeichert.
+- Zusätzliche Pausen nach einem verworfenen 0er-Set werden zur bestehenden Pause addiert.
