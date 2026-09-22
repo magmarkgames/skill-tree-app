@@ -2082,3 +2082,67 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .tree-view .tree-header { padding-left: 12px; padding-right: 12px; }
   .tree-stats-btn { min-width: 68px; padding: 0 10px; }
 }
+
+/* ======================================================================
+   v0.10.4 — Mobile performance pass
+   Keep the generated artwork, but avoid expensive effects on the large
+   scrollable tree. The badges already contain their own depth/shading.
+   ====================================================================== */
+
+/* Native momentum scrolling and cheaper paint work on mobile. */
+.tree-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* Replaying 28 entrance animations every time the tree opens caused a
+   noticeable hitch on phones. */
+.tree-v10 .skill-node {
+  animation: none !important;
+  transition: transform .12s ease, opacity .12s ease !important;
+}
+
+/* The generated badge images already include glow/depth. Extra CSS filters
+   forced costly offscreen layers during every scroll frame. */
+.tree-v10 .rank-symbol,
+.tree-v10 .variant-skill-node-icon,
+.tree-v10 .node-icon .app-asset-icon,
+.tree-stat-icon .app-asset-icon,
+.variant-card .variant-icon .app-asset-icon,
+.variant-card.selected .variant-icon .app-asset-icon,
+.quick-variant-pill .app-asset-icon,
+.variant-skill-icon .app-asset-icon,
+.live-goal-icon .app-asset-icon {
+  filter: none !important;
+}
+
+/* Locked nodes are communicated mainly through opacity; grayscale/saturate
+   over many large transparent images is expensive while scrolling. */
+.tree-v10 .skill-node.locked,
+.tree-v10 .rank-node.locked,
+.tree-v10 .variant-skill-node.locked {
+  filter: none !important;
+  opacity: .42;
+}
+
+/* Avoid backdrop blurs on dozens of moving tree labels. */
+.tree-v10 .rank-node .node-target,
+.tree-v10 .variant-skill-node .node-target {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(18,35,58,.88);
+}
+
+/* The big scroll surface no longer needs a large outer shadow while moving. */
+.tree-view .tree-scroll {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

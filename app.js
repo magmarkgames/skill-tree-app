@@ -80,29 +80,29 @@ function createEmptyVariantStats() {
 // ---------- v0.10.1 Generated Asset Icon System ----------
 const ASSET_PATHS = {
   variants: {
-    standard: "variant-standard.png",
-    wide: "variant-wide.png",
-    diamond: "variant-diamond.png",
-    pike: "variant-pike.png",
-    incline: "variant-incline.png",
-    decline: "variant-decline.png"
+    standard: "variant-standard.webp",
+    wide: "variant-wide.webp",
+    diamond: "variant-diamond.webp",
+    pike: "variant-pike.webp",
+    incline: "variant-incline.webp",
+    decline: "variant-decline.webp"
   },
   metrics: {
-    max: "metric-max.png",
-    total: "metric-total.png",
-    day: "metric-day.png",
-    week: "metric-week.png"
+    max: "metric-max.webp",
+    total: "metric-total.webp",
+    day: "metric-day.webp",
+    week: "metric-week.webp"
   },
   ranks: {
-    Holz: "rank-wood.png",
-    Stein: "rank-stone.png",
-    Bronze: "rank-bronze.png",
-    Silber: "rank-silver.png"
+    Holz: "rank-wood.webp",
+    Stein: "rank-stone.webp",
+    Bronze: "rank-bronze.webp",
+    Silber: "rank-silver.webp"
   }
 };
 
 function assetImg(src, alt = "", className = "") {
-  return `<img class="app-asset-icon ${className}" src="${src}" alt="${alt}" draggable="false" />`;
+  return `<img class="app-asset-icon ${className}" src="${src}" alt="${alt}" loading="lazy" decoding="async" draggable="false" />`;
 }
 
 function getVariantIconSvg(variant, className = "") {
@@ -130,10 +130,16 @@ function getRankIconSvg(rank, className = "") {
 function renderStaticIcons() {
   document.querySelectorAll("[data-variant-icon]").forEach(el => {
     const variant = el.dataset.variantIcon || "standard";
+    const src = ASSET_PATHS.variants[variant] || ASSET_PATHS.variants.standard;
+    const current = el.querySelector("img.app-asset-icon");
+    if (current?.getAttribute("src") === src) return;
     el.innerHTML = getVariantIconSvg(variant);
   });
   document.querySelectorAll("[data-metric-icon]").forEach(el => {
-    const metric = el.dataset.metricIcon || "max";
+    const metric = ["max", "total", "day", "week"].includes(el.dataset.metricIcon) ? el.dataset.metricIcon : "max";
+    const src = ASSET_PATHS.metrics[metric];
+    const current = el.querySelector("img.app-asset-icon");
+    if (current?.getAttribute("src") === src) return;
     el.innerHTML = getMetricIconSvg(metric);
   });
 }
@@ -444,8 +450,8 @@ function render() {
   }
 
   updateQuickVariantPill();
-  renderTree();
-  renderHistory();
+  if (!treeView.classList.contains("hidden")) renderTree();
+  if (!historyView.classList.contains("hidden")) renderHistory();
   renderLiveGoals();
 }
 
