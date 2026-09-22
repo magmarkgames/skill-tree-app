@@ -64,6 +64,19 @@ const VARIANT_META = {
   decline: { label: "Decline", shortLabel: "Decline", color: "#35BFE6" }
 };
 
+// Varianten mit einem echten Freischalt-Knoten erscheinen im Training erst,
+// sobald dieser Knoten im Skill Tree erreichbar ist. Varianten ohne Eintrag
+// bleiben vorerst Basis-Varianten. Neue Spezialübungen können später einfach
+// hier an ihren Unlock-Knoten gekoppelt werden.
+const VARIANT_UNLOCK_NODES = {
+  standard: null,
+  wide: "wide2",
+  diamond: "diamondSkill",
+  pike: null,
+  incline: null,
+  decline: null
+};
+
 const VARIANT_TREE_MILESTONES = {
   max: [1, 3, 8, 17, 30],
   total: [10, 25, 75, 150, 300]
@@ -190,7 +203,16 @@ const SKILL_NODES = [
   { id: "diamondSkill", type: "skill", metric: "variantPoints", variant: "diamond", branch: "variant", target: 1, x: 595, y: 510, parents: ["bronzeRank"] },
   { id: "diamondStage2", type: "metric", metric: "variantPoints", variant: "diamond", branch: "variant", target: 3, x: 596, y: 355, parents: ["diamondSkill"] },
 
-  { id: "silverRank", type: "rank", branch: "rank", rank: "Silber", x: 315, y: 170, parents: ["standard50", "day200", "total1000", "week500", "diamondStage2"], requirementCount: 1 }
+  { id: "silverRank", type: "rank", branch: "rank", rank: "Silber", x: 315, y: 170, parents: ["standard50", "day200", "total1000", "week500", "diamondStage2"], requirementCount: 1 },
+
+  // Erste Ziele nach Silber. Sie sind absichtlich schon im Datenmodell, werden
+  // aber durch die Discovery-Logik zunächst nur als geheimnisvolle ?-Knoten
+  // gezeigt. So kann der Tree später weiter wachsen, ohne den Nutzer jetzt zu
+  // überladen.
+  { id: "standard100", type: "metric", metric: "standardMax", branch: "max", target: 100, x: 52, y: 18, parents: ["silverRank"] },
+  { id: "day400", type: "metric", metric: "day", branch: "day", target: 400, x: 188, y: 18, parents: ["silverRank"] },
+  { id: "total2500", type: "metric", metric: "total", branch: "total", target: 2500, x: 328, y: 18, parents: ["silverRank"] },
+  { id: "week1000", type: "metric", metric: "week", branch: "week", target: 1000, x: 468, y: 18, parents: ["silverRank"] }
 ];
 
 let progress = loadProgress();
@@ -480,6 +502,7 @@ function render() {
     historyHomeHint.textContent = "Noch kein Training gespeichert";
   }
 
+  updateVariantAvailability();
   updateQuickVariantPill();
   if (!treeView.classList.contains("hidden")) renderTree();
   if (!historyView.classList.contains("hidden")) renderHistory();
@@ -613,6 +636,68 @@ function isNodeAvailable(node) {
   return node.parents.every(parentId => isNodeDone(getNode(parentId)));
 }
 
+function isVariantUnlocked(variant) {
+  if (!VARIANT_META[variant]) return false;
+  const unlockNodeId = VARIANT_UNLOCK_NODES[variant];
+  if (!unlockNodeId) return true;
+  const unlockNode = getNode(unlockNodeId);
+  // Der große Skill-Knoten selbst ist der Freischaltmoment: sobald er erreichbar
+  // wird, taucht die Übung im Training auf. So entsteht kein Deadlock, bei dem
+  // man die Variante trainieren müsste, bevor man sie freischalten kann.
+  return !!unlockNode && (isNodeDone(unlockNode) || isNodeAvailable(unlockNode));
+}
+
+function getDiscoveryGroupKey(node) {
+  if (!node || node.type !== "metric") return null;
+  return `${node.metric}:${node.variant || "base"}`;
+}
+
+function getNodeDiscoveryState(node) {
+  if (!node) return "mystery";
+  if (isNodeDone(node)) return "done";
+
+  // Ränge und große Übungs-Freischaltungen bleiben bewusst sichtbar. Sie sind
+  // die großen Orientierungspunkte des Trees und dürfen Vorfreude erzeugen.
+  if (node.type === "rank" || node.type === "skill") {
+    return isNodeAvailable(node) ? "current" : "locked";
+  }
+
+  const groupKey = getDiscoveryGroupKey(node);
+  const group = SKILL_NODES
+    .filter(candidate => candidate.type === "metric" && getDiscoveryGroupKey(candidate) === groupKey)
+    .sort((a, b) => (a.target || 0) - (b.target || 0));
+  const unfinished = group.filter(candidate => !isNodeDone(candidate));
+  const index = unfinished.findIndex(candidate => candidate.id === node.id);
+
+  if (index < 0) return "done";
+
+  const blockedByVariant = node.variant && !isVariantUnlocked(node.variant);
+  const firstReachable = index === 0 && isNodeAvailable(node) && !blockedByVariant;
+  if (firstReachable) return "current";
+
+  // Ist das erste offene Ziel noch durch einen Rang/Skill blockiert, darf genau
+  // dieses Ziel sichtbar bleiben. Danach beginnt bereits das Geheimnis.
+  if (index === 0) return "locked";
+  if (index === 1 && isNodeAvailable(unfinished[0]) && !blockedByVariant) return "locked";
+  return "mystery";
+}
+
+function updateVariantAvailability() {
+  const apply = (element, variant) => {
+    const unlocked = isVariantUnlocked(variant);
+    element.classList.toggle("unlock-hidden", !unlocked);
+    element.disabled = !unlocked;
+    element.setAttribute("aria-hidden", unlocked ? "false" : "true");
+  };
+
+  variantCards.forEach(card => apply(card, card.dataset.variant));
+  workoutVariantButtons.forEach(button => apply(button, button.dataset.workoutVariant));
+
+  if (!isVariantUnlocked(currentTrainingVariant)) {
+    currentTrainingVariant = "standard";
+  }
+}
+
 function getNodeTitle(node) {
   if (node.metric === "standardMax") return "am Stück";
   if (node.metric === "total") return "gesamt";
@@ -717,9 +802,12 @@ function renderTree() {
 
     const done = isNodeDone(node);
     const available = isNodeAvailable(node);
-    if (done) el.classList.add("done");
-    else if (available) el.classList.add("next");
-    else el.classList.add("locked");
+    const discoveryState = getNodeDiscoveryState(node);
+    el.dataset.discovery = discoveryState;
+    if (discoveryState === "done") el.classList.add("done");
+    else if (discoveryState === "current") el.classList.add("next", "current");
+    else if (discoveryState === "locked") el.classList.add("locked", "preview-locked");
+    else el.classList.add("locked", "mystery");
 
     if (node.type === "rank") {
       el.classList.add("rank-node", `rank-${node.rank.toLowerCase()}`);
@@ -727,7 +815,7 @@ function renderTree() {
         <span class="rank-symbol">${getRankIconSvg(node.rank)}</span>
         <span class="node-target">${node.rank.toUpperCase()}</span>
         <span class="node-label">RANG</span>
-        ${done ? '<span class="rank-complete-pill">RANG ERREICHT</span>' : ''}
+        ${done ? '<span class="rank-complete-pill">RANG ERREICHT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '')}
       `;
       el.addEventListener("click", () => alert(getRankDescription(node)));
     } else if (node.type === "skill") {
@@ -739,7 +827,7 @@ function renderTree() {
         <span class="variant-skill-node-icon">${getVariantIconSvg(node.variant)}</span>
         <span class="node-target">${meta.label.toUpperCase()}</span>
         <span class="node-label">${progressCount}/10</span>
-        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (!available ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>')}
+        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>')}
       `;
       el.addEventListener("click", () => openVariantModal(node.variant));
     } else {
@@ -749,20 +837,30 @@ function renderTree() {
       const metricIcon = node.metric === "variantMax"
         ? getVariantIconSvg(node.variant)
         : getMetricIconSvg(node.metric === "standardMax" ? "max" : node.metric);
-      el.innerHTML = `
-        <span class="node-icon">${metricIcon}</span>
-        <span class="node-target">${node.target}</span>
-        <span class="node-label">${title}</span>
-        <span class="node-progress"><span style="width:${progress}%"></span></span>
-        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (!available ? '<span class="node-lock">🔒</span>' : '')}
-      `;
+
+      if (discoveryState === "mystery") {
+        el.innerHTML = `
+          <span class="mystery-mark">?</span>
+          <span class="node-label">GEHEIM</span>
+        `;
+        el.setAttribute("aria-label", "Geheimes Ziel");
+      } else {
+        el.innerHTML = `
+          <span class="node-icon">${metricIcon}</span>
+          <span class="node-target">${node.target}</span>
+          <span class="node-label">${discoveryState === "current" ? `${current}/${node.target} · ${title}` : title}</span>
+          ${discoveryState === "current" || done ? `<span class="node-progress"><span style="width:${progress}%"></span></span>` : '<span class="node-progress locked-progress"><span></span></span>'}
+          ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '')}
+        `;
+      }
 
       el.addEventListener("click", () => {
+        if (discoveryState === "mystery") return;
         const currentValue = nodeValue(node);
         let detail = `${getNodeRequirementLabel(node)}\nAktuell: ${currentValue}`;
+        if (discoveryState === "locked") detail += `\n\nSchließe zuerst das vorherige Ziel ab.`;
         if (node.metric === "week") detail += `\n\nEine Woche läuft von Montag bis Sonntag.`;
         if (node.metric === "variantMax") detail += `\n\nDiese Wiederholungen zählen nur für ${VARIANT_META[node.variant]?.label || "diese Variante"}.`;
-        if (node.metric === "variantPoints") detail += `\n\nGroße Varianten-Knoten antippen, um die einzelnen Unter-Meilensteine zu sehen.`;
         alert(detail);
       });
     }
@@ -1199,6 +1297,7 @@ function showStep(stepName) {
 
 function openTraining() {
   resetTrainingSession();
+  updateVariantAvailability();
   trainingModal.classList.remove("hidden");
   document.body.style.overflow = "hidden";
   showStep("exercise");
@@ -1225,6 +1324,7 @@ function updateQuickVariantPill() {
 }
 
 function setSelectedTrainingVariant(variant) {
+  if (!isVariantUnlocked(variant)) return;
   currentTrainingVariant = VARIANT_META[variant] ? variant : "standard";
   variantCards.forEach(card => card.classList.toggle("selected", card.dataset.variant === currentTrainingVariant));
   workoutVariantButtons.forEach(button => button.classList.toggle("selected", button.dataset.workoutVariant === currentTrainingVariant));
@@ -1354,6 +1454,7 @@ function resetTrainingSession() {
 }
 
 function selectWorkoutVariant(variant) {
+  if (!isVariantUnlocked(variant)) return;
   setSelectedTrainingVariant(variant);
   if (trainingPhase === "prep") {
     showActiveUI();

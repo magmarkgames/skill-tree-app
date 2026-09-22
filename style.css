@@ -3300,3 +3300,152 @@ h2 { margin-bottom: 0; font-size: 21px; }
   #trainingModal.quick-theme .pause-ready-hint { display: none; }
   #trainingModal.quick-theme .pause-panel #startWorkoutBtn.pause-next-set-btn { min-height: 40px; }
 }
+
+/* ======================================================================
+   v0.10.13 — Discovery tree: green completed / current / locked / mystery
+   ====================================================================== */
+
+:root {
+  --tree-complete: #25b86f;
+  --tree-complete-dark: #168953;
+  --tree-complete-soft: #dff7ea;
+}
+
+/* One unmistakable language across every chapter: green means finished. */
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) {
+  border-color: var(--tree-complete-dark) !important;
+  outline: 3px solid var(--tree-complete) !important;
+  outline-offset: 2px;
+  background: linear-gradient(155deg, #54d591 0%, var(--tree-complete) 68%, #1ea965 100%) !important;
+  color: #fff !important;
+}
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-target,
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-label,
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-icon {
+  color: #fff !important;
+}
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-progress {
+  background: rgba(255,255,255,.28) !important;
+}
+.tree-v10 .skill-node.done:not(.rank-node):not(.variant-skill-node) .node-progress span {
+  background: #fff !important;
+}
+.tree-v10 .skill-node.done .node-complete-pill,
+.tree-v10 .rank-node.done .rank-complete-pill {
+  background: var(--tree-complete-dark) !important;
+  border-color: #fff !important;
+}
+
+/* Completed generated rank / exercise badges get a cheap solid green overlay.
+   No blur/filter is used, so the mobile scrolling performance stays intact. */
+.tree-v10 .rank-node.done,
+.tree-v10 .variant-skill-node.done {
+  opacity: 1 !important;
+}
+.tree-v10 .rank-node.done::before,
+.tree-v10 .variant-skill-node.done::before {
+  content: "";
+  display: block !important;
+  position: absolute;
+  inset: 4px 7px 5px;
+  z-index: 1;
+  border: 3px solid #fff;
+  clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  background: var(--tree-complete);
+  pointer-events: none;
+}
+.tree-v10 .rank-node.done .rank-symbol,
+.tree-v10 .variant-skill-node.done .variant-skill-node-icon {
+  opacity: .20;
+}
+.tree-v10 .rank-node.done .node-target,
+.tree-v10 .variant-skill-node.done .node-target,
+.tree-v10 .variant-skill-node.done .node-label,
+.tree-v10 .rank-node.done .rank-complete-pill,
+.tree-v10 .variant-skill-node.done .node-complete-pill {
+  z-index: 3;
+}
+.tree-v10 .variant-skill-node.done .node-target {
+  border-color: rgba(255,255,255,.9) !important;
+  background: rgba(16,93,58,.92) !important;
+}
+.tree-v10 .variant-skill-node.done .node-label { color: #175f42 !important; }
+
+/* Finished path = green path. */
+.tree-v10 .connector.done {
+  background: var(--tree-complete) !important;
+}
+
+/* Current reachable goal keeps the material of its rank chapter. */
+.tree-v10 .skill-node.current:not(.rank-node):not(.variant-skill-node) {
+  border-color: var(--tier-main) !important;
+  background: linear-gradient(180deg, #fff 0%, var(--tier-soft) 100%) !important;
+  opacity: 1 !important;
+}
+
+/* The immediate next goal is visible but unmistakably locked. */
+.tree-v10 .skill-node.preview-locked:not(.rank-node):not(.variant-skill-node) {
+  opacity: .72 !important;
+  border-color: var(--tier-mid) !important;
+  background: linear-gradient(180deg, #fff 0%, var(--tier-soft) 100%) !important;
+}
+.tree-v10 .skill-node.preview-locked .node-lock {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  top: 5px;
+  right: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  font-size: 12px;
+}
+.tree-v10 .locked-progress { opacity: .38; }
+.tree-v10 .locked-progress span { width: 0 !important; }
+
+/* From the goal after next onward, small milestones stay secret. */
+.tree-v10 .skill-node.mystery:not(.rank-node):not(.variant-skill-node) {
+  opacity: 1 !important;
+  border: 3px dashed #c4cfda !important;
+  outline: none !important;
+  background: #edf2f6 !important;
+  color: #718196 !important;
+}
+.tree-v10 .skill-node.mystery .mystery-mark {
+  display: block;
+  margin-top: -2px;
+  color: #76879b;
+  font-size: 38px;
+  line-height: .95;
+  font-weight: 950;
+}
+.tree-v10 .skill-node.mystery .node-label {
+  margin-top: 6px;
+  color: #8a99aa !important;
+  font-size: 8px;
+  letter-spacing: .12em;
+}
+
+/* Big ranks / unlock challenges remain visible as teasers even when locked. */
+.tree-v10 .rank-node.preview-locked,
+.tree-v10 .variant-skill-node.preview-locked {
+  opacity: .55 !important;
+}
+.tree-v10 .rank-node .node-lock,
+.tree-v10 .variant-skill-node .node-lock {
+  z-index: 5;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.94);
+  font-size: 12px;
+}
+
+/* A variant that has not been unlocked in the Skill Tree does not exist in the
+   workout picker yet. This avoids spoilers and makes unlocks meaningful. */
+.variant-card.unlock-hidden,
+.workout-variant-btn.unlock-hidden {
+  display: none !important;
+}

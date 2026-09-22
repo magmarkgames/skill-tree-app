@@ -1,4 +1,12 @@
-# Skill Tree App v0.10.12
+# Skill Tree App v0.10.13
+
+## v0.10.13
+
+- Abgeschlossene Skill-Tree-Knoten sind jetzt einheitlich grün.
+- Pro Fortschrittslinie ist nur das aktuelle Ziel vollständig offen; das nächste Ziel ist sichtbar + gesperrt, spätere Zwischenziele erscheinen als ?.
+- Ränge und große Skill-/Varianten-Freischaltungen bleiben als Teaser sichtbar.
+- Zukünftige Varianten mit Unlock-Knoten werden im Training erst angezeigt, wenn ihr Skill-Tree-Knoten erreichbar/freigeschaltet ist.
+- Erste geheime Ziele nach Silber wurden vorbereitet, damit die ?-Logik auch am oberen Ende des aktuellen Trees sichtbar bleibt.
 
 ## v0.10.12
 
