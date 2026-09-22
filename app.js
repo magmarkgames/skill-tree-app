@@ -413,7 +413,7 @@ function showView(name) {
   if (name === "tree") {
     renderTree();
     requestAnimationFrame(() => {
-      treeScroll.scrollLeft = Math.max(0, (treeScroll.scrollWidth - treeScroll.clientWidth) / 2);
+      treeScroll.scrollLeft = 0;
       treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight - 24);
     });
   }
@@ -623,26 +623,50 @@ function getNodeRequirementLabel(node) {
   return `${node.target}`;
 }
 
+const TREE_COLUMN_ANCHORS = [52, 188, 328, 468, 595];
+
+function getTreeColumnIndex(node) {
+  let closestIndex = 0;
+  let closestDistance = Infinity;
+  TREE_COLUMN_ANCHORS.forEach((anchor, index) => {
+    const distance = Math.abs((node.x ?? TREE_COLUMN_ANCHORS[2]) - anchor);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index;
+    }
+  });
+  return closestIndex;
+}
+
+function getTreeColumnCenters() {
+  const width = Math.max(280, skillTree.clientWidth || treeScroll.clientWidth || window.innerWidth || 360);
+  // Matches the responsive CSS node size closely. The extra side padding keeps
+  // the first/last badges comfortably inside the viewport.
+  const nodeSize = Math.min(72, Math.max(54, ((window.innerWidth || width) - 48) / 5));
+  const sidePadding = nodeSize / 2 + 6;
+  const usableWidth = Math.max(0, width - sidePadding * 2);
+  return TREE_COLUMN_ANCHORS.map((_, index) => sidePadding + (usableWidth * index / 4));
+}
+
+function positionTreeNode(el, node, columnCenters) {
+  const column = getTreeColumnIndex(node);
+  const centerX = columnCenters[column];
+  el.style.left = `${Math.round(centerX - el.offsetWidth / 2)}px`;
+  el.style.top = `${node.y}px`;
+}
+
 function renderTree() {
   skillTree.innerHTML = "";
 
-  SKILL_NODES.forEach(node => {
-    (node.parents || []).forEach(parentId => {
-      const parent = getNode(parentId);
-      if (!parent) return;
-      const line = createConnector(parent, node);
-      if (isNodeDone(parent) && isNodeDone(node)) line.classList.add("done");
-      else if (isNodeDone(parent) && isNodeAvailable(node)) line.classList.add("active");
-      skillTree.appendChild(line);
-    });
-  });
+  const nodeElements = new Map();
+  const columnCenters = getTreeColumnCenters();
 
+  // Render nodes first so we can use their real responsive dimensions for the
+  // connector geometry. This keeps all five columns aligned on every phone.
   SKILL_NODES.forEach(node => {
     const el = document.createElement("button");
     el.type = "button";
     el.className = `skill-node branch-${node.branch}`;
-    el.style.left = `${node.x}px`;
-    el.style.top = `${node.y}px`;
     if (node.variant && VARIANT_META[node.variant]) {
       el.style.setProperty("--branch", VARIANT_META[node.variant].color);
     }
@@ -661,11 +685,7 @@ function renderTree() {
         <span class="node-label">RANG</span>
       `;
       el.addEventListener("click", () => alert(getRankDescription(node)));
-      skillTree.appendChild(el);
-      return;
-    }
-
-    if (node.type === "skill") {
+    } else if (node.type === "skill") {
       const meta = VARIANT_META[node.variant] || { label: node.variant, color: "#8B6CFF" };
       const progressCount = getVariantMilestoneCount(node.variant);
       el.classList.add("variant-skill-node", `variant-${node.variant}`);
@@ -677,39 +697,49 @@ function renderTree() {
         ${!done && !available ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>'}
       `;
       el.addEventListener("click", () => openVariantModal(node.variant));
-      skillTree.appendChild(el);
-      return;
+    } else {
+      const current = nodeValue(node);
+      const title = getNodeTitle(node);
+      const progress = Math.max(0, Math.min(100, Math.round((current / Math.max(1, node.target)) * 100)));
+      const metricIcon = node.metric === "variantMax"
+        ? getVariantIconSvg(node.variant)
+        : getMetricIconSvg(node.metric === "standardMax" ? "max" : node.metric);
+      el.innerHTML = `
+        <span class="node-icon">${metricIcon}</span>
+        <span class="node-target">${node.target}</span>
+        <span class="node-label">${title}</span>
+        <span class="node-progress"><span style="width:${progress}%"></span></span>
+        ${!done && !available ? '<span class="node-lock">🔒</span>' : ''}
+      `;
+
+      el.addEventListener("click", () => {
+        const currentValue = nodeValue(node);
+        let detail = `${getNodeRequirementLabel(node)}\nAktuell: ${currentValue}`;
+        if (node.metric === "week") detail += `\n\nEine Woche läuft von Montag bis Sonntag.`;
+        if (node.metric === "variantMax") detail += `\n\nDiese Wiederholungen zählen nur für ${VARIANT_META[node.variant]?.label || "diese Variante"}.`;
+        if (node.metric === "variantPoints") detail += `\n\nGroße Varianten-Knoten antippen, um die einzelnen Unter-Meilensteine zu sehen.`;
+        alert(detail);
+      });
     }
 
-    const current = nodeValue(node);
-    const title = getNodeTitle(node);
-    const progress = Math.max(0, Math.min(100, Math.round((current / Math.max(1, node.target)) * 100)));
-    const metricIcon = node.metric === "variantMax"
-      ? getVariantIconSvg(node.variant)
-      : getMetricIconSvg(node.metric === "standardMax" ? "max" : node.metric);
-    el.innerHTML = `
-      <span class="node-icon">${metricIcon}</span>
-      <span class="node-target">${node.target}</span>
-      <span class="node-label">${title}</span>
-      <span class="node-progress"><span style="width:${progress}%"></span></span>
-      ${!done && !available ? '<span class="node-lock">🔒</span>' : ''}
-    `;
-
-    el.addEventListener("click", () => {
-      const currentValue = nodeValue(node);
-      let detail = `${getNodeRequirementLabel(node)}
-Aktuell: ${currentValue}`;
-      if (node.metric === "week") detail += `\n\nEine Woche läuft von Montag bis Sonntag.`;
-      if (node.metric === "variantMax") detail += `
-
-Diese Wiederholungen zählen nur für ${VARIANT_META[node.variant]?.label || "diese Variante"}.`;
-      if (node.metric === "variantPoints") detail += `
-
-Große Varianten-Knoten antippen, um die einzelnen Unter-Meilensteine zu sehen.`;
-      alert(detail);
-    });
-
     skillTree.appendChild(el);
+    positionTreeNode(el, node, columnCenters);
+    nodeElements.set(node.id, el);
+  });
+
+  // Connectors are appended after the nodes but remain visually behind them
+  // through z-index. Using actual element sizes avoids misalignment when the
+  // five columns shrink on narrower displays.
+  SKILL_NODES.forEach(node => {
+    (node.parents || []).forEach(parentId => {
+      const parent = getNode(parentId);
+      if (!parent) return;
+      const line = createConnector(parent, node, nodeElements);
+      if (!line) return;
+      if (isNodeDone(parent) && isNodeDone(node)) line.classList.add("done");
+      else if (isNodeDone(parent) && isNodeAvailable(node)) line.classList.add("active");
+      skillTree.appendChild(line);
+    });
   });
 }
 
@@ -845,22 +875,18 @@ function renderLiveGoals() {
   });
 }
 
-function getNodeDimensions(node) {
-  if (node.type === "rank") return { width: 130, height: 114 };
-  if (node.type === "skill") return { width: 126, height: 112 };
-  return { width: 104, height: 104 };
-}
+function createConnector(from, to, nodeElements) {
+  const fromEl = nodeElements.get(from.id);
+  const toEl = nodeElements.get(to.id);
+  if (!fromEl || !toEl) return null;
 
-function createConnector(from, to) {
   const line = document.createElement("div");
   line.className = `connector branch-${to.branch}`;
 
-  const fromSize = getNodeDimensions(from);
-  const toSize = getNodeDimensions(to);
-  const x1 = from.x + fromSize.width / 2;
-  const y1 = from.y + fromSize.height / 2;
-  const x2 = to.x + toSize.width / 2;
-  const y2 = to.y + toSize.height / 2;
+  const x1 = fromEl.offsetLeft + fromEl.offsetWidth / 2;
+  const y1 = fromEl.offsetTop + fromEl.offsetHeight / 2;
+  const x2 = toEl.offsetLeft + toEl.offsetWidth / 2;
+  const y2 = toEl.offsetTop + toEl.offsetHeight / 2;
   const dx = x2 - x1;
   const dy = y2 - y1;
   const length = Math.hypot(dx, dy);
@@ -1775,6 +1801,13 @@ function closeTreeStats() {
 }
 
 // ---------- Events ----------
+let treeResizeTimer = null;
+window.addEventListener("resize", () => {
+  if (treeView.classList.contains("hidden")) return;
+  clearTimeout(treeResizeTimer);
+  treeResizeTimer = setTimeout(() => renderTree(), 120);
+});
+
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("openTreeStatsBtn").addEventListener("click", openTreeStats);
