@@ -4515,3 +4515,43 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .home-rank-preview { grid-template-columns: 72px 1fr; }
   .home-rank-icon, .home-rank-icon img { width: 72px; height: 72px; }
 }
+
+
+/* ==========================================================================
+   v0.10.25 — category icons refresh + tree bottom scroll fix
+   ========================================================================== */
+.home-discipline-tab {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.home-discipline-tab strong,
+.home-discipline-tab span:not(.discipline-icon) {
+  position: relative;
+  z-index: 1;
+}
+.home-discipline-tab .discipline-icon {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 1px;
+}
+.home-discipline-tab .discipline-icon svg {
+  width: 26px;
+  height: 26px;
+}
+.home-discipline-tab.discipline-push { color: #1f7ef0; }
+.home-discipline-tab.discipline-run { color: #2fb878; }
+.home-discipline-tab.discipline-pull { color: #7450d8; }
+.home-discipline-tab.discipline-core { color: #ff8c18; }
+.home-discipline-tab.active .discipline-icon { filter: drop-shadow(0 3px 8px rgba(31,126,240,.16)); }
+.home-discipline-tab.locked-feature { opacity: .72; filter: none; }
+.home-discipline-tab.locked-feature.discipline-run { background: linear-gradient(180deg, #fbfefd, #f5fbf7); }
+.home-discipline-tab.locked-feature.discipline-pull { background: linear-gradient(180deg, #fcfbff, #f8f5ff); }
+.home-discipline-tab.locked-feature.discipline-core { background: linear-gradient(180deg, #fffdf9, #fff7ef); }
+
+.tree-view .tree-scroll {
+  padding-bottom: 180px;
+}
+.tree {
+  padding-bottom: 180px;
+}

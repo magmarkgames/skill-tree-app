@@ -613,7 +613,7 @@ function showView(name) {
       const bottomEdge = lowestNode
         ? lowestNode.offsetTop + lowestNode.offsetHeight + 16
         : treeScroll.scrollHeight;
-      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight + 150);
+      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight + 240);
     });
   }
 
@@ -1252,7 +1252,7 @@ function renderTree() {
     const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
     return Math.max(max, getScaledTreeY(node.y) + approxSize);
   }, 0);
-  skillTree.style.height = `${Math.max(1900, roughBottom + 240)}px`;
+  skillTree.style.height = `${Math.max(2100, roughBottom + 420)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();
