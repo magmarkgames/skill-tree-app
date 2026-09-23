@@ -1180,6 +1180,12 @@ function getNodeRequirementLabel(node) {
 }
 
 const TREE_COLUMN_ANCHORS = [52, 188, 328, 468, 595];
+const TREE_VERTICAL_SCALE = 0.84;
+const TREE_TOP_PADDING = 18;
+
+function getScaledTreeY(y) {
+  return Math.round((Number(y) || 0) * TREE_VERTICAL_SCALE) + TREE_TOP_PADDING;
+}
 
 function getTreeColumnIndex(node) {
   let closestIndex = 0;
@@ -1208,11 +1214,18 @@ function positionTreeNode(el, node, columnCenters) {
   const column = getTreeColumnIndex(node);
   const centerX = columnCenters[column];
   el.style.left = `${Math.round(centerX - el.offsetWidth / 2)}px`;
-  el.style.top = `${node.y}px`;
+  el.style.top = `${getScaledTreeY(node.y)}px`;
 }
 
 function renderTree() {
   skillTree.innerHTML = "";
+
+  const visibleNodes = SKILL_NODES.filter(node => shouldRenderTreeNode(node));
+  const roughBottom = visibleNodes.reduce((max, node) => {
+    const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
+    return Math.max(max, getScaledTreeY(node.y) + approxSize);
+  }, 0);
+  skillTree.style.height = `${Math.max(1700, roughBottom + 48)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();

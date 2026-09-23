@@ -4151,3 +4151,100 @@ h2 { margin-bottom: 0; font-size: 21px; }
     font-size: 22px;
   }
 }
+
+
+/* v0.10.20 readability + compact tree */
+.variant-sheet-panel {
+  color: #33435f;
+  background:
+    radial-gradient(circle at top center, rgba(var(--variant-rgb), 0.20), transparent 46%),
+    linear-gradient(180deg, #fcfbff 0%, #f4efff 100%);
+}
+
+.variant-modal-head h2,
+#variantModalTitle {
+  color: #2f3a60;
+  text-shadow: none;
+}
+
+.variant-modal-head .eyebrow {
+  color: #7b739b;
+}
+
+.variant-back-hint,
+.variant-sheet-progress small,
+#variantModalSubtitle {
+  color: #6b6f87;
+}
+
+.variant-sheet-progress strong {
+  color: #544a85;
+}
+
+.variant-skill-hero {
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.16), rgba(255,255,255,0.92));
+}
+
+.variant-quick-stat {
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.16), rgba(255,255,255,0.94));
+  border-color: rgba(var(--variant-rgb), 0.28);
+}
+
+.variant-quick-stat strong {
+  color: #4f477f;
+}
+
+.variant-quick-stat span {
+  color: #716b92;
+}
+
+.variant-subtree-card {
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.14), rgba(255,255,255,0.92));
+  border-color: rgba(var(--variant-rgb), 0.26);
+}
+
+.variant-mini-lines line {
+  stroke: rgba(var(--variant-rgb), 0.55);
+  stroke-width: 1.25;
+}
+
+.variant-mini-node {
+  border-color: rgba(var(--variant-rgb), 0.42);
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.18), rgba(248,245,255,0.98));
+}
+
+.variant-mini-root {
+  border-color: rgba(var(--variant-rgb), 0.54);
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.28), rgba(250,247,255,0.98));
+}
+
+.variant-mini-target {
+  color: #4d467b;
+}
+
+.variant-mini-label {
+  color: #5b5486;
+}
+
+.variant-mini-progress {
+  color: #746d96;
+}
+
+.variant-mini-icon .app-asset-icon {
+  filter: none;
+}
+
+.tree-v10 .variant-skill-node .node-label {
+  color: #4f5f7c;
+  font-weight: 800;
+}
+
+@media (max-width: 520px) {
+  .variant-subtree-card {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .variant-mini-node {
+    border-width: 2.5px;
+  }
+}
