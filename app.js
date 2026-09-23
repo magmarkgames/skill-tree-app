@@ -90,6 +90,26 @@ const VARIANT_TREE_MILESTONES = {
   total: [10, 25, 75, 150, 300]
 };
 
+// v0.10.19: Jede Variante hat jetzt einen eigenen kleinen Unter-Skill-Tree.
+// Der Hauptbaum zeigt nur noch den großen Varianten-Knoten und einen
+// Prozentwert, wie weit dieser Unterbaum bereits abgeschlossen ist.
+const VARIANT_SUBTREE_MILESTONES = {
+  max: [3, 8, 15],
+  sets: [3, 10, 25],
+  day: [10, 25, 50],
+  week: [20, 60, 150],
+  total: [10, 30, 75]
+};
+
+const VARIANT_SUBTREE_LAYOUT = {
+  root: { x: 50, y: 84 },
+  max: { x: 14, y: 18 },
+  day: { x: 50, y: 10 },
+  total: { x: 86, y: 18 },
+  sets: { x: 28, y: 46 },
+  week: { x: 72, y: 46 }
+};
+
 const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
 const HOME_DAY_TARGETS = [20, 50, 100, 200, 400, 700, 1000, 1500, 2500];
 const HOME_WEEK_TARGETS = [75, 150, 250, 500, 1000, 1500, 3000, 5000, 7500];
@@ -276,7 +296,7 @@ const SKILL_NODES = [
   { id: "trainingDays50", type: "metric", metric: "trainingDays", branch: "week", target: 50, x: 468, y: 1620, parents: ["diamondRank"], tier: "diamant", discoveryGroup: "main:days" },
 
   { id: "diamond2Trial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 150, x: 328, y: 1440, parents: ["diamondRank"], tier: "diamant", challengeTitle: "DIAMANT II", challengeShort: "150 WDH.", challengeIcon: "◆" },
-  { id: "diamond2Rank", type: "rank", branch: "rank", rank: "Diamant II", rankAsset: "Diamant", x: 328, y: 1260, parents: ["standard125", "total25000", "trainingDays50", "handstandMastery", "diamond2Trial"], requirementCount: 4, requiredParents: ["handstandMastery", "diamond2Trial"], tier: "diamant" },
+  { id: "diamond2Rank", type: "rank", branch: "rank", rank: "Diamant II", rankAsset: "Diamant", x: 328, y: 1260, parents: ["standard125", "total25000", "trainingDays50", "handstandSkill", "diamond2Trial"], requirementCount: 4, requiredParents: ["handstandSkill", "diamond2Trial"], tier: "diamant" },
 
   // -----------------------------------------------------------------------
   // DIAMANT II -> III — Pseudo Planche als neuer Geheim-/Mastery-Ast
@@ -299,7 +319,7 @@ const SKILL_NODES = [
   { id: "trainingDays100", type: "metric", metric: "trainingDays", branch: "week", target: 100, x: 468, y: 540, parents: ["diamond3Rank"], tier: "diamant", discoveryGroup: "main:days" },
 
   { id: "diamond4Trial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 250, x: 328, y: 360, parents: ["diamond3Rank"], tier: "diamant", challengeTitle: "FINAL-PRÜFUNG", challengeShort: "250 WDH.", challengeIcon: "◆" },
-  { id: "diamond4Rank", type: "rank", branch: "rank", rank: "Diamant IV", rankAsset: "Diamant", x: 328, y: 180, parents: ["standard200", "total100000", "trainingDays100", "pseudoPlancheMastery", "diamond4Trial"], requirementCount: 4, requiredParents: ["pseudoPlancheMastery", "diamond4Trial"], tier: "diamant" }
+  { id: "diamond4Rank", type: "rank", branch: "rank", rank: "Diamant IV", rankAsset: "Diamant", x: 328, y: 180, parents: ["standard200", "total100000", "trainingDays100", "pseudoPlancheSkill", "diamond4Trial"], requirementCount: 4, requiredParents: ["pseudoPlancheSkill", "diamond4Trial"], tier: "diamant" }
 ];
 
 let progress = loadProgress();
@@ -448,13 +468,14 @@ const resultSetCount = document.getElementById("resultSetCount");
 const resultSetsList = document.getElementById("resultSetsList");
 
 const variantModal = document.getElementById("variantModal");
+const variantSheetPanel = document.getElementById("variantSheetPanel");
 const closeVariantModalBtn = document.getElementById("closeVariantModalBtn");
 const variantModalTitle = document.getElementById("variantModalTitle");
 const variantModalIcon = document.getElementById("variantModalIcon");
 const variantModalSubtitle = document.getElementById("variantModalSubtitle");
 const variantModalProgress = document.getElementById("variantModalProgress");
-const variantMaxMilestones = document.getElementById("variantMaxMilestones");
-const variantTotalMilestones = document.getElementById("variantTotalMilestones");
+const variantTree = document.getElementById("variantTree");
+const variantQuickStats = document.getElementById("variantQuickStats");
 const liveGoalsList = document.getElementById("liveGoalsList");
 const liveGoalText = document.getElementById("liveGoalText");
 const liveGoalsVariantHint = document.getElementById("liveGoalsVariantHint");
@@ -813,6 +834,112 @@ function getVariantMilestoneCount(variant) {
   return count;
 }
 
+function getVariantSetEntries(variant) {
+  const entries = [];
+  for (const workout of getPushupHistory()) {
+    const workoutDate = workout?.date;
+    const sets = Array.isArray(workout?.sets) ? workout.sets : [];
+    if (sets.length) {
+      for (const set of sets) {
+        const setVariant = VARIANT_META[set?.variant] ? set.variant : "standard";
+        if (setVariant !== variant) continue;
+        entries.push({
+          date: workoutDate,
+          reps: Math.max(0, Number(set?.reps) || 0)
+        });
+      }
+      continue;
+    }
+    const fallbackVariant = VARIANT_META[workout?.variant] ? workout.variant : "standard";
+    if (fallbackVariant !== variant) continue;
+    entries.push({
+      date: workoutDate,
+      reps: Math.max(0, Number(workout?.reps) || 0)
+    });
+  }
+  return entries;
+}
+
+function getVariantHistoryTotalBetween(variant, start, end) {
+  return getVariantSetEntries(variant).reduce((sum, entry) => {
+    const date = new Date(entry?.date);
+    if (Number.isNaN(date.getTime()) || date < start || date >= end) return sum;
+    return sum + Math.max(0, Number(entry?.reps) || 0);
+  }, 0);
+}
+
+function getVariantDynamicStats(variant) {
+  const persisted = getVariantStats(variant);
+  const entries = getVariantSetEntries(variant);
+  const max = Math.max(persisted.max || 0, ...entries.map(entry => Math.max(0, Number(entry.reps) || 0)));
+  const totalFromHistory = entries.reduce((sum, entry) => sum + Math.max(0, Number(entry.reps) || 0), 0);
+  const total = Math.max(persisted.total || 0, totalFromHistory);
+
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endToday = new Date(startToday);
+  endToday.setDate(endToday.getDate() + 1);
+
+  const startWeek = startOfLocalWeek(now);
+  const endWeek = new Date(startWeek);
+  endWeek.setDate(endWeek.getDate() + 7);
+
+  return {
+    max,
+    total,
+    sets: entries.filter(entry => Math.max(0, Number(entry.reps) || 0) > 0).length,
+    day: getVariantHistoryTotalBetween(variant, startToday, endToday),
+    week: getVariantHistoryTotalBetween(variant, startWeek, endWeek)
+  };
+}
+
+function getVariantTreeMetricState(variant, metricKey) {
+  const stats = getVariantDynamicStats(variant);
+  const current = Math.max(0, Number(stats[metricKey]) || 0);
+  const milestones = VARIANT_SUBTREE_MILESTONES[metricKey] || [];
+  const completed = milestones.filter(target => current >= target).length;
+  const total = milestones.length;
+  const done = completed >= total && total > 0;
+  const nextTarget = done ? milestones[total - 1] || 0 : milestones[completed] || 0;
+  const progress = done ? 100 : Math.max(0, Math.min(100, Math.round((current / Math.max(1, nextTarget)) * 100)));
+  return { metricKey, current, milestones, completed, total, done, nextTarget, progress };
+}
+
+function getVariantSubtreeSummary(variant) {
+  const metricKeys = ["max", "sets", "day", "week", "total"];
+  const states = metricKeys.map(metricKey => getVariantTreeMetricState(variant, metricKey));
+  const completed = states.reduce((sum, state) => sum + state.completed, 0);
+  const total = states.reduce((sum, state) => sum + state.total, 0);
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+  return { states, completed, total, percent };
+}
+
+function getVariantTreeMetricLabel(metricKey) {
+  return ({
+    max: "am Stück",
+    sets: "Sets",
+    day: "24h",
+    week: "7 Tage",
+    total: "gesamt"
+  })[metricKey] || metricKey;
+}
+
+function getVariantTreeMetricIcon(metricKey) {
+  if (metricKey === "max") return getMetricIconSvg("max");
+  if (metricKey === "day") return getMetricIconSvg("day");
+  if (metricKey === "week") return getMetricIconSvg("week");
+  if (metricKey === "total") return getMetricIconSvg("total");
+  return '<span class="variant-mini-emoji">▦</span>';
+}
+
+function hexToRgbString(hex) {
+  const normalized = String(hex || "#8B6CFF").replace('#', '');
+  const full = normalized.length === 3 ? normalized.split('').map(ch => ch + ch).join('') : normalized;
+  const num = Number.parseInt(full, 16);
+  if (!Number.isFinite(num)) return '139, 108, 255';
+  return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
+}
+
 function getPushupHistory() {
   return (Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [])
     .filter(item => !item?.exercise || item.exercise === "pushups");
@@ -959,12 +1086,9 @@ function getNodeDiscoveryState(node) {
 
 function shouldRenderTreeNode(node) {
   if (!node) return false;
-  if (node.type === "metric" && node.variant) {
-    const skillParent = (node.parents || [])
-      .map(parentId => getNode(parentId))
-      .find(parent => parent?.type === "skill" && parent.variant === node.variant);
-    if (skillParent && !isNodeDone(skillParent)) return false;
-  }
+  // Varianten-Fortschritt lebt ab v0.10.19 komplett im Unter-Skill-Tree.
+  // Im Hauptbaum bleibt nur noch der große Varianten-Knoten sichtbar.
+  if (node.type === "metric" && node.variant) return false;
   return true;
 }
 
@@ -1143,17 +1267,16 @@ function renderTree() {
       });
     } else if (node.type === "skill") {
       const meta = VARIANT_META[node.variant] || { label: node.variant, color: "#8B6CFF" };
-      const progressCount = node.metric === "variantTotal"
-        ? getVariantStats(node.variant).total
-        : getVariantMilestoneCount(node.variant);
-      const progressTarget = node.metric === "variantTotal" ? (node.target || 10) : 10;
+      const subtree = getVariantSubtreeSummary(node.variant);
+      const progressPercent = subtree.percent;
+      const statusText = progressPercent >= 100 ? '100%' : (done ? 'AKTIV' : (discoveryState === "locked" ? '🔒' : 'ÖFFNEN'));
       el.classList.add("variant-skill-node", `variant-${node.variant}`);
       el.style.setProperty("--variant-color", meta.color);
       el.innerHTML = `
         <span class="variant-skill-node-icon">${getVariantIconSvg(node.variant)}</span>
         <span class="node-target">${(meta.shortLabel || meta.label).toUpperCase()}</span>
-        <span class="node-label">${progressCount}/${progressTarget}</span>
-        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>')}
+        <span class="node-label">${progressPercent}% Skill Tree</span>
+        <span class="node-complete-pill">${statusText}</span>
       `;
       el.addEventListener("click", () => openVariantModal(node.variant));
     } else {
@@ -1221,31 +1344,69 @@ function renderTree() {
 
 function openVariantModal(variant) {
   const meta = VARIANT_META[variant] || { label: variant, color: "#8B6CFF" };
-  const stats = getVariantStats(variant);
-  const milestoneCount = getVariantMilestoneCount(variant);
+  const subtree = getVariantSubtreeSummary(variant);
+  const stats = getVariantDynamicStats(variant);
+  const colorRgb = hexToRgbString(meta.color);
 
   variantModalTitle.textContent = `${meta.label} Push-Up`;
-  variantModalIcon.innerHTML = getVariantIconSvg(variant); 
+  variantModalIcon.innerHTML = getVariantIconSvg(variant);
   variantModalIcon.style.setProperty("--variant-color", meta.color);
-  variantModalSubtitle.textContent = `Unter-Skill-Tree für ${meta.label}. Hauptbaum zeigt später nur den großen Knoten, hier drin liegen die Einzel-Meilensteine.`;
-  variantModalProgress.textContent = `${milestoneCount} / 10`;
+  variantModalSubtitle.textContent = `Eigener Unter-Skill-Tree für ${meta.label}. Hier siehst du Max Reps, Sets, 24h, 7 Tage und Gesamt-Fortschritt.`;
+  variantModalProgress.textContent = `${subtree.percent}%`;
+  variantModal.style.setProperty("--variant-color", meta.color);
+  variantModal.style.setProperty("--variant-rgb", colorRgb);
+  variantSheetPanel?.style.setProperty("--variant-color", meta.color);
+  variantSheetPanel?.style.setProperty("--variant-rgb", colorRgb);
 
-  variantMaxMilestones.innerHTML = "";
-  variantTotalMilestones.innerHTML = "";
+  if (variantQuickStats) {
+    variantQuickStats.innerHTML = `
+      <div class="variant-quick-stat"><strong>${stats.max}</strong><span>Max</span></div>
+      <div class="variant-quick-stat"><strong>${stats.sets}</strong><span>Sets</span></div>
+      <div class="variant-quick-stat"><strong>${stats.day}</strong><span>24h</span></div>
+      <div class="variant-quick-stat"><strong>${stats.week}</strong><span>7 Tage</span></div>
+      <div class="variant-quick-stat"><strong>${stats.total}</strong><span>Gesamt</span></div>
+    `;
+  }
 
-  VARIANT_TREE_MILESTONES.max.forEach(target => {
-    const item = document.createElement("div");
-    item.className = `milestone-item${stats.max >= target ? " done" : ""}`;
-    item.innerHTML = `<strong>${target}</strong><span>am Stück</span>`;
-    variantMaxMilestones.appendChild(item);
-  });
+  if (variantTree) {
+    const layout = VARIANT_SUBTREE_LAYOUT;
+    const root = layout.root;
+    const stateByKey = Object.fromEntries(subtree.states.map(state => [state.metricKey, state]));
+    const metricKeys = ["max", "day", "total", "sets", "week"];
 
-  VARIANT_TREE_MILESTONES.total.forEach(target => {
-    const item = document.createElement("div");
-    item.className = `milestone-item${stats.total >= target ? " done" : ""}`;
-    item.innerHTML = `<strong>${target}</strong><span>gesamt</span>`;
-    variantTotalMilestones.appendChild(item);
-  });
+    const lines = metricKeys.map(metricKey => {
+      const pos = layout[metricKey];
+      return `<line x1="${root.x}" y1="${root.y}" x2="${pos.x}" y2="${pos.y}"></line>`;
+    }).join('');
+
+    const nodes = metricKeys.map(metricKey => {
+      const state = stateByKey[metricKey];
+      const pos = layout[metricKey];
+      const classes = ['variant-mini-node', `metric-${metricKey}`];
+      if (state?.done) classes.push('done');
+      const targetText = state?.done ? '✓' : `${state?.nextTarget || 0}`;
+      const footerText = state?.done ? `${state.completed}/${state.total}` : `${Math.min(state.current, state.nextTarget || state.current)}/${state.nextTarget || 0}`;
+      return `
+        <div class="${classes.join(' ')}" style="left:${pos.x}%; top:${pos.y}%">
+          <span class="variant-mini-icon">${getVariantTreeMetricIcon(metricKey)}</span>
+          <strong class="variant-mini-target">${targetText}</strong>
+          <span class="variant-mini-label">${getVariantTreeMetricLabel(metricKey)}</span>
+          <small class="variant-mini-progress">${footerText}</small>
+        </div>
+      `;
+    }).join('');
+
+    variantTree.innerHTML = `
+      <svg class="variant-mini-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+      ${nodes}
+      <div class="variant-mini-node variant-mini-root ${subtree.percent >= 100 ? 'done' : ''}" style="left:${root.x}%; top:${root.y}%">
+        <span class="variant-mini-icon">${getVariantIconSvg(variant)}</span>
+        <strong class="variant-mini-target">${subtree.percent}%</strong>
+        <span class="variant-mini-label">${meta.shortLabel || meta.label}</span>
+        <small class="variant-mini-progress">${subtree.completed}/${subtree.total} Knoten</small>
+      </div>
+    `;
+  }
 
   variantModal.classList.remove("hidden");
   document.body.style.overflow = "hidden";
@@ -1257,6 +1418,7 @@ function closeVariantModal() {
     document.body.style.overflow = "";
   }
 }
+
 
 function getProjectedMetrics(variant, sessionReps = repCount) {
   const stats = getVariantStats(variant);

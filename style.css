@@ -3932,3 +3932,222 @@ h2 { margin-bottom: 0; font-size: 21px; }
   padding-right: 6px !important;
   white-space: nowrap;
 }
+
+
+/* v0.10.19 Variant sub trees */
+.variant-sheet,
+.variant-sheet-panel {
+  --variant-color: #8B6CFF;
+  --variant-rgb: 139, 108, 255;
+}
+
+.variant-sheet-panel {
+  background:
+    radial-gradient(circle at top center, rgba(var(--variant-rgb), 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.98));
+  border: 1px solid rgba(var(--variant-rgb), 0.18);
+}
+
+.variant-modal-head {
+  align-items: flex-start;
+}
+
+.variant-back-hint {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.variant-sheet-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  min-width: 72px;
+}
+.variant-sheet-progress strong {
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+}
+.variant-sheet-progress small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.variant-skill-hero {
+  border-color: rgba(var(--variant-rgb), 0.18);
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.11), rgba(255,255,255,0.88));
+  align-items: center;
+}
+
+.variant-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.variant-quick-stat {
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(var(--variant-rgb), 0.18);
+  border-radius: 18px;
+  padding: 10px 6px;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(24, 42, 74, 0.08);
+}
+.variant-quick-stat strong {
+  display: block;
+  font-size: 18px;
+  color: var(--text);
+}
+.variant-quick-stat span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.variant-subtree-card {
+  margin-top: 16px;
+  padding: 16px 12px 10px;
+  border-radius: 28px;
+  border: 1px solid rgba(var(--variant-rgb), 0.16);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(var(--variant-rgb), 0.06));
+  box-shadow: 0 16px 40px rgba(24, 42, 74, 0.10);
+}
+
+.variant-mini-tree {
+  position: relative;
+  min-height: 390px;
+}
+
+.variant-mini-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.variant-mini-lines line {
+  stroke: rgba(var(--variant-rgb), 0.35);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.variant-mini-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  min-height: 90px;
+  border-radius: 50%;
+  padding: 9px 7px 8px;
+  border: 3px solid rgba(var(--variant-rgb), 0.28);
+  background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(var(--variant-rgb), 0.08));
+  box-shadow: 0 10px 28px rgba(24, 42, 74, 0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.variant-mini-node.done {
+  background: linear-gradient(180deg, #54d790, #24b26a);
+  border-color: #189d5d;
+}
+.variant-mini-node.done .variant-mini-target,
+.variant-mini-node.done .variant-mini-label,
+.variant-mini-node.done .variant-mini-progress {
+  color: #fff;
+}
+.variant-mini-node.done .variant-mini-icon .app-asset-icon,
+.variant-mini-root.done .variant-mini-icon .app-asset-icon {
+  filter: brightness(0) invert(1);
+}
+
+.variant-mini-root {
+  width: 112px;
+  min-height: 112px;
+  border-radius: 34px;
+  border-color: rgba(var(--variant-rgb), 0.42);
+  background: linear-gradient(180deg, rgba(var(--variant-rgb), 0.18), rgba(255,255,255,0.96));
+}
+
+.variant-mini-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+}
+.variant-mini-icon .app-asset-icon {
+  width: 22px;
+  height: 22px;
+}
+.variant-mini-emoji {
+  font-size: 15px;
+  line-height: 1;
+  color: rgba(var(--variant-rgb), 0.9);
+}
+.variant-mini-target {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text);
+}
+.variant-mini-root .variant-mini-target {
+  font-size: 24px;
+}
+.variant-mini-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+}
+.variant-mini-progress {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.tree-v10 .variant-skill-node .node-label {
+  font-size: 8px;
+  line-height: 1.1;
+}
+.tree-v10 .variant-skill-node .node-complete-pill {
+  min-width: 54px;
+}
+
+@media (max-width: 520px) {
+  .variant-quick-stats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .variant-quick-stat {
+    padding: 9px 4px;
+  }
+  .variant-quick-stat strong {
+    font-size: 16px;
+  }
+  .variant-quick-stat span {
+    font-size: 10px;
+  }
+  .variant-mini-tree {
+    min-height: 360px;
+  }
+  .variant-mini-node {
+    width: 82px;
+    min-height: 82px;
+    padding: 8px 6px;
+  }
+  .variant-mini-root {
+    width: 104px;
+    min-height: 104px;
+  }
+  .variant-mini-target {
+    font-size: 20px;
+  }
+  .variant-mini-root .variant-mini-target {
+    font-size: 22px;
+  }
+}
