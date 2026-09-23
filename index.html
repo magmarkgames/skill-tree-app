@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.10.20</title>
-  <link rel="stylesheet" href="style.css?v=0.10.20" />
+  <title>Power Push – v0.10.21</title>
+  <link rel="stylesheet" href="style.css?v=0.10.21" />
 </head>
 <body>
   <main class="app-shell">
@@ -16,7 +16,13 @@
     <section id="homeView" class="view home-view home-v17">
       <header class="home-brandbar">
         <div class="home-brand">
-          <span class="home-logo" aria-hidden="true"><span></span></span>
+          <span class="home-logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+              <path class="logo-peak-back" d="M10 43 25 21l8 12 7-9 14 19H10Z"/>
+              <path class="logo-peak-front" d="m17 43 11-15 7 10 5-7 8 12H17Z"/>
+              <path class="logo-ridge" d="M18 45h29"/>
+            </svg>
+          </span>
           <div>
             <p class="home-brand-title">Power Push</p>
             <p class="home-brand-subtitle">Stärker. Jeden Tag.</p>
@@ -153,7 +159,7 @@
         <button id="homeNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
-        <button class="home-nav-item locked-feature" type="button" disabled><span>●</span><small>Profil 🔒</small></button>
+        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
       </nav>
     </section>
 
@@ -196,6 +202,60 @@
       <div id="historyList" class="history-list">
         <div class="history-empty">Noch kein Training gespeichert.</div>
       </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profileView" class="view profile-view hidden" aria-labelledby="profileHeading">
+      <header class="view-header profile-header">
+        <button id="profileBackBtn" class="icon-btn" type="button" aria-label="Zur Startseite">←</button>
+        <div>
+          <p class="eyebrow">POWER PUSH</p>
+          <h1 id="profileHeading">Profil</h1>
+        </div>
+        <span class="profile-version-pill">v0.10.21</span>
+      </header>
+
+      <section class="profile-hero-card">
+        <div class="profile-avatar" aria-label="Platzhalter Profilbild">
+          <span>●</span>
+        </div>
+        <div class="profile-identity">
+          <span class="profile-placeholder-label">PLATZHALTER</span>
+          <h2>Dein Name</h2>
+          <p>Power Push Athlet</p>
+        </div>
+        <div class="profile-level-box">
+          <small>LEVEL</small>
+          <strong>1</strong>
+          <span>Platzhalter</span>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-head">
+          <div>
+            <p class="eyebrow">DEINE SAMMLUNG</p>
+            <h2>Badges & Ränge</h2>
+          </div>
+          <span class="profile-section-count">1 aktiv</span>
+        </div>
+
+        <article class="profile-rank-card">
+          <div id="profilePushRankIcon" class="profile-rank-icon"></div>
+          <div class="profile-rank-copy">
+            <span>Push-up Skill Tree</span>
+            <strong id="profilePushRankName">Starter</strong>
+            <small id="profilePushRankHint">Dein aktueller Push-up Rang</small>
+          </div>
+          <button id="profileOpenTreeBtn" class="profile-rank-action" type="button" aria-label="Push-up Skill Tree öffnen">›</button>
+        </article>
+
+        <div class="profile-future-grid" aria-label="Spätere Rang-Bereiche">
+          <article class="profile-future-badge"><span>🔒</span><strong>Laufen</strong><small>Kommt später</small></article>
+          <article class="profile-future-badge"><span>🔒</span><strong>Klimmzüge</strong><small>Kommt später</small></article>
+          <article class="profile-future-badge"><span>🔒</span><strong>Core</strong><small>Kommt später</small></article>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -460,6 +520,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.10.20"></script>
+  <script type="module" src="app.js?v=0.10.21"></script>
 </body>
 </html>

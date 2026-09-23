@@ -380,6 +380,7 @@ let lastPauseVibrationMark = 0;
 const homeView = document.getElementById("homeView");
 const treeView = document.getElementById("treeView");
 const historyView = document.getElementById("historyView");
+const profileView = document.getElementById("profileView");
 const treeScroll = document.getElementById("treeScroll");
 const skillTree = document.getElementById("skillTree");
 
@@ -408,6 +409,9 @@ const homeDayGoalHint = document.getElementById("homeDayGoalHint");
 const homeWeekGoalValue = document.getElementById("homeWeekGoalValue");
 const homeWeekGoalBar = document.getElementById("homeWeekGoalBar");
 const homeWeekGoalHint = document.getElementById("homeWeekGoalHint");
+const profilePushRankIcon = document.getElementById("profilePushRankIcon");
+const profilePushRankName = document.getElementById("profilePushRankName");
+const profilePushRankHint = document.getElementById("profilePushRankHint");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -581,6 +585,7 @@ function showView(name) {
   homeView.classList.toggle("hidden", name !== "home");
   treeView.classList.toggle("hidden", name !== "tree");
   historyView.classList.toggle("hidden", name !== "history");
+  profileView.classList.toggle("hidden", name !== "profile");
 
   window.scrollTo(0, 0);
 
@@ -588,11 +593,20 @@ function showView(name) {
     renderTree();
     requestAnimationFrame(() => {
       treeScroll.scrollLeft = 0;
-      treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight - 24);
+      const nodes = Array.from(skillTree.querySelectorAll(".skill-node"));
+      const lowestNode = nodes.reduce((lowest, node) => {
+        if (!lowest) return node;
+        return node.offsetTop > lowest.offsetTop ? node : lowest;
+      }, null);
+      const bottomEdge = lowestNode
+        ? lowestNode.offsetTop + lowestNode.offsetHeight + 10
+        : treeScroll.scrollHeight;
+      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight);
     });
   }
 
   if (name === "history") renderHistory();
+  if (name === "profile") renderProfile();
 }
 
 function render() {
@@ -628,6 +642,7 @@ function render() {
   updateQuickVariantPill();
   if (!treeView.classList.contains("hidden")) renderTree();
   if (!historyView.classList.contains("hidden")) renderHistory();
+  if (!profileView.classList.contains("hidden")) renderProfile();
   renderLiveGoals();
 }
 
@@ -1225,7 +1240,7 @@ function renderTree() {
     const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
     return Math.max(max, getScaledTreeY(node.y) + approxSize);
   }, 0);
-  skillTree.style.height = `${Math.max(1700, roughBottom + 48)}px`;
+  skillTree.style.height = `${Math.max(1700, roughBottom + 10)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();
@@ -1694,6 +1709,21 @@ function createConnector(from, to, nodeElements) {
   line.style.width = `${length}px`;
   line.style.transform = `rotate(${angle}deg)`;
   return line;
+}
+
+function renderProfile() {
+  if (!profilePushRankName || !profilePushRankIcon) return;
+  const rankName = getCurrentRankName();
+  profilePushRankName.textContent = rankName;
+  profilePushRankIcon.innerHTML = rankName === "Starter"
+    ? getVariantIconSvg("standard", "profile-starter-icon")
+    : getRankIconSvg(rankName, "profile-rank-asset");
+
+  const currentIndex = Math.max(0, RANK_ORDER.indexOf(rankName));
+  const nextRank = RANK_ORDER[currentIndex + 1];
+  profilePushRankHint.textContent = nextRank
+    ? `Aktueller Rang · als Nächstes ${nextRank}`
+    : "Höchsten Push-up Rang erreicht";
 }
 
 // ---------- Historie ----------
@@ -2926,6 +2956,9 @@ document.getElementById("openHomeStatsBtn").addEventListener("click", openTreeSt
 document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("homeNavHistoryBtn").addEventListener("click", () => showView("history"));
+document.getElementById("homeNavProfileBtn").addEventListener("click", () => showView("profile"));
+document.getElementById("profileBackBtn").addEventListener("click", () => showView("home"));
+document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
 
 document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
