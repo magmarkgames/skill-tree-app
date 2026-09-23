@@ -594,7 +594,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.10.26",
+    appVersion: "0.11.0",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -693,7 +693,7 @@ function showView(name) {
     const scrollTreeToStart = () => {
       syncTreeCanvasHeight();
       treeScroll.scrollLeft = 0;
-      treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight);
+      treeScroll.scrollTop = 0;
     };
 
     // Two frames allow responsive badge dimensions to settle first. The small
@@ -3055,6 +3055,390 @@ function openTreeStats() {
 function closeTreeStats() {
   treeStatsSheet.classList.add("hidden");
   document.body.style.overflow = trainingModal.classList.contains("hidden") && variantModal.classList.contains("hidden") ? "" : "hidden";
+}
+
+
+
+// =====================================================================
+// v0.11.0 — Kapitelbasierter Skill Tree (vereinfachte, motivierende Reise)
+// =====================================================================
+const V11_RANK_ORDER = ["Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
+const V11_CHAPTERS = {
+  Holz: {
+    chapter: 1,
+    next: "Stein",
+    examTitle: "Stein-Prüfung",
+    skyQuote: "\u201eKleine Schritte.\nGro\u00dfe Fortschritte.\u201c",
+    skyNote: "Die Reise beginnt mit einem einzigen sauberen Push-up.",
+    variantPath: ["standard", "wide", "diamond"],
+    currentVariant: "wide",
+    challenges: [
+      { id: "firstRep", title: "First Rep", label: "1 Push-up am St\u00fcck", metric: "standardMax", target: 1, icon: "max" },
+      { id: "starterVolume", title: "Volume", label: "25 insgesamt", metric: "total", target: 25, icon: "total" },
+      { id: "starterRoutine", title: "Routine Builder", label: "2 Trainingstage", metric: "trainingDays", target: 2, icon: "week" },
+      { id: "wideStart", title: "Wide", label: "5 Wide Push-ups", metric: "variantTotal", variant: "wide", target: 5, icon: "variant" }
+    ]
+  },
+  Stein: {
+    chapter: 2,
+    next: "Bronze",
+    examTitle: "Bronze-Pr\u00fcfung",
+    skyQuote: "\u201eDisziplin heute.\nSt\u00e4rke morgen.\u201c",
+    skyNote: "Jetzt entstehen Gewohnheit und Selbstvertrauen.",
+    variantPath: ["wide", "diamond", "archer"],
+    currentVariant: "diamond",
+    challenges: [
+      { id: "stoneIron", title: "Iron Set", label: "10 Push-ups am St\u00fcck", metric: "standardMax", target: 10, icon: "max" },
+      { id: "stoneVolume", title: "Volume", label: "75 insgesamt", metric: "total", target: 75, icon: "total" },
+      { id: "stoneRoutine", title: "Routine Builder", label: "4 Trainingstage", metric: "trainingDays", target: 4, icon: "week" },
+      { id: "stoneDiamond", title: "Diamond", label: "5 Diamond Push-ups", metric: "variantTotal", variant: "diamond", target: 5, icon: "variant" }
+    ]
+  },
+  Bronze: {
+    chapter: 3,
+    next: "Silber",
+    examTitle: "Silber-Pr\u00fcfung",
+    skyQuote: "\u201eDisziplin heute.\nSt\u00e4rke morgen.\u201c",
+    skyNote: "Schlie\u00dfe 3 von 4 Herausforderungen, um die Pr\u00fcfung freizuschalten.",
+    variantPath: ["wide", "diamond", "archer"],
+    currentVariant: "diamond",
+    challenges: [
+      { id: "bronzeIron", title: "Iron Set", label: "20 Push-ups am St\u00fcck", metric: "standardMax", target: 20, icon: "max" },
+      { id: "bronzeVolume", title: "Volume", label: "250 insgesamt", metric: "total", target: 250, icon: "total" },
+      { id: "bronzeRoutine", title: "Routine Builder", label: "7 Trainingstage", metric: "trainingDays", target: 7, icon: "week" },
+      { id: "bronzeDiamond", title: "Diamond", label: "10 Diamond Push-ups", metric: "variantTotal", variant: "diamond", target: 10, icon: "variant" }
+    ]
+  },
+  Silber: {
+    chapter: 4,
+    next: "Gold",
+    examTitle: "Gold-Pr\u00fcfung",
+    skyQuote: "\u201eBleib dran.\nDas n\u00e4chste Level wartet.\u201c",
+    skyNote: "Du bist kein Anf\u00e4nger mehr \u2013 jetzt kommt echte Belastbarkeit.",
+    variantPath: ["diamond", "explosive", "archer"],
+    currentVariant: "explosive",
+    challenges: [
+      { id: "silverIron", title: "Power Set", label: "35 Push-ups am St\u00fcck", metric: "standardMax", target: 35, icon: "max" },
+      { id: "silverVolume", title: "Volume", label: "750 insgesamt", metric: "total", target: 750, icon: "total" },
+      { id: "silverRoutine", title: "Routine Builder", label: "12 Trainingstage", metric: "trainingDays", target: 12, icon: "week" },
+      { id: "silverExplosive", title: "Explosive", label: "10 Explosive Push-ups", metric: "variantTotal", variant: "explosive", target: 10, icon: "variant" }
+    ]
+  },
+  Gold: {
+    chapter: 5,
+    next: "Platin",
+    examTitle: "Platin-Pr\u00fcfung",
+    skyQuote: "\u201eMehr Kontrolle.\nMehr Kraft.\u201c",
+    skyNote: "Hier z\u00e4hlt nicht nur Volumen, sondern echte Beherrschung.",
+    variantPath: ["explosive", "archer", "handstand"],
+    currentVariant: "archer",
+    challenges: [
+      { id: "goldIron", title: "Elite Set", label: "50 Push-ups am St\u00fcck", metric: "standardMax", target: 50, icon: "max" },
+      { id: "goldVolume", title: "Volume", label: "2.000 insgesamt", metric: "total", target: 2000, icon: "total" },
+      { id: "goldRoutine", title: "Routine Builder", label: "20 Trainingstage", metric: "trainingDays", target: 20, icon: "week" },
+      { id: "goldArcher", title: "Archer", label: "10 Archer Push-ups", metric: "variantTotal", variant: "archer", target: 10, icon: "variant" }
+    ]
+  },
+  Platin: {
+    chapter: 6,
+    next: "Diamant",
+    examTitle: "Diamant-Pr\u00fcfung",
+    skyQuote: "\u201eWenig schaffen viele.\nDurchziehen wenige.\u201c",
+    skyNote: "Nur noch wenige Schritte bis zur obersten Stufe.",
+    variantPath: ["archer", "handstand", "pseudoPlanche"],
+    currentVariant: "handstand",
+    challenges: [
+      { id: "platinIron", title: "Master Set", label: "75 Push-ups am St\u00fcck", metric: "standardMax", target: 75, icon: "max" },
+      { id: "platinVolume", title: "Volume", label: "5.000 insgesamt", metric: "total", target: 5000, icon: "total" },
+      { id: "platinRoutine", title: "Routine Builder", label: "30 Trainingstage", metric: "trainingDays", target: 30, icon: "week" },
+      { id: "platinHandstand", title: "Handstand", label: "5 Handstand Push-ups", metric: "variantTotal", variant: "handstand", target: 5, icon: "variant" }
+    ]
+  },
+  Diamant: {
+    chapter: 7,
+    next: null,
+    examTitle: "Endgame",
+    skyQuote: "\u201eDu bist weit gekommen.\nAber noch lange nicht fertig.\u201c",
+    skyNote: "Ab hier wird aus Fortschritt Meisterschaft.",
+    variantPath: ["handstand", "pseudoPlanche", "pseudoPlanche"],
+    currentVariant: "pseudoPlanche",
+    challenges: [
+      { id: "diamondIron", title: "Legend Set", label: "100 Push-ups am St\u00fcck", metric: "standardMax", target: 100, icon: "max" },
+      { id: "diamondVolume", title: "Volume", label: "10.000 insgesamt", metric: "total", target: 10000, icon: "total" },
+      { id: "diamondRoutine", title: "Routine Builder", label: "50 Trainingstage", metric: "trainingDays", target: 50, icon: "week" },
+      { id: "diamondPlanche", title: "Planche", label: "10 Pseudo Planche", metric: "variantTotal", variant: "pseudoPlanche", target: 10, icon: "variant" }
+    ]
+  }
+};
+
+function getV11RankThemeClass(rank) {
+  const map = { Holz: 'wood', Stein: 'stone', Bronze: 'bronze', Silber: 'silver', Gold: 'gold', Platin: 'platin', Diamant: 'diamant' };
+  return `highlight-${map[rank] || 'bronze'}`;
+}
+
+function normalizeV11Rank(rawRank) {
+  if (String(rawRank || '').startsWith('Diamant')) return 'Diamant';
+  if (!rawRank || rawRank === 'Starter') return 'Holz';
+  return rawRank;
+}
+
+function getV11Chapter() {
+  const displayRank = normalizeV11Rank(getCurrentRankName());
+  return V11_CHAPTERS[displayRank] || V11_CHAPTERS.Holz;
+}
+
+function getV11MetricValue(metric, variant) {
+  switch (metric) {
+    case 'standardMax': return progress.pushupMax;
+    case 'total': return progress.pushupTotal;
+    case 'trainingDays': return getTrainingDayCount();
+    case 'variantTotal': return getVariantStats(variant).total;
+    case 'variantMax': return getVariantStats(variant).max;
+    case 'day': return getTodayTotal();
+    case 'week': return getCurrentWeekTotal();
+    default: return 0;
+  }
+}
+
+function getV11ChallengeState(challenge) {
+  const current = Math.max(0, Number(getV11MetricValue(challenge.metric, challenge.variant)) || 0);
+  const target = Math.max(1, Number(challenge.target) || 1);
+  const done = current >= target;
+  const percent = Math.max(0, Math.min(100, (current / target) * 100));
+  const left = Math.max(0, target - current);
+  return { ...challenge, current, target, done, percent, left };
+}
+
+function getV11ChapterSummary() {
+  const chapter = getV11Chapter();
+  const states = chapter.challenges.map(getV11ChallengeState);
+  const completed = states.filter(item => item.done).length;
+  const examUnlocked = completed >= 3;
+  const nextGoal = states
+    .filter(item => !item.done)
+    .sort((a, b) => (a.left / a.target) - (b.left / b.target) || a.left - b.left)[0] || states[0] || null;
+  return { chapter, states, completed, examUnlocked, nextGoal };
+}
+
+function getV11MetricIconHtml(challenge) {
+  if (challenge.variant) return getVariantIconSvg(challenge.variant);
+  return getMetricIconSvg(challenge.icon || 'max');
+}
+
+function getV11GoalLeftText(state) {
+  if (!state) return 'Alle Ziele dieses Kapitels geschafft.';
+  if (state.left <= 0) return 'Geschafft – die Prüfung wartet!';
+  if (state.metric === 'trainingDays') return `Noch ${state.left} Trainingstag${state.left === 1 ? '' : 'e'}.`;
+  return `Nur noch ${state.left}!`;
+}
+
+function getV11GoalSubtitle(state) {
+  if (!state) return 'Dieses Kapitel ist vollständig abgeschlossen.';
+  return state.label;
+}
+
+function getV11VariantStatus(variant, currentVariant) {
+  const total = getVariantStats(variant).total;
+  if (total > 0) return 'done';
+  if (variant === currentVariant) return 'current';
+  return 'locked';
+}
+
+function renderV11ChallengeCard(state, currentId) {
+  return `
+    <article class="v11-card v11-node-card ${state.done ? 'done' : ''} ${state.id === currentId ? 'current' : ''}">
+      <div class="v11-node-head">
+        <div class="v11-node-icon">${getV11MetricIconHtml(state)}</div>
+        <div>
+          <h3 class="v11-node-title">${state.title}</h3>
+          <p class="v11-node-label">${state.label}</p>
+        </div>
+        <span class="v11-node-check">${state.done ? '✓' : ''}</span>
+      </div>
+      <div class="v11-node-meta">
+        <span class="v11-node-fraction">${Math.min(state.current, state.target)} / ${state.target}</span>
+      </div>
+      <div class="v11-progress"><span style="width:${state.done ? 100 : state.percent}%"></span></div>
+      <div class="v11-node-subcopy">${state.done ? 'Siegel gesammelt' : getV11GoalLeftText(state)}</div>
+    </article>
+  `;
+}
+
+function renderV11VariantItem(variant, currentVariant) {
+  const meta = VARIANT_META[variant] || { label: variant };
+  const status = getV11VariantStatus(variant, currentVariant);
+  const statText = status === 'done'
+    ? `${getVariantStats(variant).total} Reps gesammelt`
+    : status === 'current'
+      ? 'Aktueller Fokus'
+      : 'Noch gesperrt';
+  return `
+    <div class="v11-variant-item ${status}">
+      <div class="v11-variant-icon">${getVariantIconSvg(variant)}</div>
+      <div class="v11-variant-copy"><strong>${meta.label}</strong><small>${statText}</small></div>
+      <span class="v11-variant-state"></span>
+    </div>
+  `;
+}
+
+function renderV11Journey(currentRank, chapterNumber) {
+  const currentIndex = V11_RANK_ORDER.indexOf(currentRank);
+  const ranksToShow = V11_RANK_ORDER.slice(0, Math.max(currentIndex + 1, 1));
+  return ranksToShow.map((rank, idx) => {
+    const isCurrent = idx === currentIndex;
+    const isDone = idx < currentIndex;
+    return `
+      <div class="v11-rank-step ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}">
+        <div class="v11-step-icon">${getRankIconSvg(rank)}</div>
+        <div>
+          <strong class="${getV11RankThemeClass(rank)}">${rank}</strong>
+          <small>Kapitel ${idx + 1}</small>
+          <div class="v11-rank-pill">${isCurrent ? 'DU BIST HIER' : 'GESCHAFFT'}</div>
+        </div>
+      </div>
+    `;
+  }).reverse().join('');
+}
+
+function renderTree() {
+  if (!skillTree) return;
+  const { chapter, states, completed, examUnlocked, nextGoal } = getV11ChapterSummary();
+  const currentRank = normalizeV11Rank(getCurrentRankName());
+  const themeClass = getV11RankThemeClass(currentRank);
+  const nextRank = chapter.next;
+  const goalPercent = nextGoal ? Math.max(6, nextGoal.percent) : 100;
+  const topSealDots = Array.from({ length: 4 }, (_, index) => `<span class="${index < completed ? 'done' : ''}"></span>`).join('');
+  const challengeCards = states.map(state => renderV11ChallengeCard(state, nextGoal?.id)).join('');
+  const nextRankMarkup = nextRank ? `
+    <div class="v11-next-rank">
+      <div class="v11-next-rank-icon">${getRankIconSvg(nextRank)}</div>
+      <span class="v11-next-rank-lock">🔒</span>
+      <strong>${nextRank}</strong>
+      <small>Nächstes Kapitel</small>
+    </div>
+  ` : `
+    <div class="v11-next-rank">
+      <div class="v11-next-rank-icon">${getRankIconSvg('Diamant')}</div>
+      <strong>Endgame</strong>
+      <small>Neue Kapitel folgen</small>
+    </div>
+  `;
+
+  const variantMarkup = (chapter.variantPath || []).map(variant => renderV11VariantItem(variant, chapter.currentVariant)).join('');
+
+  skillTree.className = 'skill-tree-v11';
+  skillTree.innerHTML = `
+    <div class="v11-tree-page">
+      <section class="v11-card v11-summary-card">
+        <div class="v11-rank-copy">
+          <div class="v11-rank-icon">${getRankIconSvg(currentRank)}</div>
+          <div>
+            <span class="v11-kicker">Power Push Journey</span>
+            <h2 class="v11-rank-title">Dein Rang: <span class="${themeClass}">${currentRank}</span></h2>
+            <div class="v11-rank-subline">Kapitel ${chapter.chapter}</div>
+          </div>
+        </div>
+        <div class="v11-seals">
+          <strong>${completed} / 4</strong>
+          <small>Siegel gesammelt</small>
+          <div class="v11-seal-dots">${topSealDots}</div>
+        </div>
+      </section>
+
+      <section class="v11-card v11-goal-card">
+        <div class="v11-goal-icon">${nextGoal ? getV11MetricIconHtml(nextGoal) : getRankIconSvg(currentRank)}</div>
+        <div class="v11-goal-copy">
+          <span class="v11-kicker">Nächstes Ziel</span>
+          <h2>${nextGoal ? nextGoal.title : 'Kapitel abgeschlossen'}</h2>
+          <p>${getV11GoalSubtitle(nextGoal)}</p>
+        </div>
+        <div class="v11-goal-meter">
+          <strong>${nextGoal ? `${Math.min(nextGoal.current, nextGoal.target)} / ${nextGoal.target}` : '100 %'}</strong>
+          <div class="v11-progress"><span style="width:${goalPercent}%"></span></div>
+          <small>${getV11GoalLeftText(nextGoal)}</small>
+        </div>
+      </section>
+
+      <section class="v11-card v11-sky-card">
+        <div class="v11-sky-quote">${chapter.skyQuote.replace(/\n/g, '<br>')}</div>
+        <div class="v11-sky-note">${chapter.skyNote.replace(/\n/g, '<br>')}</div>
+        ${nextRankMarkup}
+        <div class="v11-exam-card ${examUnlocked ? '' : 'locked'}">
+          <div class="v11-exam-badge">🏆</div>
+          <div class="v11-exam-copy">
+            <strong>${chapter.examTitle}</strong>
+            <small>${examUnlocked ? 'freigeschaltet' : 'noch gesperrt'}</small>
+            <p>${examUnlocked ? 'Du kannst den Aufstieg jetzt angehen.' : `Noch ${Math.max(0, 3 - completed)} Siegel bis zur Freischaltung.`}</p>
+            <button class="v11-exam-btn" type="button">${examUnlocked ? 'Prüfung starten →' : 'Weiter trainieren →'}</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="v11-chapter-zone">
+        ${challengeCards}
+      </section>
+
+      <section class="v11-journey-grid">
+        <article class="v11-card v11-rank-journey">
+          <div class="v11-journey-head">
+            <div>
+              <h3>Deine Reise</h3>
+              <p>Ein Kapitel nach dem anderen.</p>
+            </div>
+          </div>
+          <div class="v11-journey-line">
+            ${renderV11Journey(currentRank, chapter.chapter)}
+          </div>
+          <div class="v11-journey-foot">Hier beginnt deine Reise.</div>
+        </article>
+
+        <aside class="v11-card v11-variant-panel">
+          <div>
+            <h3>Skill-Pfad</h3>
+            <p>Varianten</p>
+          </div>
+          <div class="v11-variant-list">${variantMarkup}</div>
+          <div class="v11-variant-foot">Meistere Varianten. Werde vielseitiger.</div>
+        </aside>
+      </section>
+    </div>
+  `;
+}
+
+function syncTreeCanvasHeight() {
+  if (!skillTree) return;
+  skillTree.style.height = 'auto';
+}
+
+function renderHomeDashboard(todayTotal, weekTotal, rankName) {
+  if (!homeRankIcon) return;
+
+  const { chapter, nextGoal } = getV11ChapterSummary();
+  const displayRank = normalizeV11Rank(rankName);
+  homeRankName.textContent = rankName;
+  homeRankIcon.innerHTML = rankName === 'Starter'
+    ? getVariantIconSvg('standard', 'home-starter-icon')
+    : getRankIconSvg(displayRank, 'home-rank-asset');
+
+  homeNextRankLabel.textContent = chapter.next || 'Endgame';
+
+  if (nextGoal) {
+    const current = Math.max(0, nextGoal.current);
+    const target = Math.max(1, nextGoal.target);
+    const percent = Math.max(0, Math.min(100, current / target * 100));
+    homeNextGoalTitle.textContent = nextGoal.title;
+    homeNextGoalValue.textContent = `${Math.min(current, target)} / ${target}`;
+    homeNextGoalProgress.style.width = `${percent}%`;
+    homeNextGoalText.textContent = nextGoal.label;
+  } else {
+    homeNextGoalTitle.textContent = 'Push-up Tree gemeistert';
+    homeNextGoalValue.textContent = '100 %';
+    homeNextGoalProgress.style.width = '100%';
+    homeNextGoalText.textContent = 'Alle aktuell eingebauten Kapitelziele sind geschafft.';
+  }
+
+  renderHomeTimedGoal('day', todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
+  renderHomeTimedGoal('week', weekTotal, homeWeekGoalValue, homeWeekGoalBar, homeWeekGoalHint);
 }
 
 // ---------- Events ----------

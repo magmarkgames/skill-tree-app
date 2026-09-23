@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.10.28</title>
-  <link rel="stylesheet" href="style.css?v=0.10.28" />
+  <title>Power Push – v0.11.0</title>
+  <link rel="stylesheet" href="style.css?v=0.11.0" />
 </head>
 <body>
   <main class="app-shell">
@@ -176,12 +176,12 @@
     </section>
 
     <!-- PUSH-UP TREE -->
-    <section id="treeView" class="view tree-view hidden" aria-labelledby="treeTitle">
+    <section id="treeView" class="view tree-view tree-view-v11 hidden" aria-labelledby="treeTitle">
       <header class="view-header tree-header">
         <button id="treeBackBtn" class="icon-btn" type="button" aria-label="Zur Startseite">←</button>
         <div>
           <p class="eyebrow">POWER PUSH</p>
-          <h1 id="treeTitle">Push-up Skill Tree</h1>
+          <h1 id="treeTitle">Skill Tree</h1>
         </div>
         <button id="openTreeStatsBtn" class="tree-stats-btn" type="button" aria-label="Stats öffnen">
           <span class="tree-stats-btn-icon">▥</span>
@@ -189,8 +189,8 @@
         </button>
       </header>
 
-      <section id="treeScroll" class="tree-scroll tree-scroll-light" aria-label="Vertikal scrollbarer Push-up Skill Tree">
-        <div class="tree tree-v10" id="skillTree" aria-label="Push-up Skill Tree"></div>
+      <section id="treeScroll" class="tree-scroll tree-scroll-light tree-scroll-v11" aria-label="Vertikal scrollbarer Push-up Skill Tree">
+        <div class="tree skill-tree-v11" id="skillTree" aria-label="Push-up Skill Tree"></div>
       </section>
     </section>
 
@@ -239,7 +239,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.10.28</span>
+        <span class="profile-version-pill">v0.11.0</span>
       </header>
 
       <section class="profile-hero-card">
@@ -585,6 +585,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.10.28"></script>
+  <script type="module" src="app.js?v=0.11.0"></script>
 </body>
 </html>
