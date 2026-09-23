@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.10.23</title>
-  <link rel="stylesheet" href="style.css?v=0.10.23" />
+  <title>Power Push – v0.10.24</title>
+  <link rel="stylesheet" href="style.css?v=0.10.24" />
 </head>
 <body>
   <main class="app-shell">
@@ -18,9 +18,9 @@
         <div class="home-brand">
           <span class="home-logo" aria-hidden="true">
             <svg viewBox="0 0 64 64" focusable="false" aria-hidden="true">
-              <path class="logo-peak-back" d="M10 43 25 21l8 12 7-9 14 19H10Z"/>
-              <path class="logo-peak-front" d="m17 43 11-15 7 10 5-7 8 12H17Z"/>
-              <path class="logo-ridge" d="M18 45h29"/>
+              <path class="logo-peak-back" d="M6 45 22 18l9 14 10-12 17 25H6Z"/>
+              <path class="logo-peak-front" d="M13 45 26 28l7 10 6-7 12 14H13Z"/>
+              <path class="logo-ridge" d="M20 46c5-9 9-12 13-22 4 10 7 13 13 22"/>
             </svg>
           </span>
           <div>
@@ -28,9 +28,9 @@
             <p class="home-brand-subtitle">Stärker. Jeden Tag.</p>
           </div>
         </div>
-        <div class="home-brand-actions" aria-label="Spätere Funktionen">
-          <button class="home-icon-action locked-feature" type="button" disabled aria-label="Benachrichtigungen – noch nicht verfügbar">♢<span class="home-action-lock">🔒</span></button>
-          <button class="home-icon-action locked-feature" type="button" disabled aria-label="Einstellungen – noch nicht verfügbar">⚙</button>
+        <div class="home-brand-actions" aria-label="Schnellaktionen">
+          <button class="home-icon-action" type="button" aria-label="Benachrichtigungen"><span class="notif-dot"></span>🔔</button>
+          <button class="home-icon-action" type="button" aria-label="Einstellungen">⚙</button>
         </div>
       </header>
 
@@ -44,7 +44,11 @@
 
       <section class="home-tree-hub" aria-labelledby="homeTreeHeading">
         <div class="home-tree-heading">
-          <span class="home-tree-mark" aria-hidden="true">⌁</span>
+          <span class="home-tree-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+              <path d="M14 31c0-6 4-11 10-13l7-2c3-.9 6 .8 7.1 3.8l1.4 4c.8 2.2-.2 4.6-2.2 5.7l-5 2.6c-2.1 1.1-4.7.5-6.1-1.4l-2.5-3.5-.5 7.1c-.2 3-2.6 5.3-5.5 5.3H12c-1.1 0-2-.9-2-2 0-1 .8-1.9 1.8-2l5-.5.6-8.5c.2-3 2.7-5.2 5.7-5.1l1.6.1-3.1-2.3c-1.8-1.3-4.3-1-5.7.7L13.2 33c-.5.9-1.7 1.3-2.7.7-1-.5-1.4-1.7-.8-2.7L14 31Z" fill="currentColor"/>
+            </svg>
+          </span>
           <div>
             <h2 id="homeTreeHeading">Skill Tree</h2>
             <p>Wähle deine Disziplin und wachse Schritt für Schritt.</p>
@@ -53,16 +57,24 @@
 
         <div class="home-discipline-tabs" role="tablist" aria-label="Skill Trees">
           <button class="home-discipline-tab active" type="button" aria-selected="true">
-            <span class="discipline-icon">◒</span><strong>Push-up</strong>
+            <span class="discipline-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" focusable="false"><path d="M8 31h12l6-8 8-1c2-.2 3.8 1.2 4 3.2.2 1.6-.8 3.1-2.3 3.7l-6.8 2.3-3.8 6.6c-.7 1.2-2 1.8-3.3 1.5-1.7-.4-2.7-2.1-2.3-3.8l1-3.6h-7c-1.8 0-3.2-1.4-3.2-3.2S6.2 31 8 31Zm20-18a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z" fill="currentColor"/></svg>
+            </span><strong>Push-up</strong>
           </button>
           <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Laufen – noch gesperrt">
-            <span class="discipline-icon">🏃</span><span>Laufen</span><small>🔒</small>
+            <span class="discipline-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" focusable="false"><path d="M27 8a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm-5.6 10.6c1-1.2 2.6-1.7 4.1-1.3l6.8 1.9c1.4.4 2.4 1.8 2.2 3.3-.3 1.8-2 3-3.8 2.7l-4.3-.8 4.4 5.5c1.1 1.4 1.1 3.5-.1 4.9l-5.8 7c-1.2 1.5-3.4 1.7-4.9.4-1.4-1.2-1.6-3.4-.4-4.8l4.1-5-2.7-3.1-2 4.5c-.4.9-1.1 1.6-2.1 1.9l-6 2c-1.8.6-3.8-.4-4.4-2.2-.6-1.7.3-3.6 2-4.3l4.5-1.8 3-6.7c.3-.7.7-1.3 1.3-1.8Z" fill="currentColor"/></svg>
+            </span><span>Laufen</span><small>🔒</small>
           </button>
           <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Klimmzüge – noch gesperrt">
-            <span class="discipline-icon">⌁</span><span>Klimmzüge</span><small>🔒</small>
+            <span class="discipline-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" focusable="false"><path d="M10 8h4v10h20V8h4v14h-5l-3 5v10h-4V27h-4v10h-4V27l-3-5h-5V8Zm12 0h4v6h-4V8Z" fill="currentColor"/></svg>
+            </span><span>Klimmzüge</span><small>🔒</small>
           </button>
           <button class="home-discipline-tab locked-feature" type="button" disabled aria-label="Core – noch gesperrt">
-            <span class="discipline-icon">◇</span><span>Core</span><small>🔒</small>
+            <span class="discipline-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" focusable="false"><path d="M10 27c0-2.3 1.8-4.1 4.1-4.1h7.4l3.6-7.7c.7-1.4 2.2-2.3 3.8-2.1 2.1.2 3.7 2 3.6 4.1l-.4 7.9h4.8c2.3 0 4.1 1.8 4.1 4.1s-1.8 4.1-4.1 4.1H32l-.4 5c-.2 2-1.9 3.5-4 3.5-2.2 0-4-1.8-4-4v-4.5h-9.5C11.8 31.1 10 29.3 10 27Z" fill="currentColor"/></svg>
+            </span><span>Core</span><small>🔒</small>
           </button>
         </div>
 
@@ -108,7 +120,7 @@
         <article class="home-goal-card">
           <div class="home-goal-card-top">
             <span class="home-goal-icon day">◎</span>
-            <div><span>Tagesziel</span><small>Push-ups</small></div>
+            <div><span>Tagesziel</span><small>(Push-ups)</small></div>
             <strong id="homeDayGoalValue">0 / 0</strong>
           </div>
           <div class="home-progress-track"><span id="homeDayGoalBar"></span></div>
@@ -117,7 +129,7 @@
         <article class="home-goal-card">
           <div class="home-goal-card-top">
             <span class="home-goal-icon week">▣</span>
-            <div><span>Wochenziel</span><small>Push-ups</small></div>
+            <div><span>Wochenziel</span><small>(Push-ups)</small></div>
             <strong id="homeWeekGoalValue">0 / 0</strong>
           </div>
           <div class="home-progress-track"><span id="homeWeekGoalBar"></span></div>
@@ -136,13 +148,13 @@
 
       <section class="home-support-grid" aria-label="Weitere Bereiche">
         <button id="openHistoryBtn" class="home-support-card" type="button">
-          <span class="home-support-icon history">▦</span>
-          <span><strong>Trainingshistorie</strong><small id="historyHomeHint">Noch kein Training gespeichert</small></span>
+          <span class="home-support-icon history">🗓</span>
+          <span><strong>Trainingshistorie</strong><small id="historyHomeHint">Deine Liegestütz-Einheiten</small></span>
           <span>›</span>
         </button>
         <button id="openHomeStatsBtn" class="home-support-card" type="button">
           <span class="home-support-icon stats">▥</span>
-          <span><strong>Statistiken</strong><small><span id="homeTotalStat">0</span> Push-ups gesamt</small></span>
+          <span><strong>Statistiken</strong><small>Deine Fortschritte</small></span>
           <span>›</span>
         </button>
       </section>
@@ -211,7 +223,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.10.23</span>
+        <span class="profile-version-pill">v0.10.24</span>
       </header>
 
       <section class="profile-hero-card">

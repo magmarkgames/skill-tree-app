@@ -4427,3 +4427,91 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .home-v17::before { height: 386px; background-position: center, center, 74% center; }
   .home-hero-copy { width: 57%; }
 }
+
+
+/* ==========================================================================
+   v0.10.24 — Home polish to match final concept
+   ========================================================================== */
+.home-brandbar { margin-bottom: 10px; }
+.home-brand { gap: 12px; }
+.home-logo { width: 56px; height: 56px; flex-basis: 56px; border-radius: 18px; box-shadow: 0 12px 24px rgba(27,116,225,.20), inset 0 1px 0 rgba(255,255,255,.45); }
+.home-logo::after { inset: 1.5px; border-radius: 17px; }
+.home-logo svg { width: 42px; height: 42px; }
+.home-logo .logo-peak-back { fill: rgba(255,255,255,.34); }
+.home-logo .logo-peak-front { fill: #fff; }
+.home-logo .logo-ridge { fill: none; stroke: rgba(255,255,255,.82); stroke-width: 3.2; stroke-linecap: round; }
+.home-brand-title { font-size: 28px; letter-spacing: -.04em; }
+.home-brand-subtitle { margin-top: 4px; font-size: 11px; font-weight: 700; }
+.home-brand-actions { gap: 10px; }
+.home-icon-action { width: 48px; height: 48px; border-radius: 50%; font-size: 20px; border-color: rgba(226,236,246,.95); box-shadow: 0 8px 18px rgba(60,92,127,.09); }
+.home-icon-action .notif-dot { position: absolute; right: 11px; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: #ff3f44; box-shadow: 0 0 0 2px #fff; }
+.home-hero-v17 { min-height: 372px; margin-bottom: 8px; }
+.home-v17::before { height: 446px; background-position: center, center, 68% center; }
+.home-hero-copy { width: 53%; padding: 16px 0 34px 2px; }
+.home-kicker { color: #5c779d; margin-bottom: 10px; }
+.home-hero-copy h1 { font-size: clamp(31px, 8.1vw, 44px); line-height: .94; }
+.home-hero-copy > p:last-child { font-size: 13px; max-width: 200px; }
+.home-tree-hub { margin-top: -4px; padding: 18px; border-radius: 26px; background: rgba(255,255,255,.975); }
+.home-tree-heading { margin-bottom: 14px; gap: 12px; }
+.home-tree-mark { width: 46px; height: 46px; flex-basis: 46px; border-radius: 14px; box-shadow: 0 8px 18px rgba(39,185,126,.18); font-size: 0; }
+.home-tree-mark svg { width: 27px; height: 27px; color: #fff; }
+.home-tree-heading h2 { font-size: 23px; line-height: 1.05; }
+.home-tree-heading p { font-size: 11px; }
+.home-discipline-tabs { gap: 10px; margin-bottom: 14px; }
+.home-discipline-tab { min-height: 64px; padding: 8px 5px; border-radius: 18px; background: #f8fbff; color: #7a8da7; font-size: 10px; font-weight: 800; }
+.home-discipline-tab.active { background: linear-gradient(180deg,#fcfeff,#eef6ff); }
+.home-discipline-tab small { right: 8px; top: 6px; font-size: 9px; }
+.discipline-icon { width: 24px; height: 24px; display: grid; place-items: center; color: currentColor; }
+.discipline-icon svg { width: 24px; height: 24px; display: block; }
+.home-tree-preview { border-radius: 22px; }
+.home-rank-preview { grid-template-columns: 82px 1fr; gap: 14px; padding: 14px 16px 4px; }
+.home-rank-icon, .home-rank-icon img { width: 82px; height: 82px; }
+.home-rank-preview span { font-size: 11px; }
+.home-rank-preview strong { font-size: 23px; }
+.home-rank-preview small { font-size: 11px; }
+.home-next-goal { padding: 10px 16px 14px; }
+.home-next-goal-head span { font-size: 11px; }
+.home-next-goal-head strong { font-size: 18px; }
+.home-next-goal p { font-size: 12px; margin: 7px 0 10px; }
+.home-goal-fraction { padding: 7px 11px; font-size: 12px; }
+.home-mini-tree { padding: 10px 16px 14px; }
+.home-open-tree-btn { min-height: 48px; margin: 0 12px 12px; border-radius: 16px; font-size: 14px; }
+.home-goals-grid { gap: 12px; margin: 14px 0 12px; }
+.home-goal-card { padding: 14px; border-radius: 20px; }
+.home-goal-card-top { grid-template-columns: 40px minmax(0,1fr) auto; gap: 9px; }
+.home-goal-icon { width: 40px; height: 40px; border-radius: 14px; font-size: 20px; }
+.home-goal-icon.week { background: #f0e5ff; color: #9558f3; }
+.home-goal-card-top > div > span { font-size: 13px; }
+.home-goal-card-top > div > small { font-size: 8px; }
+.home-goal-card-top strong { font-size: 13px; }
+.home-goal-card p { font-size: 10px; margin-top: 9px; }
+.home-training-cta { min-height: 84px; grid-template-columns: 60px 1fr 24px; padding: 13px 16px; border-radius: 24px; }
+.home-training-play { width: 52px; height: 52px; font-size: 21px; }
+.home-training-copy strong { font-size: 18px; }
+.home-training-copy small { font-size: 11px; }
+.home-training-arrow { font-size: 28px; }
+.home-support-grid { gap: 12px; margin-top: 12px; }
+.home-support-card { min-height: 78px; grid-template-columns: 42px 1fr 14px; gap: 10px; padding: 12px; border-radius: 20px; }
+.home-support-icon { width: 40px; height: 40px; border-radius: 14px; font-size: 19px; }
+.home-support-icon.history { background: #f2e7ff; color: #8a55eb; }
+.home-support-icon.stats { background: #e6f1ff; color: #2889f2; }
+.home-support-card strong { font-size: 13px; }
+.home-support-card small { font-size: 9px; white-space: normal; }
+.home-quote { margin-top: 18px; font-size: 11px; }
+.home-bottom-nav { min-height: calc(78px + env(safe-area-inset-bottom)); padding-top: 10px; }
+.home-nav-item { font-size: 20px; }
+.home-nav-item small { font-size: 9px; }
+.home-nav-training > span { width: 44px; height: 44px; margin-top: -18px; }
+
+@media (max-width: 390px) {
+  .home-v17::before { height: 424px; background-position: center, center, 72% center; }
+  .home-hero-v17 { min-height: 344px; }
+  .home-brand-title { font-size: 25px; }
+  .home-hero-copy { width: 54%; padding-top: 8px; }
+  .home-hero-copy h1 { font-size: 28px; }
+  .home-discipline-tabs { gap: 8px; }
+  .home-discipline-tab { min-height: 58px; }
+  .discipline-icon, .discipline-icon svg { width: 21px; height: 21px; }
+  .home-rank-preview { grid-template-columns: 72px 1fr; }
+  .home-rank-icon, .home-rank-icon img { width: 72px; height: 72px; }
+}
