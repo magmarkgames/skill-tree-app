@@ -581,12 +581,24 @@ function saveProgress() {
 }
 
 // ---------- Views / Dashboard ----------
+function setBottomNavActive(name) {
+  const groups = {
+    home: [document.getElementById("homeNavHomeBtn"), document.getElementById("profileNavHomeBtn")],
+    tree: [document.getElementById("homeNavTreeBtn"), document.getElementById("profileNavTreeBtn")],
+    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("profileNavHistoryBtn")],
+    profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("profileNavProfileBtn")]
+  };
+  Object.values(groups).flat().forEach(btn => btn?.classList.remove("active"));
+  (groups[name] || []).forEach(btn => btn?.classList.add("active"));
+}
+
 function showView(name) {
   homeView.classList.toggle("hidden", name !== "home");
   treeView.classList.toggle("hidden", name !== "tree");
   historyView.classList.toggle("hidden", name !== "history");
   profileView.classList.toggle("hidden", name !== "profile");
 
+  setBottomNavActive(name);
   window.scrollTo(0, 0);
 
   if (name === "tree") {
@@ -599,9 +611,9 @@ function showView(name) {
         return node.offsetTop > lowest.offsetTop ? node : lowest;
       }, null);
       const bottomEdge = lowestNode
-        ? lowestNode.offsetTop + lowestNode.offsetHeight + 10
+        ? lowestNode.offsetTop + lowestNode.offsetHeight + 16
         : treeScroll.scrollHeight;
-      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight);
+      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight + 150);
     });
   }
 
@@ -1240,7 +1252,7 @@ function renderTree() {
     const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
     return Math.max(max, getScaledTreeY(node.y) + approxSize);
   }, 0);
-  skillTree.style.height = `${Math.max(1700, roughBottom + 10)}px`;
+  skillTree.style.height = `${Math.max(1900, roughBottom + 240)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();
@@ -2953,12 +2965,17 @@ treeStatsSheet.addEventListener("click", (event) => {
 document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
 document.getElementById("historyBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("openHomeStatsBtn").addEventListener("click", openTreeStats);
+document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("homeNavHistoryBtn").addEventListener("click", () => showView("history"));
 document.getElementById("homeNavProfileBtn").addEventListener("click", () => showView("profile"));
-document.getElementById("profileBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("profileNavHomeBtn").addEventListener("click", () => showView("home"));
+document.getElementById("profileNavTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
+document.getElementById("profileNavHistoryBtn").addEventListener("click", () => showView("history"));
+document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
 
 document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);

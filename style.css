@@ -3638,22 +3638,22 @@ h2 { margin-bottom: 0; font-size: 21px; }
 
 .home-hero-v17 {
   position: relative;
-  min-height: 282px;
+  min-height: 318px;
   overflow: hidden;
   margin: 0 0 12px;
   border: 1px solid #dbe9f6;
   border-radius: 26px;
   background-image:
-    linear-gradient(90deg, rgba(247,251,255,.99) 0%, rgba(247,251,255,.92) 38%, rgba(247,251,255,.24) 67%, rgba(247,251,255,.04) 100%),
-    url("home-hero-large.webp");
-  background-size: cover, 100% auto;
-  background-position: center, center bottom;
+    linear-gradient(90deg, rgba(247,251,255,.98) 0%, rgba(247,251,255,.95) 32%, rgba(247,251,255,.72) 48%, rgba(247,251,255,.16) 70%, rgba(247,251,255,.02) 100%),
+    url("home-top-bg.webp");
+  background-size: cover, cover;
+  background-position: center, center top;
   background-repeat: no-repeat;
   box-shadow: 0 15px 34px rgba(49, 103, 162, .10);
 }
-.home-hero-copy { position: relative; z-index: 1; width: 55%; padding: 30px 0 24px 20px; }
+.home-hero-copy { position: relative; z-index: 1; width: 56%; padding: 26px 0 24px 20px; }
 .home-kicker { margin: 0 0 7px; color: #6681a5; font-size: 10px; font-weight: 900; letter-spacing: .25em; }
-.home-hero-copy h1 { margin: 0; color: #0a2752; font-size: clamp(27px, 7.3vw, 36px); line-height: .98; letter-spacing: -.045em; }
+.home-hero-copy h1 { margin: 0; color: #0a2752; font-size: clamp(28px, 7.5vw, 37px); line-height: .97; letter-spacing: -.05em; }
 .home-hero-copy > p:last-child { margin: 13px 0 0; color: #7185a1; font-size: 13px; font-style: italic; line-height: 1.25; }
 
 .home-tree-hub {
@@ -3817,7 +3817,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 @media (max-width: 390px) {
   .home-v17 { padding-left: 11px; padding-right: 11px; }
   .home-brand-title { font-size: 23px; }
-  .home-hero-v17 { min-height: 260px; background-size: cover, 100% auto; background-position: center, center bottom; }
+  .home-hero-v17 { min-height: 290px; background-size: cover, cover; background-position: center, center top; }
   .home-hero-copy { width: 59%; padding-left: 16px; }
   .home-hero-copy h1 { font-size: 26px; }
   .home-tree-hub { padding: 12px; }
@@ -4394,4 +4394,20 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .profile-rank-card { grid-template-columns: 72px minmax(0,1fr) 34px; }
   .profile-rank-icon, .profile-rank-icon img { width: 72px; height: 72px; }
   .profile-future-grid { gap: 6px; }
+}
+
+
+/* v0.10.22 profile bottom nav + tree scroll fix + new home bg */
+.profile-view {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+.profile-header-no-back {
+  grid-template-columns: minmax(0,1fr) auto;
+}
+.profile-bottom-nav {
+  display: grid;
+}
+
+@media (max-width: 520px) {
+  .home-hero-copy { width: 57%; }
 }

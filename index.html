@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.10.21</title>
-  <link rel="stylesheet" href="style.css?v=0.10.21" />
+  <title>Power Push – v0.10.22</title>
+  <link rel="stylesheet" href="style.css?v=0.10.22" />
 </head>
 <body>
   <main class="app-shell">
@@ -155,7 +155,7 @@
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
 
       <nav class="home-bottom-nav" aria-label="Hauptnavigation">
-        <button class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
+        <button id="homeNavHomeBtn" class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
         <button id="homeNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
@@ -206,13 +206,12 @@
 
     <!-- PROFILE -->
     <section id="profileView" class="view profile-view hidden" aria-labelledby="profileHeading">
-      <header class="view-header profile-header">
-        <button id="profileBackBtn" class="icon-btn" type="button" aria-label="Zur Startseite">←</button>
+      <header class="view-header profile-header profile-header-no-back">
         <div>
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.10.21</span>
+        <span class="profile-version-pill">v0.10.22</span>
       </header>
 
       <section class="profile-hero-card">
@@ -256,6 +255,13 @@
           <article class="profile-future-badge"><span>🔒</span><strong>Core</strong><small>Kommt später</small></article>
         </div>
       </section>
+      <nav class="home-bottom-nav profile-bottom-nav" aria-label="Profil Navigation">
+        <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
+        <button id="profileNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
+        <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
+        <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
+        <button id="profileNavProfileBtn" class="home-nav-item active" type="button"><span>●</span><small>Profil</small></button>
+      </nav>
     </section>
   </main>
 
