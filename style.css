@@ -3833,3 +3833,102 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .home-goal-card-top > div > span, .home-goal-card-top strong { font-size: 10px; }
   .home-training-copy strong { font-size: 15px; }
 }
+
+/* ======================================================================
+   v0.10.18 — Chapter tree: boss challenges + optional mastery branches
+   ====================================================================== */
+
+/* More vertical room for the chapter structure and Diamant I–IV mastery. */
+.tree-v10 {
+  height: 5580px !important;
+}
+
+/* Chapter trials are landmarks, not another statistic circle. */
+.tree-v10 .challenge-node {
+  --branch: #f0a72f;
+  width: calc(var(--tree-node-size) * 1.18) !important;
+  height: calc(var(--tree-node-size) * 1.18) !important;
+  min-width: calc(var(--tree-node-size) * 1.18) !important;
+  border-radius: 22% !important;
+  border: 3px solid #e7a126 !important;
+  background: linear-gradient(155deg, #fffdf8 0%, #fff1c9 100%) !important;
+  color: #76500a;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px !important;
+  overflow: visible !important;
+  box-shadow: 0 4px 10px rgba(97, 73, 25, .10) !important;
+}
+.tree-v10 .challenge-node .challenge-icon {
+  font-size: clamp(15px, calc(var(--tree-node-size) * .28), 20px);
+  line-height: 1;
+  color: #efa622;
+  margin-bottom: 2px;
+}
+.tree-v10 .challenge-node .node-target {
+  max-width: 100%;
+  font-size: clamp(8px, calc(var(--tree-node-size) * .135), 10px) !important;
+  line-height: 1.02 !important;
+  white-space: normal;
+  text-align: center;
+}
+.tree-v10 .challenge-node .node-label {
+  margin-top: 2px !important;
+  max-width: 100%;
+  font-size: clamp(6px, calc(var(--tree-node-size) * .09), 7px) !important;
+  line-height: 1 !important;
+  letter-spacing: .02em !important;
+  color: #8c6721;
+  text-align: center;
+}
+.tree-v10 .challenge-node .challenge-progress-text {
+  margin-top: 3px;
+  font-size: 7px;
+  font-weight: 950;
+  color: #9b7426;
+}
+.tree-v10 .challenge-node .node-progress {
+  bottom: 6px !important;
+  left: 12% !important;
+  right: 12% !important;
+  width: auto !important;
+}
+.tree-v10 .challenge-node.preview-locked {
+  opacity: .72 !important;
+  border-style: dashed !important;
+}
+.tree-v10 .challenge-node.done {
+  border-color: var(--tree-complete-dark) !important;
+  outline: 3px solid var(--tree-complete) !important;
+  outline-offset: 2px;
+  background: linear-gradient(155deg, #54d591 0%, var(--tree-complete) 68%, #1ea965 100%) !important;
+  color: #fff !important;
+}
+.tree-v10 .challenge-node.done .challenge-icon,
+.tree-v10 .challenge-node.done .node-target,
+.tree-v10 .challenge-node.done .node-label {
+  color: #fff !important;
+}
+.tree-v10 .challenge-node.done .node-progress { display: none !important; }
+.tree-v10 .challenge-node .node-complete-pill {
+  bottom: -14px !important;
+}
+
+/* Challenge routes get their own warm connector while still becoming green
+   after completion through the existing .connector.done rule. */
+.tree-v10 .connector.active.branch-challenge {
+  background: color-mix(in srgb, #f0a72f 48%, #c7d4e4) !important;
+}
+.tree-v10 .connector.branch-challenge {
+  background: #d7e1ec;
+}
+
+/* Diamant I–IV reuse the same generated gem artwork but the label has to fit. */
+.tree-v10 .rank-node.rank-diamant .node-target {
+  font-size: clamp(8px, calc(var(--tree-node-size) * .13), 10px) !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  white-space: nowrap;
+}

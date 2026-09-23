@@ -74,7 +74,7 @@ const VARIANT_META = {
 // hier an ihren Unlock-Knoten gekoppelt werden.
 const VARIANT_UNLOCK_NODES = {
   standard: null,
-  wide: "wide2",
+  wide: "wideSkill",
   diamond: "diamondSkill",
   pike: null,
   incline: null,
@@ -90,7 +90,9 @@ const VARIANT_TREE_MILESTONES = {
   total: [10, 25, 75, 150, 300]
 };
 
-const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
+const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
+const HOME_DAY_TARGETS = [20, 50, 100, 200, 400, 700, 1000, 1500, 2500];
+const HOME_WEEK_TARGETS = [75, 150, 250, 500, 1000, 1500, 3000, 5000, 7500];
 
 function createEmptyVariantStats() {
   return Object.fromEntries(
@@ -152,7 +154,8 @@ function getMetricIconSvg(metric, className = "") {
 }
 
 function getRankIconSvg(rank, className = "") {
-  const src = ASSET_PATHS.ranks[rank] || ASSET_PATHS.ranks.Holz;
+  const assetRank = String(rank || "").startsWith("Diamant") ? "Diamant" : rank;
+  const src = ASSET_PATHS.ranks[assetRank] || ASSET_PATHS.ranks.Holz;
   return assetImg(src, `${rank} Rang`, className);
 }
 
@@ -173,138 +176,131 @@ function renderStaticIcons() {
   });
 }
 
-// v0.10: vertikaler Hauptbaum mit fünf Fortschrittsrichtungen.
-const BASE_SKILL_NODES = [
-  { id: "standard1", type: "metric", metric: "standardMax", branch: "max", target: 1, x: 328, y: 1630 },
-  { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", x: 315, y: 1472, parents: ["standard1"], requirementCount: 1 },
+// v0.10.18: Rang-Kapitel statt Statistik-Matrix.
+//
+// Der Hauptpfad besteht pro Kapitel aus wenigen, unterschiedlichen Zielen,
+// einer sichtbaren Rang-Prüfung (Boss-Knoten) und optionalen Variantenästen.
+// Dadurch bleibt der Tree übersichtlich, wirkt aber deutlich mehr wie ein
+// gewachsener Skill Tree als wie vier parallele Zahlenlisten.
+//
+// x benutzt weiterhin die fünf responsiven Spalten. y läuft von unten nach oben.
+const SKILL_NODES = [
+  // -----------------------------------------------------------------------
+  // START -> HOLZ
+  // -----------------------------------------------------------------------
+  { id: "standard1", type: "metric", metric: "standardMax", branch: "max", target: 1, x: 328, y: 5380, tier: "holz", discoveryGroup: "main:max" },
+  { id: "woodRank", type: "rank", branch: "rank", rank: "Holz", rankAsset: "Holz", x: 328, y: 5220, parents: ["standard1"], requirementCount: 1, tier: "holz" },
 
-  // Holz -> Stein: drei gleichwertige Wege
-  { id: "standard3", type: "metric", metric: "standardMax", branch: "max", target: 3, x: 92, y: 1320, parents: ["woodRank"] },
-  { id: "total8", type: "metric", metric: "total", branch: "total", target: 8, x: 328, y: 1320, parents: ["woodRank"] },
-  { id: "wide2", type: "metric", metric: "variantMax", variant: "wide", branch: "variant", target: 2, x: 564, y: 1320, parents: ["woodRank"] },
-  { id: "stoneRank", type: "rank", branch: "rank", rank: "Stein", x: 315, y: 1150, parents: ["standard3", "total8", "wide2"], requirementCount: 1 },
+  // -----------------------------------------------------------------------
+  // HOLZ-KAPITEL — Basics + erster Seitenast
+  // -----------------------------------------------------------------------
+  { id: "standard5", type: "metric", metric: "standardMax", branch: "max", target: 5, x: 188, y: 5040, parents: ["woodRank"], tier: "holz", discoveryGroup: "main:max" },
+  { id: "total25", type: "metric", metric: "total", branch: "total", target: 25, x: 468, y: 5040, parents: ["woodRank"], tier: "holz", discoveryGroup: "main:total" },
+  { id: "trainingDays2", type: "metric", metric: "trainingDays", branch: "week", target: 2, x: 328, y: 4890, parents: ["woodRank"], tier: "holz", discoveryGroup: "main:days" },
 
-  // Stein -> Bronze: fünf Richtungen
-  { id: "standard8", type: "metric", metric: "standardMax", branch: "max", target: 8, x: 52, y: 1000, parents: ["stoneRank"] },
-  { id: "standard12", type: "metric", metric: "standardMax", branch: "max", target: 12, x: 52, y: 850, parents: ["standard8"] },
+  // Wide ist ein optionaler Mini-Ast. Der große Skill-Knoten ist der Unlock;
+  // danach kann der Ast unabhängig vom Rang weiter gemeistert werden.
+  { id: "wideSkill", type: "skill", metric: "variantTotal", variant: "wide", branch: "variant", target: 5, x: 595, y: 4950, parents: ["woodRank"], tier: "holz" },
+  { id: "wideMastery", type: "metric", metric: "variantMax", variant: "wide", branch: "variant", target: 10, x: 595, y: 4780, parents: ["wideSkill"], tier: "holz", discoveryGroup: "variant:wide" },
 
-  { id: "day25", type: "metric", metric: "day", branch: "day", target: 25, x: 188, y: 1000, parents: ["stoneRank"] },
-  { id: "day50", type: "metric", metric: "day", branch: "day", target: 50, x: 188, y: 850, parents: ["day25"] },
+  { id: "stoneTrial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 20, x: 328, y: 4680, parents: ["woodRank"], tier: "holz", challengeTitle: "BASIS-PRÜFUNG", challengeShort: "20 WDH.", challengeIcon: "★" },
+  { id: "stoneRank", type: "rank", branch: "rank", rank: "Stein", rankAsset: "Stein", x: 328, y: 4500, parents: ["standard5", "total25", "trainingDays2", "stoneTrial"], requirementCount: 3, requiredParents: ["stoneTrial"], tier: "stein" },
 
-  { id: "total20", type: "metric", metric: "total", branch: "total", target: 20, x: 328, y: 1000, parents: ["stoneRank"] },
-  { id: "total75", type: "metric", metric: "total", branch: "total", target: 75, x: 328, y: 850, parents: ["total20"] },
+  // -----------------------------------------------------------------------
+  // STEIN-KAPITEL — erste echte Routine
+  // -----------------------------------------------------------------------
+  { id: "standard12", type: "metric", metric: "standardMax", branch: "max", target: 12, x: 92, y: 4320, parents: ["stoneRank"], tier: "stein", discoveryGroup: "main:max" },
+  { id: "total100", type: "metric", metric: "total", branch: "total", target: 100, x: 328, y: 4320, parents: ["stoneRank"], tier: "stein", discoveryGroup: "main:total" },
+  { id: "week75", type: "metric", metric: "week", branch: "week", target: 75, x: 468, y: 4320, parents: ["stoneRank"], tier: "stein", discoveryGroup: "main:week" },
 
-  { id: "week50", type: "metric", metric: "week", branch: "week", target: 50, x: 468, y: 1000, parents: ["stoneRank"] },
-  { id: "week150", type: "metric", metric: "week", branch: "week", target: 150, x: 468, y: 850, parents: ["week50"] },
+  { id: "bronzeTrial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 50, x: 328, y: 4140, parents: ["stoneRank"], tier: "stein", challengeTitle: "KRAFT-PROBE", challengeShort: "50 WDH.", challengeIcon: "★" },
+  { id: "bronzeRank", type: "rank", branch: "rank", rank: "Bronze", rankAsset: "Bronze", x: 328, y: 3960, parents: ["standard12", "total100", "week75", "bronzeTrial"], requirementCount: 3, requiredParents: ["bronzeTrial"], tier: "bronze" },
 
-  { id: "wideSkill", type: "skill", metric: "variantPoints", variant: "wide", branch: "variant", target: 1, x: 595, y: 1000, parents: ["stoneRank"] },
-  { id: "wideStage2", type: "metric", metric: "variantPoints", variant: "wide", branch: "variant", target: 3, x: 596, y: 850, parents: ["wideSkill"] },
+  // -----------------------------------------------------------------------
+  // BRONZE-KAPITEL — Konstanz + Diamond-Seitenast
+  // -----------------------------------------------------------------------
+  { id: "standard20", type: "metric", metric: "standardMax", branch: "max", target: 20, x: 52, y: 3780, parents: ["bronzeRank"], tier: "bronze", discoveryGroup: "main:max" },
+  { id: "total250", type: "metric", metric: "total", branch: "total", target: 250, x: 328, y: 3780, parents: ["bronzeRank"], tier: "bronze", discoveryGroup: "main:total" },
+  { id: "trainingDays7", type: "metric", metric: "trainingDays", branch: "week", target: 7, x: 468, y: 3780, parents: ["bronzeRank"], tier: "bronze", discoveryGroup: "main:days" },
 
-  { id: "bronzeRank", type: "rank", branch: "rank", rank: "Bronze", x: 315, y: 675, parents: ["standard12", "day50", "total75", "week150", "wideStage2"], requirementCount: 1 },
+  { id: "diamondSkill", type: "skill", metric: "variantTotal", variant: "diamond", branch: "variant", target: 5, x: 595, y: 3780, parents: ["bronzeRank"], tier: "bronze" },
+  { id: "diamondMastery", type: "metric", metric: "variantMax", variant: "diamond", branch: "variant", target: 10, x: 595, y: 3610, parents: ["diamondSkill"], tier: "bronze", discoveryGroup: "variant:diamond" },
 
-  // Bronze -> Silber: langfristigere Ziele + Diamond
-  { id: "standard20", type: "metric", metric: "standardMax", branch: "max", target: 20, x: 52, y: 520, parents: ["bronzeRank"] },
-  { id: "standard50", type: "metric", metric: "standardMax", branch: "max", target: 50, x: 52, y: 360, parents: ["standard20"] },
+  { id: "silverTrial", type: "challenge", metric: "workoutSets", branch: "challenge", target: 2, x: 328, y: 3600, parents: ["bronzeRank"], tier: "bronze", challengeTitle: "SET-RHYTHMUS", challengeShort: "2 SETS", challengeIcon: "★" },
+  { id: "silverRank", type: "rank", branch: "rank", rank: "Silber", rankAsset: "Silber", x: 328, y: 3420, parents: ["standard20", "total250", "trainingDays7", "silverTrial"], requirementCount: 3, requiredParents: ["silverTrial"], tier: "silber" },
 
-  { id: "day100", type: "metric", metric: "day", branch: "day", target: 100, x: 188, y: 520, parents: ["bronzeRank"] },
-  { id: "day200", type: "metric", metric: "day", branch: "day", target: 200, x: 188, y: 360, parents: ["day100"] },
+  // -----------------------------------------------------------------------
+  // SILBER-KAPITEL — Volumen + Explosive (Pflicht für Gold)
+  // -----------------------------------------------------------------------
+  { id: "standard50", type: "metric", metric: "standardMax", branch: "max", target: 50, x: 52, y: 3240, parents: ["silverRank"], tier: "silber", discoveryGroup: "main:max" },
+  { id: "total1000", type: "metric", metric: "total", branch: "total", target: 1000, x: 328, y: 3240, parents: ["silverRank"], tier: "silber", discoveryGroup: "main:total" },
+  { id: "week500", type: "metric", metric: "week", branch: "week", target: 500, x: 468, y: 3240, parents: ["silverRank"], tier: "silber", discoveryGroup: "main:week" },
 
-  { id: "total250", type: "metric", metric: "total", branch: "total", target: 250, x: 328, y: 520, parents: ["bronzeRank"] },
-  { id: "total1000", type: "metric", metric: "total", branch: "total", target: 1000, x: 328, y: 360, parents: ["total250"] },
+  { id: "explosiveSkill", type: "skill", metric: "variantTotal", variant: "explosive", branch: "variant", target: 10, x: 595, y: 3240, parents: ["silverRank"], tier: "silber" },
+  { id: "explosiveMastery", type: "metric", metric: "variantMax", variant: "explosive", branch: "variant", target: 10, x: 595, y: 3070, parents: ["explosiveSkill"], tier: "silber", discoveryGroup: "variant:explosive" },
 
-  { id: "week250", type: "metric", metric: "week", branch: "week", target: 250, x: 468, y: 520, parents: ["bronzeRank"] },
-  { id: "week500", type: "metric", metric: "week", branch: "week", target: 500, x: 468, y: 360, parents: ["week250"] },
+  { id: "goldTrial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 100, x: 328, y: 3060, parents: ["silverRank"], tier: "silber", challengeTitle: "GOLD-PRÜFUNG", challengeShort: "100 WDH.", challengeIcon: "★" },
+  { id: "goldRank", type: "rank", branch: "rank", rank: "Gold", rankAsset: "Gold", x: 328, y: 2880, parents: ["standard50", "total1000", "week500", "explosiveSkill", "goldTrial"], requirementCount: 4, requiredParents: ["explosiveSkill", "goldTrial"], tier: "gold" },
 
-  { id: "diamondSkill", type: "skill", metric: "variantPoints", variant: "diamond", branch: "variant", target: 1, x: 595, y: 520, parents: ["bronzeRank"] },
-  { id: "diamondStage2", type: "metric", metric: "variantPoints", variant: "diamond", branch: "variant", target: 3, x: 596, y: 360, parents: ["diamondSkill"] },
+  // -----------------------------------------------------------------------
+  // GOLD-KAPITEL — fortgeschrittene Kraft + Archer
+  // -----------------------------------------------------------------------
+  { id: "standard75", type: "metric", metric: "standardMax", branch: "max", target: 75, x: 52, y: 2700, parents: ["goldRank"], tier: "gold", discoveryGroup: "main:max" },
+  { id: "total5000", type: "metric", metric: "total", branch: "total", target: 5000, x: 328, y: 2700, parents: ["goldRank"], tier: "gold", discoveryGroup: "main:total" },
+  { id: "trainingDays20", type: "metric", metric: "trainingDays", branch: "week", target: 20, x: 468, y: 2700, parents: ["goldRank"], tier: "gold", discoveryGroup: "main:days" },
 
-  { id: "silverRank", type: "rank", branch: "rank", rank: "Silber", x: 315, y: 170, parents: ["standard50", "day200", "total1000", "week500", "diamondStage2"], requirementCount: 1 },
+  { id: "archerSkill", type: "skill", metric: "variantTotal", variant: "archer", branch: "variant", target: 10, x: 595, y: 2700, parents: ["goldRank"], tier: "gold" },
+  { id: "archerMastery", type: "metric", metric: "variantMax", variant: "archer", branch: "variant", target: 10, x: 595, y: 2530, parents: ["archerSkill"], tier: "gold", discoveryGroup: "variant:archer" },
 
-  // Erste Ziele nach Silber. Sie sind absichtlich schon im Datenmodell, werden
-  // aber durch die Discovery-Logik zunächst nur als geheimnisvolle ?-Knoten
-  // gezeigt. So kann der Tree später weiter wachsen, ohne den Nutzer jetzt zu
-  // überladen.
-  { id: "standard100", type: "metric", metric: "standardMax", branch: "max", target: 100, x: 52, y: 18, parents: ["silverRank"] },
-  { id: "day400", type: "metric", metric: "day", branch: "day", target: 400, x: 188, y: 18, parents: ["silverRank"] },
-  { id: "total2500", type: "metric", metric: "total", branch: "total", target: 2500, x: 328, y: 18, parents: ["silverRank"] },
-  { id: "week1000", type: "metric", metric: "week", branch: "week", target: 1000, x: 468, y: 18, parents: ["silverRank"] }
+  { id: "platinumTrial", type: "challenge", metric: "workoutVariants", branch: "challenge", target: 3, x: 328, y: 2520, parents: ["goldRank"], tier: "gold", challengeTitle: "MASTER-MIX", challengeShort: "3 VARIANTEN", challengeIcon: "★" },
+  { id: "platinumRank", type: "rank", branch: "rank", rank: "Platin", rankAsset: "Platin", x: 328, y: 2340, parents: ["standard75", "total5000", "trainingDays20", "archerSkill", "platinumTrial"], requirementCount: 4, requiredParents: ["archerSkill", "platinumTrial"], tier: "platin" },
+
+  // -----------------------------------------------------------------------
+  // PLATIN-KAPITEL — Handstand öffnet die Diamant-Mastery
+  // -----------------------------------------------------------------------
+  { id: "standard100", type: "metric", metric: "standardMax", branch: "max", target: 100, x: 52, y: 2160, parents: ["platinumRank"], tier: "platin", discoveryGroup: "main:max" },
+  { id: "total10000", type: "metric", metric: "total", branch: "total", target: 10000, x: 328, y: 2160, parents: ["platinumRank"], tier: "platin", discoveryGroup: "main:total" },
+  { id: "week1500", type: "metric", metric: "week", branch: "week", target: 1500, x: 468, y: 2160, parents: ["platinumRank"], tier: "platin", discoveryGroup: "main:week" },
+
+  { id: "handstandSkill", type: "skill", metric: "variantTotal", variant: "handstand", branch: "variant", target: 5, x: 595, y: 2160, parents: ["platinumRank"], tier: "platin" },
+  { id: "handstandMastery", type: "metric", metric: "variantMax", variant: "handstand", branch: "variant", target: 10, x: 595, y: 1990, parents: ["handstandSkill"], tier: "platin", discoveryGroup: "variant:handstand" },
+
+  { id: "diamond1Trial", type: "challenge", metric: "workoutSets", branch: "challenge", target: 4, x: 328, y: 1980, parents: ["platinumRank"], tier: "platin", challengeTitle: "DIAMANT-PRÜFUNG", challengeShort: "4 SETS", challengeIcon: "◆" },
+  { id: "diamondRank", type: "rank", branch: "rank", rank: "Diamant I", rankAsset: "Diamant", x: 328, y: 1800, parents: ["standard100", "total10000", "week1500", "handstandSkill", "diamond1Trial"], requirementCount: 4, requiredParents: ["handstandSkill", "diamond1Trial"], tier: "diamant" },
+
+  // -----------------------------------------------------------------------
+  // DIAMANT I -> II — erste echte Mastery-Stufe
+  // -----------------------------------------------------------------------
+  { id: "standard125", type: "metric", metric: "standardMax", branch: "max", target: 125, x: 52, y: 1620, parents: ["diamondRank"], tier: "diamant", discoveryGroup: "main:max" },
+  { id: "total25000", type: "metric", metric: "total", branch: "total", target: 25000, x: 328, y: 1620, parents: ["diamondRank"], tier: "diamant", discoveryGroup: "main:total" },
+  { id: "trainingDays50", type: "metric", metric: "trainingDays", branch: "week", target: 50, x: 468, y: 1620, parents: ["diamondRank"], tier: "diamant", discoveryGroup: "main:days" },
+
+  { id: "diamond2Trial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 150, x: 328, y: 1440, parents: ["diamondRank"], tier: "diamant", challengeTitle: "DIAMANT II", challengeShort: "150 WDH.", challengeIcon: "◆" },
+  { id: "diamond2Rank", type: "rank", branch: "rank", rank: "Diamant II", rankAsset: "Diamant", x: 328, y: 1260, parents: ["standard125", "total25000", "trainingDays50", "handstandMastery", "diamond2Trial"], requirementCount: 4, requiredParents: ["handstandMastery", "diamond2Trial"], tier: "diamant" },
+
+  // -----------------------------------------------------------------------
+  // DIAMANT II -> III — Pseudo Planche als neuer Geheim-/Mastery-Ast
+  // -----------------------------------------------------------------------
+  { id: "standard150", type: "metric", metric: "standardMax", branch: "max", target: 150, x: 52, y: 1080, parents: ["diamond2Rank"], tier: "diamant", discoveryGroup: "main:max" },
+  { id: "total50000", type: "metric", metric: "total", branch: "total", target: 50000, x: 328, y: 1080, parents: ["diamond2Rank"], tier: "diamant", discoveryGroup: "main:total" },
+  { id: "week3000", type: "metric", metric: "week", branch: "week", target: 3000, x: 468, y: 1080, parents: ["diamond2Rank"], tier: "diamant", discoveryGroup: "main:week" },
+
+  { id: "pseudoPlancheSkill", type: "skill", metric: "variantTotal", variant: "pseudoPlanche", branch: "variant", target: 5, x: 595, y: 1080, parents: ["diamond2Rank"], tier: "diamant" },
+  { id: "pseudoPlancheMastery", type: "metric", metric: "variantMax", variant: "pseudoPlanche", branch: "variant", target: 10, x: 595, y: 910, parents: ["pseudoPlancheSkill"], tier: "diamant", discoveryGroup: "variant:pseudoPlanche" },
+
+  { id: "diamond3Trial", type: "challenge", metric: "workoutVariants", branch: "challenge", target: 4, x: 328, y: 900, parents: ["diamond2Rank"], tier: "diamant", challengeTitle: "DIAMANT III", challengeShort: "4 VARIANTEN", challengeIcon: "◆" },
+  { id: "diamond3Rank", type: "rank", branch: "rank", rank: "Diamant III", rankAsset: "Diamant", x: 328, y: 720, parents: ["standard150", "total50000", "week3000", "pseudoPlancheSkill", "diamond3Trial"], requirementCount: 4, requiredParents: ["pseudoPlancheSkill", "diamond3Trial"], tier: "diamant" },
+
+  // -----------------------------------------------------------------------
+  // DIAMANT III -> IV — derzeitiges Endgame
+  // -----------------------------------------------------------------------
+  { id: "standard200", type: "metric", metric: "standardMax", branch: "max", target: 200, x: 52, y: 540, parents: ["diamond3Rank"], tier: "diamant", discoveryGroup: "main:max" },
+  { id: "total100000", type: "metric", metric: "total", branch: "total", target: 100000, x: 328, y: 540, parents: ["diamond3Rank"], tier: "diamant", discoveryGroup: "main:total" },
+  { id: "trainingDays100", type: "metric", metric: "trainingDays", branch: "week", target: 100, x: 468, y: 540, parents: ["diamond3Rank"], tier: "diamant", discoveryGroup: "main:days" },
+
+  { id: "diamond4Trial", type: "challenge", metric: "workoutTotal", branch: "challenge", target: 250, x: 328, y: 360, parents: ["diamond3Rank"], tier: "diamant", challengeTitle: "FINAL-PRÜFUNG", challengeShort: "250 WDH.", challengeIcon: "◆" },
+  { id: "diamond4Rank", type: "rank", branch: "rank", rank: "Diamant IV", rankAsset: "Diamant", x: 328, y: 180, parents: ["standard200", "total100000", "trainingDays100", "pseudoPlancheMastery", "diamond4Trial"], requirementCount: 4, requiredParents: ["pseudoPlancheMastery", "diamond4Trial"], tier: "diamant" }
 ];
-
-const LEGACY_TREE_OFFSET = 1850;
-
-// Existing v0.10 milestones are shifted downward unchanged, leaving room for
-// Gold, Platin and Diamant above them. Each legacy node keeps the material of
-// the chapter it originally belonged to.
-const SHIFTED_BASE_SKILL_NODES = BASE_SKILL_NODES.map(node => ({
-  ...node,
-  y: node.y + LEGACY_TREE_OFFSET,
-  tier: node.type === "rank"
-    ? node.rank.toLowerCase()
-    : (node.y < 170 ? "silber" : node.y < 675 ? "bronze" : node.y < 1150 ? "stein" : "holz")
-}));
-
-const EXTENDED_SKILL_NODES = [
-  // Silber -> Gold. The four familiar metric goals are the old post-Silber
-  // goals; Explosive is the new visible skill teaser in the fifth column.
-  { id: "explosiveSkill", type: "skill", metric: "variantTotal", variant: "explosive", branch: "variant", target: 10, x: 595, y: 1868, parents: ["silverRank"], tier: "silber" },
-  { id: "goldRank", type: "rank", branch: "rank", rank: "Gold", x: 315, y: 1680, parents: ["standard100", "day400", "total2500", "week1000", "explosiveSkill"], requirementCount: 3, requiredParents: ["explosiveSkill"], tier: "gold" },
-
-  // Gold -> Platin
-  { id: "standard150", type: "metric", metric: "standardMax", branch: "max", target: 150, x: 52, y: 1510, parents: ["goldRank"], tier: "gold" },
-  { id: "standard200", type: "metric", metric: "standardMax", branch: "max", target: 200, x: 52, y: 1360, parents: ["standard150"], tier: "gold" },
-
-  { id: "day700", type: "metric", metric: "day", branch: "day", target: 700, x: 188, y: 1510, parents: ["goldRank"], tier: "gold" },
-  { id: "day1000", type: "metric", metric: "day", branch: "day", target: 1000, x: 188, y: 1360, parents: ["day700"], tier: "gold" },
-
-  { id: "total5000", type: "metric", metric: "total", branch: "total", target: 5000, x: 328, y: 1510, parents: ["goldRank"], tier: "gold" },
-  { id: "total10000", type: "metric", metric: "total", branch: "total", target: 10000, x: 328, y: 1360, parents: ["total5000"], tier: "gold" },
-
-  { id: "week1800", type: "metric", metric: "week", branch: "week", target: 1800, x: 468, y: 1510, parents: ["goldRank"], tier: "gold" },
-  { id: "week3000", type: "metric", metric: "week", branch: "week", target: 3000, x: 468, y: 1360, parents: ["week1800"], tier: "gold" },
-
-  { id: "archerSkill", type: "skill", metric: "variantTotal", variant: "archer", branch: "variant", target: 10, x: 595, y: 1510, parents: ["goldRank"], tier: "gold" },
-  { id: "archerStage2", type: "metric", metric: "variantPoints", variant: "archer", branch: "variant", target: 3, x: 595, y: 1360, parents: ["archerSkill"], tier: "gold" },
-
-  { id: "platinumRank", type: "rank", branch: "rank", rank: "Platin", x: 315, y: 1165, parents: ["standard200", "day1000", "total10000", "week3000", "archerSkill"], requirementCount: 3, requiredParents: ["archerSkill"], tier: "platin" },
-
-  // Platin -> Diamant
-  { id: "standard250", type: "metric", metric: "standardMax", branch: "max", target: 250, x: 52, y: 995, parents: ["platinumRank"], tier: "platin" },
-  { id: "standard300", type: "metric", metric: "standardMax", branch: "max", target: 300, x: 52, y: 845, parents: ["standard250"], tier: "platin" },
-
-  { id: "day1500", type: "metric", metric: "day", branch: "day", target: 1500, x: 188, y: 995, parents: ["platinumRank"], tier: "platin" },
-  { id: "day2500", type: "metric", metric: "day", branch: "day", target: 2500, x: 188, y: 845, parents: ["day1500"], tier: "platin" },
-
-  { id: "total25000", type: "metric", metric: "total", branch: "total", target: 25000, x: 328, y: 995, parents: ["platinumRank"], tier: "platin" },
-  { id: "total50000", type: "metric", metric: "total", branch: "total", target: 50000, x: 328, y: 845, parents: ["total25000"], tier: "platin" },
-
-  { id: "week5000", type: "metric", metric: "week", branch: "week", target: 5000, x: 468, y: 995, parents: ["platinumRank"], tier: "platin" },
-  { id: "week7500", type: "metric", metric: "week", branch: "week", target: 7500, x: 468, y: 845, parents: ["week5000"], tier: "platin" },
-
-  { id: "handstandSkill", type: "skill", metric: "variantTotal", variant: "handstand", branch: "variant", target: 10, x: 595, y: 995, parents: ["platinumRank"], tier: "platin" },
-  { id: "handstandStage2", type: "metric", metric: "variantPoints", variant: "handstand", branch: "variant", target: 3, x: 595, y: 845, parents: ["handstandSkill"], tier: "platin" },
-
-  { id: "diamondRank", type: "rank", branch: "rank", rank: "Diamant", x: 315, y: 650, parents: ["standard300", "day2500", "total50000", "week7500", "handstandSkill"], requirementCount: 3, requiredParents: ["handstandSkill"], tier: "diamant" },
-
-  // Endgame teasers after Diamant. Small nodes stay hidden by the discovery
-  // system; the special Pseudo-Planche unlock remains visible as a teaser.
-  { id: "standard400", type: "metric", metric: "standardMax", branch: "max", target: 400, x: 52, y: 480, parents: ["diamondRank"], tier: "diamant" },
-  { id: "standard500", type: "metric", metric: "standardMax", branch: "max", target: 500, x: 52, y: 300, parents: ["standard400"], tier: "diamant" },
-
-  { id: "day4000", type: "metric", metric: "day", branch: "day", target: 4000, x: 188, y: 480, parents: ["diamondRank"], tier: "diamant" },
-  { id: "day6000", type: "metric", metric: "day", branch: "day", target: 6000, x: 188, y: 300, parents: ["day4000"], tier: "diamant" },
-
-  { id: "total100000", type: "metric", metric: "total", branch: "total", target: 100000, x: 328, y: 480, parents: ["diamondRank"], tier: "diamant" },
-  { id: "total250000", type: "metric", metric: "total", branch: "total", target: 250000, x: 328, y: 300, parents: ["total100000"], tier: "diamant" },
-
-  { id: "week12000", type: "metric", metric: "week", branch: "week", target: 12000, x: 468, y: 480, parents: ["diamondRank"], tier: "diamant" },
-  { id: "week20000", type: "metric", metric: "week", branch: "week", target: 20000, x: 468, y: 300, parents: ["week12000"], tier: "diamant" },
-
-  { id: "pseudoPlancheSkill", type: "skill", metric: "variantTotal", variant: "pseudoPlanche", branch: "variant", target: 10, x: 595, y: 480, parents: ["diamondRank"], tier: "diamant" },
-  { id: "pseudoPlancheStage2", type: "metric", metric: "variantPoints", variant: "pseudoPlanche", branch: "variant", target: 3, x: 595, y: 300, parents: ["pseudoPlancheSkill"], tier: "diamant" }
-];
-
-const SKILL_NODES = [...SHIFTED_BASE_SKILL_NODES, ...EXTENDED_SKILL_NODES];
-
 
 let progress = loadProgress();
 
@@ -666,7 +662,7 @@ function getHomeNextGoalNode() {
   candidates.sort((a, b) => scoringValue(a) - scoringValue(b) || (a.target || 0) - (b.target || 0));
   if (candidates.length) return candidates[0];
 
-  return SKILL_NODES.find(node => !isNodeDone(node) && (node.type === "skill" || node.type === "metric")) || null;
+  return SKILL_NODES.find(node => !isNodeDone(node) && (node.type === "skill" || node.type === "metric" || node.type === "challenge")) || null;
 }
 
 function getHomeGoalHint(node, current, target) {
@@ -676,6 +672,10 @@ function getHomeGoalHint(node, current, target) {
   if (node.metric === "total") return `Noch ${left} Push-ups bis zum nächsten Gesamt-Meilenstein.`;
   if (node.metric === "day") return `Noch ${left} Push-ups für dieses Tagesziel.`;
   if (node.metric === "week") return `Noch ${left} Push-ups für dieses Wochenziel.`;
+  if (node.metric === "trainingDays") return `Noch ${left} Trainingstage bis zum nächsten Kapitelziel.`;
+  if (node.metric === "workoutTotal") return `Noch ${left} Push-ups in einem Workout bis zur Prüfung.`;
+  if (node.metric === "workoutSets") return `Noch ${left} Sets in einem Workout bis zur Prüfung.`;
+  if (node.metric === "workoutVariants") return `Noch ${left} Varianten in einem Workout bis zur Prüfung.`;
   if (node.variant) return `Noch ${left} ${VARIANT_META[node.variant]?.label || "Varianten"}-Push-ups bis zum Unlock.`;
   return `Noch ${left} bis zum nächsten Skill.`;
 }
@@ -684,7 +684,17 @@ function getHomeTimedGoalNode(metric) {
   const nodes = SKILL_NODES
     .filter(node => node.type === "metric" && node.metric === metric)
     .sort((a, b) => (a.target || 0) - (b.target || 0));
-  return nodes.find(node => !isNodeDone(node)) || nodes[nodes.length - 1] || null;
+  const liveNode = nodes.find(node => !isNodeDone(node));
+  if (liveNode) return liveNode;
+
+  // Tages- und Wochenziele sind Dashboard-Ziele und müssen nicht jeden Rang
+  // als sichtbaren Tree-Knoten aufblasen. Falls ein Kapitel gerade keinen
+  // entsprechenden Knoten hat, nimmt das Dashboard die nächste sinnvolle
+  // Stufe aus dieser schlanken Zielskala.
+  const current = metric === "day" ? getTodayTotal() : getCurrentWeekTotal();
+  const targets = metric === "day" ? HOME_DAY_TARGETS : HOME_WEEK_TARGETS;
+  const target = targets.find(value => value > current) || targets[targets.length - 1];
+  return target ? { type: "dashboardGoal", metric, target } : (nodes[nodes.length - 1] || null);
 }
 
 function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
@@ -714,7 +724,10 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
 }
 
 function getCurrentRankName() {
-  if (isNodeDone(getNode("diamondRank"))) return "Diamant";
+  if (isNodeDone(getNode("diamond4Rank"))) return "Diamant IV";
+  if (isNodeDone(getNode("diamond3Rank"))) return "Diamant III";
+  if (isNodeDone(getNode("diamond2Rank"))) return "Diamant II";
+  if (isNodeDone(getNode("diamondRank"))) return "Diamant I";
   if (isNodeDone(getNode("platinumRank"))) return "Platin";
   if (isNodeDone(getNode("goldRank"))) return "Gold";
   if (isNodeDone(getNode("silverRank"))) return "Silber";
@@ -800,6 +813,45 @@ function getVariantMilestoneCount(variant) {
   return count;
 }
 
+function getPushupHistory() {
+  return (Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [])
+    .filter(item => !item?.exercise || item.exercise === "pushups");
+}
+
+function getTrainingDayCount() {
+  const days = new Set();
+  for (const item of getPushupHistory()) {
+    const date = new Date(item?.date);
+    if (!Number.isNaN(date.getTime())) days.add(localDateString(date));
+  }
+  return days.size;
+}
+
+function getBestWorkoutTotal() {
+  return getPushupHistory().reduce((best, item) => Math.max(best, Math.max(0, Number(item?.reps) || 0)), 0);
+}
+
+function getBestWorkoutSetCount() {
+  return getPushupHistory().reduce((best, item) => {
+    const sets = Array.isArray(item?.sets) ? item.sets.filter(set => Number(set?.reps) > 0) : [];
+    const count = sets.length || (Number(item?.reps) > 0 ? 1 : 0);
+    return Math.max(best, count);
+  }, 0);
+}
+
+function getBestWorkoutVariantCount() {
+  return getPushupHistory().reduce((best, item) => {
+    const sets = Array.isArray(item?.sets) ? item.sets.filter(set => Number(set?.reps) > 0) : [];
+    let count = 0;
+    if (sets.length) {
+      count = new Set(sets.map(set => VARIANT_META[set?.variant] ? set.variant : "standard")).size;
+    } else if (Number(item?.reps) > 0) {
+      count = 1;
+    }
+    return Math.max(best, count);
+  }, 0);
+}
+
 function nodeValue(node) {
   if (!node) return 0;
   switch (node.metric) {
@@ -817,6 +869,14 @@ function nodeValue(node) {
       return getVariantMilestoneCount(node.variant);
     case "variantTotal":
       return getVariantStats(node.variant).total;
+    case "trainingDays":
+      return getTrainingDayCount();
+    case "workoutTotal":
+      return getBestWorkoutTotal();
+    case "workoutSets":
+      return getBestWorkoutSetCount();
+    case "workoutVariants":
+      return getBestWorkoutVariantCount();
     default:
       return 0;
   }
@@ -824,6 +884,10 @@ function nodeValue(node) {
 
 function isNodeDone(node) {
   if (!node) return false;
+  if ((node.type === "challenge" || node.type === "skill") && node.parents?.length) {
+    const chapterUnlocked = node.parents.every(parentId => isNodeDone(getNode(parentId)));
+    if (!chapterUnlocked) return false;
+  }
   if (node.type === "rank") {
     const parents = node.parents || [];
     const requiredParents = node.requiredParents || [];
@@ -860,7 +924,7 @@ function isVariantUnlocked(variant) {
 
 function getDiscoveryGroupKey(node) {
   if (!node || node.type !== "metric") return null;
-  return `${node.metric}:${node.variant || "base"}`;
+  return node.discoveryGroup || `${node.metric}:${node.variant || "base"}`;
 }
 
 function getNodeDiscoveryState(node) {
@@ -869,7 +933,7 @@ function getNodeDiscoveryState(node) {
 
   // Ränge und große Übungs-Freischaltungen bleiben bewusst sichtbar. Sie sind
   // die großen Orientierungspunkte des Trees und dürfen Vorfreude erzeugen.
-  if (node.type === "rank" || node.type === "skill") {
+  if (node.type === "rank" || node.type === "skill" || node.type === "challenge") {
     return isNodeAvailable(node) ? "current" : "locked";
   }
 
@@ -895,7 +959,7 @@ function getNodeDiscoveryState(node) {
 
 function shouldRenderTreeNode(node) {
   if (!node) return false;
-  if (node.type === "metric" && node.metric === "variantPoints" && node.variant) {
+  if (node.type === "metric" && node.variant) {
     const skillParent = (node.parents || [])
       .map(parentId => getNode(parentId))
       .find(parent => parent?.type === "skill" && parent.variant === node.variant);
@@ -925,6 +989,10 @@ function getNodeTitle(node) {
   if (node.metric === "total") return "gesamt";
   if (node.metric === "day") return "in 24h";
   if (node.metric === "week") return "in 7 Tagen";
+  if (node.metric === "trainingDays") return "Trainingstage";
+  if (node.metric === "workoutTotal") return "in 1 Workout";
+  if (node.metric === "workoutSets") return "Sets in 1 Workout";
+  if (node.metric === "workoutVariants") return "Varianten in 1 Workout";
   if (node.metric === "variantMax") return VARIANT_META[node.variant]?.shortLabel || "Variante";
   if (node.metric === "variantPoints") return `${VARIANT_META[node.variant]?.shortLabel || "Variante"} Stufe`;
   return "";
@@ -958,6 +1026,12 @@ function getNodeRankTier(node) {
 
 function getNodeRequirementLabel(node) {
   if (!node) return "";
+  if (node.type === "challenge") {
+    if (node.metric === "workoutTotal") return `${node.target} Push-ups in einem Workout`;
+    if (node.metric === "workoutSets") return `${node.target} Sets in einem Workout`;
+    if (node.metric === "workoutVariants") return `${node.target} Varianten in einem Workout`;
+    return node.challengeTitle || "Rang-Prüfung";
+  }
   if (node.type === "skill") {
     if (node.metric === "variantTotal") {
       return `${node.target || 10} ${VARIANT_META[node.variant]?.label || "Variante"} Push-ups`;
@@ -968,12 +1042,16 @@ function getNodeRequirementLabel(node) {
     return `${VARIANT_META[node.variant]?.label || "Variante"} ${node.target}/10 Meilensteine`;
   }
   if (node.metric === "variantMax") {
-    return `${node.target} ${VARIANT_META[node.variant]?.label || "Variante"}`;
+    return `${node.target} ${VARIANT_META[node.variant]?.label || "Variante"} am Stück`;
   }
   if (node.metric === "standardMax") return `${node.target} Push-ups am Stück`;
   if (node.metric === "total") return `${node.target} Push-ups gesamt`;
   if (node.metric === "day") return `${node.target} Push-ups in 24h`;
   if (node.metric === "week") return `${node.target} Push-ups in 7 Tagen`;
+  if (node.metric === "trainingDays") return `${node.target} Trainingstage`;
+  if (node.metric === "workoutTotal") return `${node.target} Push-ups in einem Workout`;
+  if (node.metric === "workoutSets") return `${node.target} Sets in einem Workout`;
+  if (node.metric === "workoutVariants") return `${node.target} Varianten in einem Workout`;
   return `${node.target}`;
 }
 
@@ -1037,14 +1115,32 @@ function renderTree() {
     else el.classList.add("locked", "mystery");
 
     if (node.type === "rank") {
-      el.classList.add("rank-node", `rank-${node.rank.toLowerCase()}`);
+      el.classList.add("rank-node", `rank-${String(node.rankAsset || node.rank).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
       el.innerHTML = `
-        <span class="rank-symbol">${getRankIconSvg(node.rank)}</span>
+        <span class="rank-symbol">${getRankIconSvg(node.rankAsset || node.rank)}</span>
         <span class="node-target">${node.rank.toUpperCase()}</span>
         <span class="node-label">RANG</span>
         ${done ? '<span class="rank-complete-pill">RANG ERREICHT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '')}
       `;
       el.addEventListener("click", () => alert(getRankDescription(node)));
+    } else if (node.type === "challenge") {
+      const current = nodeValue(node);
+      const target = Math.max(1, Number(node.target) || 1);
+      const progress = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+      el.classList.add("challenge-node");
+      el.innerHTML = `
+        <span class="challenge-icon">${node.challengeIcon || "★"}</span>
+        <span class="node-target">${node.challengeShort || node.target}</span>
+        <span class="node-label">${node.challengeTitle || "RANG-PRÜFUNG"}</span>
+        ${discoveryState === "current" && !done ? `<span class="challenge-progress-text">${Math.min(current, target)}/${target}</span>` : ""}
+        ${discoveryState === "current" && !done ? `<span class="node-progress"><span style="width:${progress}%"></span></span>` : ""}
+        ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '')}
+      `;
+      el.addEventListener("click", () => {
+        let detail = `${node.challengeTitle || "Rang-Prüfung"}\n${getNodeRequirementLabel(node)}\nAktuell: ${current}/${target}`;
+        if (discoveryState === "locked") detail += "\n\nDieser Kapitel-Test wird mit dem Rang davor freigeschaltet.";
+        alert(detail);
+      });
     } else if (node.type === "skill") {
       const meta = VARIANT_META[node.variant] || { label: node.variant, color: "#8B6CFF" };
       const progressCount = node.metric === "variantTotal"
@@ -1055,7 +1151,7 @@ function renderTree() {
       el.style.setProperty("--variant-color", meta.color);
       el.innerHTML = `
         <span class="variant-skill-node-icon">${getVariantIconSvg(node.variant)}</span>
-        <span class="node-target">${meta.label.toUpperCase()}</span>
+        <span class="node-target">${(meta.shortLabel || meta.label).toUpperCase()}</span>
         <span class="node-label">${progressCount}/${progressTarget}</span>
         ${done ? '<span class="node-complete-pill">GESCHAFFT</span>' : (discoveryState === "locked" ? '<span class="node-lock">🔒</span>' : '<span class="node-plus">+</span>')}
       `;
@@ -1066,7 +1162,14 @@ function renderTree() {
       const progress = Math.max(0, Math.min(100, Math.round((current / Math.max(1, node.target)) * 100)));
       const metricIcon = node.metric === "variantMax"
         ? getVariantIconSvg(node.variant)
-        : getMetricIconSvg(node.metric === "standardMax" ? "max" : node.metric);
+        : getMetricIconSvg(
+            node.metric === "standardMax" ? "max"
+              : node.metric === "trainingDays" ? "week"
+              : node.metric === "workoutTotal" ? "total"
+              : node.metric === "workoutSets" ? "max"
+              : node.metric === "workoutVariants" ? "week"
+              : node.metric
+          );
 
       if (discoveryState === "mystery") {
         el.innerHTML = `
