@@ -539,8 +539,18 @@ function normalizeProgress(value) {
   const variantStats = createEmptyVariantStats();
   for (const item of trainingHistory) {
     if (item?.exercise && item.exercise !== "pushups") continue;
+    const sets = Array.isArray(item?.sets) ? item.sets : [];
+    if (sets.length) {
+      for (const set of sets) {
+        const variant = VARIANT_META[set?.variant] ? set.variant : "standard";
+        const reps = Math.max(0, Number(set?.reps) || 0);
+        variantStats[variant].total += reps;
+        variantStats[variant].max = Math.max(variantStats[variant].max, reps);
+      }
+      continue;
+    }
     const variant = VARIANT_META[item?.variant] ? item.variant : "standard";
-    const reps = Math.max(0, Number(item?.reps) || 0);
+    const reps = getWorkoutRepCount(item);
     variantStats[variant].total += reps;
     variantStats[variant].max = Math.max(variantStats[variant].max, reps);
   }
@@ -659,10 +669,10 @@ async function importProgressBackup(file) {
 // ---------- Views / Dashboard ----------
 function setBottomNavActive(name) {
   const groups = {
-    home: [document.getElementById("homeNavHomeBtn"), document.getElementById("profileNavHomeBtn")],
-    tree: [document.getElementById("homeNavTreeBtn"), document.getElementById("profileNavTreeBtn")],
-    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("profileNavHistoryBtn")],
-    profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("profileNavProfileBtn")]
+    home: [document.getElementById("homeNavHomeBtn"), document.getElementById("profileNavHomeBtn"), document.getElementById("historyNavHomeBtn")],
+    tree: [document.getElementById("homeNavTreeBtn"), document.getElementById("profileNavTreeBtn"), document.getElementById("historyNavTreeBtn")],
+    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("profileNavHistoryBtn"), document.getElementById("historyNavHistoryBtn")],
+    profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("profileNavProfileBtn"), document.getElementById("historyNavProfileBtn")]
   };
   Object.values(groups).flat().forEach(btn => btn?.classList.remove("active"));
   (groups[name] || []).forEach(btn => btn?.classList.add("active"));
@@ -806,20 +816,14 @@ function getHomeGoalHint(node, current, target) {
 }
 
 function getHomeTimedGoalNode(metric) {
-  const nodes = SKILL_NODES
-    .filter(node => node.type === "metric" && node.metric === metric)
-    .sort((a, b) => (a.target || 0) - (b.target || 0));
-  const liveNode = nodes.find(node => !isNodeDone(node));
-  if (liveNode) return liveNode;
-
-  // Tages- und Wochenziele sind Dashboard-Ziele und müssen nicht jeden Rang
-  // als sichtbaren Tree-Knoten aufblasen. Falls ein Kapitel gerade keinen
-  // entsprechenden Knoten hat, nimmt das Dashboard die nächste sinnvolle
-  // Stufe aus dieser schlanken Zielskala.
   const current = metric === "day" ? getTodayTotal() : getCurrentWeekTotal();
   const targets = metric === "day" ? HOME_DAY_TARGETS : HOME_WEEK_TARGETS;
-  const target = targets.find(value => value > current) || targets[targets.length - 1];
-  return target ? { type: "dashboardGoal", metric, target } : (nodes[nodes.length - 1] || null);
+  if (!targets.length) return null;
+
+  // Dashboard goals describe THIS day/week only. They must not be skipped just
+  // because the same milestone was achieved on an older day or week.
+  const target = targets.find(value => current <= value) ?? targets[targets.length - 1];
+  return { type: "dashboardGoal", metric, target };
 }
 
 function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
@@ -866,6 +870,22 @@ function getNode(id) {
   return SKILL_NODES.find(node => node.id === id);
 }
 
+function getWorkoutRepCount(item) {
+  if (!item || typeof item !== "object") return 0;
+  const direct = Math.max(0, Number(item.reps) || 0);
+  const sets = Array.isArray(item.sets) ? item.sets : [];
+  const setTotal = sets.reduce((sum, set) => sum + Math.max(0, Number(set?.reps) || 0), 0);
+  const legacy = Math.max(0, Number(item.totalReps ?? item.count ?? item.pushups) || 0);
+  return Math.max(direct, setTotal, legacy);
+}
+
+function getWorkoutDate(item) {
+  const raw = item?.date ?? item?.timestamp ?? item?.createdAt ?? item?.savedAt;
+  if (!raw) return null;
+  const date = raw instanceof Date ? raw : new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function getTodayTotal() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -894,9 +914,9 @@ function getHistoryTotalBetween(start, end) {
   const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
   return items.reduce((sum, item) => {
     if (item?.exercise && item.exercise !== "pushups") return sum;
-    const date = new Date(item?.date);
-    if (Number.isNaN(date.getTime()) || date < start || date >= end) return sum;
-    return sum + Math.max(0, Number(item?.reps) || 0);
+    const date = getWorkoutDate(item);
+    if (!date || date < start || date >= end) return sum;
+    return sum + getWorkoutRepCount(item);
   }, 0);
 }
 
@@ -1308,8 +1328,8 @@ function getTreeColumnCenters() {
   const width = Math.max(280, skillTree.clientWidth || treeScroll.clientWidth || window.innerWidth || 360);
   // Matches the responsive CSS node size closely. The extra side padding keeps
   // the first/last badges comfortably inside the viewport.
-  const nodeSize = Math.min(72, Math.max(54, ((window.innerWidth || width) - 48) / 5));
-  const sidePadding = nodeSize / 2 + 6;
+  const nodeSize = Math.min(70, Math.max(52, ((window.innerWidth || width) - 76) / 5));
+  const sidePadding = nodeSize / 2 + 16;
   const usableWidth = Math.max(0, width - sidePadding * 2);
   return TREE_COLUMN_ANCHORS.map((_, index) => sidePadding + (usableWidth * index / 4));
 }
@@ -1335,7 +1355,7 @@ function syncTreeCanvasHeight() {
   // Only a small breathing room below the true first/lowest nodes.
   // This is intentionally based on the rendered DOM instead of SKILL_NODES y
   // estimates, so responsive node sizes cannot clip the bottom of the tree.
-  const bottomBreathingRoom = 44;
+  const bottomBreathingRoom = 128;
   skillTree.style.height = `${Math.ceil(deepestBottom + bottomBreathingRoom)}px`;
   return deepestBottom;
 }
@@ -1348,7 +1368,7 @@ function renderTree() {
     const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
     return Math.max(max, getScaledTreeY(node.y) + approxSize);
   }, 0);
-  skillTree.style.height = `${Math.max(800, roughBottom + 140)}px`;
+  skillTree.style.height = `${Math.max(820, roughBottom + 220)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();
@@ -1879,7 +1899,7 @@ function renderHistory() {
 
     const reps = document.createElement("div");
     reps.className = "history-entry-reps";
-    const count = Math.max(0, Number(item.reps) || 0);
+    const count = getWorkoutRepCount(item);
     reps.textContent = `${count} Push-up${count === 1 ? "" : "s"}`;
 
     entry.append(main, reps);
@@ -3061,7 +3081,6 @@ treeStatsSheet.addEventListener("click", (event) => {
   if (event.target === treeStatsSheet) closeTreeStats();
 });
 document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
-document.getElementById("historyBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("openHomeStatsBtn").addEventListener("click", openTreeStats);
 document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
@@ -3074,6 +3093,11 @@ document.getElementById("profileNavTreeBtn").addEventListener("click", () => sho
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("profileNavHistoryBtn").addEventListener("click", () => showView("history"));
 document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
+document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => showView("home"));
+document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
+document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);
+document.getElementById("historyNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("historyNavProfileBtn")?.addEventListener("click", () => showView("profile"));
 
 document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);

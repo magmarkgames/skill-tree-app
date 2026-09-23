@@ -4720,3 +4720,97 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .home-discipline-tab.discipline-run { color: #e78312; }
 .home-discipline-tab.discipline-pull { color: #239b5d; }
 .home-discipline-tab.discipline-core { color: #7240cf; }
+
+
+/* ==========================================================================
+   v0.10.28 — breathing room, light history, reliable timed goals
+   ========================================================================== */
+.tree-v10 {
+  --tree-node-size: clamp(52px, calc((100vw - 76px) / 5), 70px) !important;
+}
+.tree-view .tree-scroll {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.history-view-light {
+  min-height: 100svh;
+  padding: 0 0 calc(104px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 82% 2%, rgba(78,165,255,.13), transparent 25%),
+    linear-gradient(180deg, #f7fbff 0%, #edf7ff 100%);
+  color: #0d2d5a;
+}
+.history-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  background: rgba(246,250,255,.96);
+  border-bottom: 1px solid #deebf7;
+  backdrop-filter: blur(10px);
+}
+.history-header h1 { margin: 1px 0 0; color: #0b2b58; font-size: 27px; line-height: 1; }
+.history-header small { display: block; margin-top: 5px; color: #758aa5; font-size: 10px; }
+.history-view-light .history-count {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #e9f4ff;
+  color: #4e75a2;
+  font-size: 10px;
+  font-weight: 850;
+}
+.history-view-light .history-summary {
+  gap: 10px;
+  margin: 16px 14px 14px;
+}
+.history-view-light .history-summary article {
+  padding: 14px 8px;
+  border: 1px solid #dce9f6;
+  border-radius: 20px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 10px 24px rgba(49,103,162,.08);
+}
+.history-view-light .history-summary span { color: #7187a4; font-size: 9px; font-weight: 750; }
+.history-view-light .history-summary strong { color: #0b2b58; font-size: 21px; }
+.history-view-light .history-summary small { display: block; margin-top: 2px; color: #91a1b3; font-size: 8px; }
+.history-content-card {
+  margin: 0 14px;
+  padding: 18px;
+  border: 1px solid #dce9f6;
+  border-radius: 26px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 15px 34px rgba(49,103,162,.09);
+}
+.history-section-head { margin-bottom: 14px; }
+.history-section-head h2 { margin: 2px 0 0; color: #0b2b58; font-size: 22px; }
+.history-view-light .history-list { gap: 10px; }
+.history-view-light .history-entry,
+.history-view-light .history-empty {
+  border: 1px solid #d8e7f5;
+  border-radius: 18px;
+  background: linear-gradient(180deg,#fbfdff,#f4f9ff);
+  box-shadow: none;
+}
+.history-view-light .history-entry {
+  min-height: 72px;
+  padding: 13px 14px;
+  color: #0d2d5a;
+}
+.history-view-light .history-entry-main strong { color: #0b2b58; font-size: 14px; }
+.history-view-light .history-entry-main span { color: #758aa5; font-size: 10px; }
+.history-view-light .history-entry-reps { color: #197ce9; font-size: 16px; }
+.history-view-light .history-empty { color: #7d91aa; min-height: 90px; }
+.history-bottom-nav { display: grid; }
+
+@media (max-width: 390px) {
+  .tree-view .tree-scroll { padding-left: 6px; padding-right: 6px; }
+  .history-header { padding-left: 14px; padding-right: 14px; }
+  .history-view-light .history-summary,
+  .history-content-card { margin-left: 11px; margin-right: 11px; }
+  .history-content-card { padding: 14px; }
+}

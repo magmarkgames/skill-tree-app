@@ -1,6 +1,6 @@
-# Power Push v0.10.27
+# Power Push v0.10.28
 
-## Neu in v0.10.27 – Skill Tree als echte Progressionsreise
+## Neu in v0.10.28 – Skill Tree als echte Progressionsreise
 
 Der Push-up Skill Tree wurde strukturell neu aufgebaut. Statt vier gleichförmiger Statistikspalten besteht er jetzt aus **Rang-Kapiteln** mit unterschiedlichen Hauptzielen, sichtbaren Rang-Prüfungen und optionalen Varianten-/Mastery-Ästen.
 
