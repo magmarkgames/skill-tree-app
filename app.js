@@ -580,6 +580,82 @@ function saveProgress() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
+function buildBackupPayload() {
+  return {
+    format: "power-push-backup",
+    version: 1,
+    appVersion: "0.10.26",
+    exportedAt: new Date().toISOString(),
+    storageKey: STORAGE_KEY,
+    progress: normalizeProgress(progress)
+  };
+}
+
+function getBackupFilename() {
+  const now = new Date();
+  const pad = value => String(value).padStart(2, "0");
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}-${pad(now.getMinutes())}`;
+  return `power-push-backup-${date}-${time}.json`;
+}
+
+function exportProgressBackup() {
+  try {
+    const payload = buildBackupPayload();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getBackupFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showAppToast("Backup gespeichert");
+  } catch (error) {
+    console.error("Backup export failed", error);
+    alert("Das Backup konnte nicht exportiert werden.");
+  }
+}
+
+function extractProgressFromBackup(value) {
+  if (!value || typeof value !== "object") return null;
+  if (value.format === "power-push-backup" && value.progress && typeof value.progress === "object") {
+    return value.progress;
+  }
+  if (looksLikeOldProgress(value)) return value;
+  return null;
+}
+
+async function importProgressBackup(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const imported = extractProgressFromBackup(parsed);
+    if (!imported) throw new Error("invalid-backup");
+
+    const normalized = normalizeProgress(imported);
+    const historyCount = Array.isArray(normalized.trainingHistory) ? normalized.trainingHistory.length : 0;
+    const confirmed = confirm(
+      `Backup importieren?\n\n${historyCount} Trainings · ${normalized.pushupTotal} Push-ups gesamt · Rekord ${normalized.pushupMax}\n\nDeine aktuell lokal gespeicherten Daten werden dadurch ersetzt.`
+    );
+    if (!confirmed) return;
+
+    progress = normalized;
+    saveProgress();
+    render();
+    renderProfile();
+    showAppToast("Backup wiederhergestellt");
+  } catch (error) {
+    console.error("Backup import failed", error);
+    alert("Diese Datei ist kein gültiges Power-Push-Backup.");
+  } finally {
+    const input = document.getElementById("backupFileInput");
+    if (input) input.value = "";
+  }
+}
+
 // ---------- Views / Dashboard ----------
 function setBottomNavActive(name) {
   const groups = {
@@ -3036,6 +3112,13 @@ closeVariantModalBtn.addEventListener("click", closeVariantModal);
 variantModal.addEventListener("click", (event) => {
   if (event.target === variantModal) closeVariantModal();
 });
+
+const exportBackupBtn = document.getElementById("exportBackupBtn");
+const importBackupBtn = document.getElementById("importBackupBtn");
+const backupFileInput = document.getElementById("backupFileInput");
+exportBackupBtn?.addEventListener("click", exportProgressBackup);
+importBackupBtn?.addEventListener("click", () => backupFileInput?.click());
+backupFileInput?.addEventListener("change", () => importProgressBackup(backupFileInput.files?.[0]));
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("Wirklich alle lokalen Testdaten löschen?")) return;

@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.10.25</title>
-  <link rel="stylesheet" href="style.css?v=0.10.25" />
+  <title>Power Push – v0.10.26</title>
+  <link rel="stylesheet" href="style.css?v=0.10.26" />
 </head>
 <body>
   <main class="app-shell">
@@ -223,7 +223,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.10.25</span>
+        <span class="profile-version-pill">v0.10.26</span>
       </header>
 
       <section class="profile-hero-card">
@@ -267,6 +267,37 @@
           <article class="profile-future-badge"><span>🔒</span><strong>Core</strong><small>Kommt später</small></article>
         </div>
       </section>
+
+      <section class="profile-section profile-backup-section" aria-labelledby="backupHeading">
+        <div class="profile-section-head">
+          <div>
+            <p class="eyebrow">SICHERUNG</p>
+            <h2 id="backupHeading">Daten & Backup</h2>
+          </div>
+          <span class="profile-section-count backup-local-pill">Lokal gespeichert</span>
+        </div>
+
+        <div class="profile-backup-card">
+          <div class="profile-backup-copy">
+            <span class="profile-backup-icon" aria-hidden="true">↕</span>
+            <div>
+              <strong>Deinen Fortschritt sichern</strong>
+              <p>Trainingshistorie, Rekorde, Varianten und Skill-Tree-Fortschritt werden in einer Backup-Datei gespeichert.</p>
+            </div>
+          </div>
+          <div class="profile-backup-actions">
+            <button id="exportBackupBtn" class="profile-backup-btn primary" type="button">
+              <span>⇩</span><strong>Daten exportieren</strong>
+            </button>
+            <button id="importBackupBtn" class="profile-backup-btn" type="button">
+              <span>⇧</span><strong>Daten importieren</strong>
+            </button>
+          </div>
+          <small class="profile-backup-note">Tipp: Speichere die Datei z. B. in Downloads oder Drive, bevor du Browser-/Website-Daten löschst.</small>
+          <input id="backupFileInput" type="file" accept="application/json,.json" hidden />
+        </div>
+      </section>
+
       <nav class="home-bottom-nav profile-bottom-nav" aria-label="Profil Navigation">
         <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
         <button id="profileNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
