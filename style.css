@@ -3577,21 +3577,36 @@ h2 { margin-bottom: 0; font-size: 21px; }
   position: relative;
   min-height: 100svh;
   padding: max(14px, env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom));
-  background:
-    radial-gradient(circle at 86% 2%, rgba(74, 160, 255, .12), transparent 25%),
-    linear-gradient(180deg, #f8fbff 0%, #eef7ff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #eef7ff 100%);
   color: var(--home-text);
   overflow-x: hidden;
+}
+.home-v17::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 430px;
+  background-image:
+    linear-gradient(90deg, rgba(247,251,255,.96) 0%, rgba(247,251,255,.93) 28%, rgba(247,251,255,.64) 46%, rgba(247,251,255,.18) 68%, rgba(247,251,255,0) 100%),
+    linear-gradient(180deg, rgba(255,255,255,0) 64%, rgba(248,251,255,.74) 84%, rgba(248,251,255,1) 100%),
+    url("home-hero-bg-v023.webp");
+  background-repeat: no-repeat;
+  background-size: cover, cover, cover;
+  background-position: center, center, 64% center;
+  pointer-events: none;
+  z-index: 0;
 }
 .home-v17 button { color: inherit; }
 .home-v17 .locked-feature { opacity: .48; filter: saturate(.35); }
 
 .home-brandbar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .home-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .home-logo {
@@ -3638,29 +3653,28 @@ h2 { margin-bottom: 0; font-size: 21px; }
 
 .home-hero-v17 {
   position: relative;
-  min-height: 318px;
-  overflow: hidden;
-  margin: 0 0 12px;
-  border: 1px solid #dbe9f6;
-  border-radius: 26px;
-  background-image:
-    linear-gradient(90deg, rgba(247,251,255,.98) 0%, rgba(247,251,255,.95) 32%, rgba(247,251,255,.72) 48%, rgba(247,251,255,.16) 70%, rgba(247,251,255,.02) 100%),
-    url("home-top-bg.webp");
-  background-size: cover, cover;
-  background-position: center, center top;
-  background-repeat: no-repeat;
-  box-shadow: 0 15px 34px rgba(49, 103, 162, .10);
+  z-index: 1;
+  min-height: 338px;
+  overflow: visible;
+  margin: 0 0 4px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
-.home-hero-copy { position: relative; z-index: 1; width: 56%; padding: 26px 0 24px 20px; }
-.home-kicker { margin: 0 0 7px; color: #6681a5; font-size: 10px; font-weight: 900; letter-spacing: .25em; }
-.home-hero-copy h1 { margin: 0; color: #0a2752; font-size: clamp(28px, 7.5vw, 37px); line-height: .97; letter-spacing: -.05em; }
-.home-hero-copy > p:last-child { margin: 13px 0 0; color: #7185a1; font-size: 13px; font-style: italic; line-height: 1.25; }
+.home-hero-copy { position: relative; z-index: 1; width: 53%; padding: 10px 0 34px 6px; }
+.home-kicker { margin: 0 0 8px; color: #5d789e; font-size: 10px; font-weight: 900; letter-spacing: .25em; }
+.home-hero-copy h1 { margin: 0; color: #092852; font-size: clamp(29px, 7.7vw, 40px); line-height: .94; letter-spacing: -.055em; }
+.home-hero-copy > p:last-child { margin: 15px 0 0; color: #6d819f; font-size: 13px; font-style: italic; line-height: 1.24; max-width: 210px; }
 
 .home-tree-hub {
+  position: relative;
+  z-index: 2;
+  margin-top: 6px;
   padding: 16px;
   border: 1px solid #dceaf7;
   border-radius: 24px;
-  background: rgba(255,255,255,.96);
+  background: rgba(255,255,255,.97);
   box-shadow: 0 14px 34px rgba(47, 95, 145, .09);
 }
 .home-tree-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
@@ -3817,8 +3831,9 @@ h2 { margin-bottom: 0; font-size: 21px; }
 @media (max-width: 390px) {
   .home-v17 { padding-left: 11px; padding-right: 11px; }
   .home-brand-title { font-size: 23px; }
-  .home-hero-v17 { min-height: 290px; background-size: cover, cover; background-position: center, center top; }
-  .home-hero-copy { width: 59%; padding-left: 16px; }
+  .home-v17::before { height: 398px; background-position: center, center, 70% center; }
+  .home-hero-v17 { min-height: 304px; }
+  .home-hero-copy { width: 58%; padding: 4px 0 28px 2px; }
   .home-hero-copy h1 { font-size: 26px; }
   .home-tree-hub { padding: 12px; }
   .home-discipline-tab { min-height: 52px; font-size: 9px; }
@@ -4409,5 +4424,6 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 @media (max-width: 520px) {
+  .home-v17::before { height: 386px; background-position: center, center, 74% center; }
   .home-hero-copy { width: 57%; }
 }
