@@ -745,7 +745,7 @@ function render() {
   renderLiveGoals();
 }
 
-function renderHomeDashboard(todayTotal, weekTotal, rankName) {
+function renderHomeDashboardLegacy(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
 
   homeRankName.textContent = rankName;
@@ -1341,7 +1341,7 @@ function positionTreeNode(el, node, columnCenters) {
   el.style.top = `${getScaledTreeY(node.y)}px`;
 }
 
-function syncTreeCanvasHeight() {
+function syncTreeCanvasHeightLegacy() {
   const renderedNodes = Array.from(skillTree.querySelectorAll(".skill-node"));
   if (!renderedNodes.length) {
     skillTree.style.height = `${Math.max(treeScroll.clientHeight || 0, 640)}px`;
@@ -1360,7 +1360,7 @@ function syncTreeCanvasHeight() {
   return deepestBottom;
 }
 
-function renderTree() {
+function renderTreeLegacy() {
   skillTree.innerHTML = "";
 
   const visibleNodes = SKILL_NODES.filter(node => shouldRenderTreeNode(node));
