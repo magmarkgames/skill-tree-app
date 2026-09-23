@@ -4644,3 +4644,79 @@ h2 { margin-bottom: 0; font-size: 21px; }
 @media (max-width: 390px) {
   .profile-backup-actions { grid-template-columns: 1fr; }
 }
+
+
+/* ==========================================================================
+   v0.10.27 — measured tree canvas + hybrid category badge icons
+   ========================================================================== */
+.tree-view .tree-scroll {
+  padding-bottom: 0 !important;
+}
+.tree-v10 {
+  overflow: visible !important;
+  padding-bottom: 0 !important;
+}
+
+/* Category icons now use the hexagonal hybrid badge language from the chosen
+   concept: recognizable pictogram inside a collectible-looking skill badge. */
+.home-discipline-tab .discipline-icon {
+  position: relative;
+  width: 42px !important;
+  height: 42px !important;
+  display: grid;
+  place-items: center;
+  margin: 0 0 3px;
+  clip-path: polygon(25% 6%, 75% 6%, 96% 25%, 96% 75%, 75% 94%, 25% 94%, 4% 75%, 4% 25%);
+  color: #fff !important;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.28);
+}
+.home-discipline-tab .discipline-icon::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  clip-path: inherit;
+  border: 1px solid rgba(255,255,255,.34);
+  pointer-events: none;
+}
+.home-discipline-tab .discipline-icon svg {
+  position: relative;
+  z-index: 1;
+  width: 27px !important;
+  height: 27px !important;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.12));
+}
+.home-discipline-tab.discipline-push .discipline-icon {
+  background: linear-gradient(145deg, #39a8ff 0%, #167bea 55%, #0755c6 100%);
+}
+.home-discipline-tab.discipline-run .discipline-icon {
+  background: linear-gradient(145deg, #ffb23b 0%, #f28a16 58%, #c96300 100%);
+}
+.home-discipline-tab.discipline-pull .discipline-icon {
+  background: linear-gradient(145deg, #57d789 0%, #22ad64 58%, #087d42 100%);
+}
+.home-discipline-tab.discipline-core .discipline-icon {
+  background: linear-gradient(145deg, #a568ff 0%, #7441d9 58%, #4d249f 100%);
+}
+.home-discipline-tab.locked-feature {
+  opacity: .68;
+}
+.home-discipline-tab.active .discipline-icon {
+  filter: drop-shadow(0 5px 9px rgba(20,116,225,.20));
+}
+
+@media (max-width: 390px) {
+  .home-discipline-tab .discipline-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .home-discipline-tab .discipline-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+/* v0.10.27 exact category palette from the chosen badge concept */
+.home-discipline-tab.discipline-push { color: #1f7ef0; }
+.home-discipline-tab.discipline-run { color: #e78312; }
+.home-discipline-tab.discipline-pull { color: #239b5d; }
+.home-discipline-tab.discipline-core { color: #7240cf; }

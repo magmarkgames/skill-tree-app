@@ -679,18 +679,19 @@ function showView(name) {
 
   if (name === "tree") {
     renderTree();
-    requestAnimationFrame(() => {
+
+    const scrollTreeToStart = () => {
+      syncTreeCanvasHeight();
       treeScroll.scrollLeft = 0;
-      const nodes = Array.from(skillTree.querySelectorAll(".skill-node"));
-      const lowestNode = nodes.reduce((lowest, node) => {
-        if (!lowest) return node;
-        return node.offsetTop > lowest.offsetTop ? node : lowest;
-      }, null);
-      const bottomEdge = lowestNode
-        ? lowestNode.offsetTop + lowestNode.offsetHeight + 16
-        : treeScroll.scrollHeight;
-      treeScroll.scrollTop = Math.max(0, bottomEdge - treeScroll.clientHeight + 240);
+      treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight);
+    };
+
+    // Two frames allow responsive badge dimensions to settle first. The small
+    // delayed pass also covers image decoding differences on Android Chrome.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollTreeToStart);
     });
+    setTimeout(scrollTreeToStart, 120);
   }
 
   if (name === "history") renderHistory();
@@ -1320,6 +1321,25 @@ function positionTreeNode(el, node, columnCenters) {
   el.style.top = `${getScaledTreeY(node.y)}px`;
 }
 
+function syncTreeCanvasHeight() {
+  const renderedNodes = Array.from(skillTree.querySelectorAll(".skill-node"));
+  if (!renderedNodes.length) {
+    skillTree.style.height = `${Math.max(treeScroll.clientHeight || 0, 640)}px`;
+    return 0;
+  }
+
+  const deepestBottom = renderedNodes.reduce((max, el) => {
+    return Math.max(max, el.offsetTop + el.offsetHeight);
+  }, 0);
+
+  // Only a small breathing room below the true first/lowest nodes.
+  // This is intentionally based on the rendered DOM instead of SKILL_NODES y
+  // estimates, so responsive node sizes cannot clip the bottom of the tree.
+  const bottomBreathingRoom = 44;
+  skillTree.style.height = `${Math.ceil(deepestBottom + bottomBreathingRoom)}px`;
+  return deepestBottom;
+}
+
 function renderTree() {
   skillTree.innerHTML = "";
 
@@ -1328,7 +1348,7 @@ function renderTree() {
     const approxSize = node.type === "rank" ? 128 : (node.type === "skill" ? 124 : 114);
     return Math.max(max, getScaledTreeY(node.y) + approxSize);
   }, 0);
-  skillTree.style.height = `${Math.max(2100, roughBottom + 420)}px`;
+  skillTree.style.height = `${Math.max(800, roughBottom + 140)}px`;
 
   const nodeElements = new Map();
   const columnCenters = getTreeColumnCenters();
@@ -1456,6 +1476,8 @@ function renderTree() {
       skillTree.appendChild(line);
     });
   });
+
+  syncTreeCanvasHeight();
 }
 
 function openVariantModal(variant) {
