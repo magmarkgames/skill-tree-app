@@ -5888,3 +5888,368 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .v112-main-grid { top: 122px; }
   .v112-variant-branch { top: 162px; }
 }
+
+
+/* =====================================================================
+   v0.11.3 — full-screen scrollable tree history
+   ===================================================================== */
+.tree-scroll-v112 {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 28px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(210, 226, 255, .56), transparent 26%),
+    linear-gradient(180deg, #f5f9ff 0%, #edf4ff 100%);
+}
+
+.skill-tree-v113 {
+  width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  color: #132547;
+}
+
+.v113-tree-scroll-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.v113-tree-section {
+  position: relative;
+  min-height: max(620px, calc(100svh - 132px));
+  padding: 8px 0 18px;
+}
+
+.v113-tree-section + .v113-tree-section {
+  border-top: 1px solid rgba(160, 181, 219, .18);
+}
+
+.v113-tree-stage {
+  position: relative;
+  width: 100%;
+  min-height: inherit;
+}
+
+.v113-tree-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.v113-tree-lines path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.v113-tree-lines .trunk {
+  stroke: rgba(155, 172, 204, .46);
+  stroke-width: 0.85;
+}
+.v113-tree-lines .path {
+  stroke-width: 0.82;
+}
+.v113-tree-lines .path-1 { stroke: rgba(79, 156, 248, .38); }
+.v113-tree-lines .path-2 { stroke: rgba(241, 166, 47, .40); }
+.v113-tree-lines .path-3 { stroke: rgba(57, 184, 111, .40); }
+.v113-tree-lines .variant-link {
+  stroke: rgba(154, 105, 204, .38);
+  stroke-width: 0.68;
+  stroke-dasharray: 1.8 1.8;
+}
+
+.v113-rank-node {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: min(170px, 42vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.v113-rank-next { top: 14px; }
+.v113-rank-current { bottom: 12px; }
+
+.v113-rank-icon {
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  background: rgba(255,255,255,.64);
+  box-shadow: 0 18px 36px rgba(87, 109, 148, .11), inset 0 0 0 1px rgba(255,255,255,.54);
+  backdrop-filter: blur(4px);
+}
+
+.v113-rank-icon .app-asset-icon,
+.v113-rank-icon .v112-start-symbol,
+.v113-rank-icon .v112-start-symbol .app-asset-icon {
+  width: 62px;
+  height: 62px;
+}
+
+.v113-rank-next.locked .v113-rank-icon::after {
+  content: "🔒";
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 6px 18px rgba(79, 101, 146, .14);
+  font-size: 14px;
+}
+
+.v113-rank-next.ready .v113-rank-icon {
+  box-shadow: 0 18px 42px rgba(39, 155, 92, .14), inset 0 0 0 1px rgba(255,255,255,.54);
+}
+
+.v113-rank-label {
+  color: #182d53;
+  font-size: clamp(22px, 5.2vw, 34px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.v113-main-grid {
+  position: absolute;
+  left: 20%;
+  right: 8%;
+  top: 132px;
+  bottom: 126px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(78px, 1fr));
+  grid-template-rows: auto repeat(3, 1fr);
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: center;
+  justify-items: center;
+  z-index: 2;
+}
+
+.v113-path-label {
+  grid-column: var(--grid-column);
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.v113-path-label span {
+  width: 34px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--path-accent, #9fb4d9);
+}
+
+.v113-path-label strong {
+  color: #223a61;
+  font-size: clamp(13px, 3.8vw, 18px);
+  font-weight: 850;
+}
+
+.v113-skill-node {
+  grid-column: var(--grid-column);
+  grid-row: var(--grid-row);
+  width: min(104px, 26vw);
+  height: min(104px, 26vw);
+  border-radius: 999px;
+  border: 3px solid color-mix(in srgb, var(--node-accent) 45%, white 55%);
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 14px 28px rgba(90, 113, 153, .08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  color: #213a60;
+}
+
+.v113-skill-node.active {
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--node-accent) 16%, transparent), 0 14px 28px rgba(90, 113, 153, .08);
+}
+
+.v113-skill-node.done {
+  border-color: color-mix(in srgb, var(--node-accent) 60%, white 40%);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--node-accent) 13%, transparent), 0 14px 28px rgba(90, 113, 153, .08);
+}
+
+.v113-node-mark {
+  font-size: clamp(18px, 5vw, 25px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+.v113-skill-node.done .v113-node-mark { color: #23975a; }
+.v113-node-mini {
+  margin-top: 4px;
+  color: #6d83a9;
+  font-size: clamp(10px, 2.7vw, 13px);
+  font-weight: 800;
+}
+
+.v113-variant-branch {
+  position: absolute;
+  left: 6px;
+  top: 190px;
+  width: min(80px, 19vw);
+  z-index: 2;
+}
+
+.v113-variant-heading {
+  text-align: center;
+  margin-bottom: 10px;
+}
+.v113-variant-heading strong {
+  display: block;
+  color: #824ab4;
+  font-size: clamp(11px, 2.6vw, 14px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.v113-variant-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.v113-variant-node {
+  position: relative;
+  width: 100%;
+  min-height: 88px;
+  padding: 12px 8px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(166, 132, 201, .24);
+  background: rgba(255,255,255,.68);
+  box-shadow: 0 12px 22px rgba(101, 84, 134, .08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+}
+
+.v113-variant-node::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  width: 2px;
+  height: 12px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(154, 105, 204, .5), rgba(154, 105, 204, .08));
+}
+.v113-variant-node:last-child::after { display: none; }
+
+.v113-variant-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(249, 241, 255, .95);
+}
+.v113-variant-icon .app-asset-icon { width: 20px; height: 20px; }
+.v113-variant-target {
+  color: #8b5eb8;
+  font-size: clamp(18px, 4.5vw, 22px);
+  font-weight: 900;
+  line-height: 1;
+}
+.v113-variant-node.done .v113-variant-target { color: #27985b; }
+.v113-variant-node small {
+  color: #7d6991;
+  font-size: clamp(10px, 2.6vw, 12px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.v113-variant-new {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9e64d9, #7e43bf);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+@media (max-width: 560px) {
+  .v113-tree-section {
+    min-height: max(590px, calc(100svh - 136px));
+  }
+  .v113-rank-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 24px;
+  }
+  .v113-rank-icon .app-asset-icon,
+  .v113-rank-icon .v112-start-symbol,
+  .v113-rank-icon .v112-start-symbol .app-asset-icon {
+    width: 56px;
+    height: 56px;
+  }
+  .v113-main-grid {
+    left: 22%;
+    right: 5%;
+    top: 126px;
+    bottom: 112px;
+    column-gap: 6px;
+  }
+  .v113-skill-node {
+    width: min(95px, 25vw);
+    height: min(95px, 25vw);
+  }
+  .v113-variant-branch {
+    left: 4px;
+    top: 176px;
+    width: min(74px, 20vw);
+  }
+  .v113-variant-node {
+    min-height: 80px;
+    padding: 10px 6px 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .tree-scroll-v112 { padding-bottom: 22px; }
+  .v113-main-grid {
+    left: 22%;
+    right: 4%;
+    top: 122px;
+    bottom: 104px;
+  }
+  .v113-path-label span { width: 28px; }
+  .v113-skill-node {
+    width: min(90px, 24vw);
+    height: min(90px, 24vw);
+    padding: 7px;
+  }
+  .v113-node-mark { font-size: clamp(16px, 4.4vw, 22px); }
+  .v113-variant-branch {
+    width: min(70px, 19vw);
+    top: 170px;
+  }
+  .v113-variant-node {
+    min-height: 74px;
+    border-radius: 18px;
+  }
+}

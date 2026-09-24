@@ -1,13 +1,14 @@
-# Power Push v0.11.2
+# Power Push v0.11.3
 
-## Skill Tree finalisiert
-- Ein Rangabschnitt passt auf ungefähr einen Smartphone-Bildschirm.
-- Unten steht der letzte erreichte Rang, oben der nächste Rang.
-- Drei Pflichtpfade: Kraft, Workout und Gesamtvolumen.
-- Alle drei Hauptpfade müssen abgeschlossen sein; es gibt keine Boss-Knoten.
-- Tages- und Wochenziele sind nur noch Bonus-Challenges auf dem Home Screen.
-- Varianten laufen als optionaler Seitenzweig und blockieren keinen Rangaufstieg.
-- Bereits freigeschaltete Varianten können in späteren Rangabschnitten erneut als Mastery-Knoten auftauchen.
-- Der Tree zeigt beim Öffnen automatisch nur den aktuell relevanten Rangabschnitt.
+## Neu in v0.11.3
+- Skill Tree bleibt vertikal scrollbar
+- volle Bildschirmfläche statt eines einzelnen Karten-Fensters
+- frühere Rang-Abschnitte bleiben sichtbar und können zurückgescrollt werden
+- aktueller Rangabschnitt wird beim Öffnen automatisch fokussiert
+- Header-Erklärung, Pfad-Zähler und Fußtext aus dem Tree entfernt
+- Rang- und Variantenpositionen symmetrischer ausgerichtet
 
-Bestehende Trainingsdaten und lokale Speicherung bleiben erhalten.
+## Skill-Tree-Logik
+- 3 Hauptpfade pro Rangabschnitt (Kraft, Workout, Gesamt)
+- optionaler Varianten-Zweig blockiert den Rang nicht
+- alle Hauptpfade eines Abschnitts müssen abgeschlossen werden, um den nächsten Rang zu erreichen
