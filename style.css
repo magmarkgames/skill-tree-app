@@ -6675,3 +6675,102 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .home-hero-copy { width: 56% !important; padding-top: 4px !important; padding-bottom: 14px !important; }
   .home-hero-copy h1 { font-size: clamp(24px, 6.8vw, 32px) !important; }
 }
+
+
+/* ==========================================================================\n   v0.11.7 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+
+/* The bottom navigation used z-index:40 while the workout modal used 20. That
+   made the app navigation sit on top of Training. Training is a real fullscreen
+   mode now and deliberately owns the whole screen. */
+#trainingModal { z-index: 120; }
+body.training-active .home-bottom-nav { display: none !important; }
+
+/* There is no optional side branch in the current rank chapters. Do not keep an
+   empty 20% rail on the left: it shifts every main node away from its connector. */
+.v114-stage-section.no-variants .v114-main-grid {
+  left: 4%;
+  right: 4%;
+}
+
+/* The Starter → Holz chapter only contains one milestone. Keep it compact and
+   perfectly centered instead of stretching a single node over a full chapter. */
+.v114-stage-section.paths-1,
+.v114-stage-section.paths-1 .v114-tree-stage {
+  min-height: 330px;
+}
+.v114-stage-section.paths-1 .v114-main-grid {
+  left: 0;
+  right: 0;
+  top: 34px;
+  bottom: 104px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* The next chapter is visible as a teaser but clearly locked. */
+.v114-stage-section.locked-preview .v114-tree-lines {
+  opacity: .48;
+}
+.v114-skill-node.preview-locked {
+  position: relative;
+  opacity: .72;
+  border-color: #becbe0;
+  background: rgba(247,250,255,.9);
+  box-shadow: 0 10px 24px rgba(90,113,153,.06);
+}
+.v114-node-lock {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9e3f0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 6px 14px rgba(67,88,127,.12);
+  font-size: 12px;
+}
+
+/* One more chapter remains intentionally secret. This restores the discovery
+   rule: next = locked, after next = ?. */
+.v114-stage-section.mystery-preview .v114-tree-lines {
+  opacity: .24;
+}
+.v114-stage-section.mystery-preview .v114-path-label span {
+  background: #c8d2e1;
+}
+.v114-stage-section.mystery-preview .v114-path-label strong {
+  color: #91a0b5;
+}
+.v114-skill-node.mystery {
+  border: 3px dashed #c8d3e2;
+  background: rgba(239,244,250,.88);
+  box-shadow: none;
+  color: #8291a6;
+}
+.v114-mystery-mark {
+  font-size: clamp(34px, 10vw, 48px);
+  line-height: 1;
+  font-weight: 950;
+}
+
+/* Locked rank anchors should feel like part of the same path without becoming
+   visually heavier than the current rank. */
+.v114-rank-anchor.locked { opacity: .74; }
+
+@media (max-width: 560px) {
+  .v114-stage-section.no-variants .v114-main-grid { left: 3%; right: 3%; }
+  .v114-stage-section.paths-1,
+  .v114-stage-section.paths-1 .v114-tree-stage { min-height: 305px; }
+  .v114-stage-section.paths-1 .v114-main-grid { top: 28px; bottom: 98px; }
+}
+
+@media (max-width: 420px) {
+  .tree-scroll-v112 { padding-left: 10px; padding-right: 10px; }
+  .v114-stage-section.no-variants .v114-main-grid { left: 2%; right: 2%; column-gap: 5px; }
+  .v114-stage-section.paths-1,
+  .v114-stage-section.paths-1 .v114-tree-stage { min-height: 292px; }
+  .v114-stage-section.paths-1 .v114-main-grid { top: 24px; bottom: 94px; }
+  .v114-skill-node { width: min(86px, 23vw); height: min(86px, 23vw); }
+}

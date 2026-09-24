@@ -597,7 +597,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.6",
+    appVersion: "0.11.7",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -701,7 +701,7 @@ function showView(name) {
         treeScroll.scrollTop = 0;
         return;
       }
-      const targetTop = Math.max(0, currentSection.offsetTop - 10);
+      const targetTop = Math.max(0, currentSection.offsetTop - 118);
       treeScroll.scrollTop = targetTop;
     };
 
@@ -1956,6 +1956,7 @@ function showStep(stepName) {
 function openTraining() {
   resetTrainingSession();
   updateVariantAvailability();
+  document.body.classList.add("training-active");
   trainingModal.classList.remove("hidden");
   document.body.style.overflow = "hidden";
   showStep("exercise");
@@ -1971,6 +1972,7 @@ function closeTraining() {
   stopDetectionLoop();
   stopCamera();
   trainingModal.classList.add("hidden");
+  document.body.classList.remove("training-active");
   document.body.style.overflow = variantModal.classList.contains("hidden") ? "" : "hidden";
   render();
 }
@@ -3315,45 +3317,80 @@ function getV114VisibleChapters() {
   const currentRank = getV012CurrentRankName();
   const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
   if (currentIndex === -1) return V012_CHAPTERS.slice();
-  return V012_CHAPTERS.slice(0, currentIndex + 1);
+
+  // Keep the tree feeling continuous: show the active rank chapter plus the
+  // next two chapters. The immediate future stays visible but locked, while
+  // the chapter after that only reveals mystery nodes.
+  const lastVisibleIndex = Math.min(V012_CHAPTERS.length - 1, currentIndex + 2);
+  return V012_CHAPTERS.slice(0, lastVisibleIndex + 1);
 }
 
-function renderV114Path(pathState, pathIndex, chapterIndex, isCurrentSection, gridColumn) {
+function getV114ChapterMode(globalChapterIndex, activeIndex) {
+  if (globalChapterIndex < activeIndex) return "complete";
+  if (globalChapterIndex === activeIndex) return "current";
+  if (globalChapterIndex === activeIndex + 1) return "locked-preview";
+  return "mystery-preview";
+}
+
+function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridColumn) {
   const firstOpenIndex = pathState.nodes.findIndex(item => !item.done);
   const rowMap = pathState.nodes.length <= 1
     ? [3]
     : pathState.nodes.length === 2
       ? [2, 4]
       : [2, 3, 4];
+
   return pathState.nodes.map((node, nodeIndex) => {
+    const isCurrentSection = chapterMode === "current";
     const active = isCurrentSection && !node.done && nodeIndex === firstOpenIndex;
-    const classes = ["v114-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
+    const forcedLocked = chapterMode === "locked-preview";
+    const mystery = chapterMode === "mystery-preview";
+    const done = chapterMode === "complete" || (!forcedLocked && !mystery && node.done);
+    const classes = [
+      "v114-skill-node",
+      done ? "done" : "",
+      active ? "active" : "",
+      forcedLocked ? "preview-locked" : "",
+      mystery ? "mystery" : ""
+    ].filter(Boolean).join(" ");
     const label = node.label || pathState.title;
     const row = rowMap[nodeIndex] || 4;
+
+    if (mystery) {
+      return `
+        <button class="${classes}" type="button" data-tree-node="mystery" aria-label="Geheimes Ziel" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${row};">
+          <span class="v114-mystery-mark">?</span>
+        </button>
+      `;
+    }
+
     return `
-      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${row};">
-        <span class="v114-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
+      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" data-preview-locked="${forcedLocked ? "true" : "false"}" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${row};">
+        <span class="v114-node-mark">${done ? "✓" : formatTreeNumber(node.target)}</span>
         <span class="v114-node-mini">${label}</span>
+        ${forcedLocked ? '<span class="v114-node-lock" aria-hidden="true">🔒</span>' : ''}
       </button>
     `;
   }).join("");
 }
 
-function renderV114VariantBranch(chapter, chapterIndex) {
+function renderV114VariantBranch(chapter, chapterIndex, chapterMode) {
   const states = (chapter.variants || []).map(getV012VariantState);
   if (!states.length) return "";
+  const locked = chapterMode === "locked-preview";
+  const mystery = chapterMode === "mystery-preview";
   return `
-    <aside class="v114-variant-branch" aria-label="Optionale Varianten">
+    <aside class="v114-variant-branch ${locked ? "preview-locked" : ""} ${mystery ? "mystery" : ""}" aria-label="Optionale Varianten">
       <div class="v114-variant-heading"><strong>Varianten</strong></div>
       <div class="v114-variant-chain">
         ${states.map((state) => {
           const meta = VARIANT_META[state.variant] || { label: state.variant };
           return `
-            <button class="v114-variant-node ${state.done ? "done" : ""} ${state.newUnlock ? "new" : ""}" type="button" data-tree-node="variant" data-chapter-index="${chapterIndex}" data-variant="${state.variant}" data-target="${state.target}" aria-label="${state.label}">
-              ${state.newUnlock ? '<span class="v114-variant-new">NEU</span>' : ''}
-              <span class="v114-variant-icon">${getVariantIconSvg(state.variant)}</span>
-              <span class="v114-variant-target">${state.done ? "✓" : formatTreeNumber(state.target)}</span>
-              <small>${meta.shortLabel || meta.label}</small>
+            <button class="v114-variant-node ${state.done && !locked && !mystery ? "done" : ""} ${state.newUnlock ? "new" : ""}" type="button" data-tree-node="variant" data-chapter-index="${chapterIndex}" data-variant="${state.variant}" data-target="${state.target}" aria-label="${mystery ? "Geheime Variante" : state.label}">
+              ${state.newUnlock && !locked && !mystery ? '<span class="v114-variant-new">NEU</span>' : ''}
+              <span class="v114-variant-icon">${mystery ? "?" : getVariantIconSvg(state.variant)}</span>
+              <span class="v114-variant-target">${mystery ? "?" : (state.done && !locked ? "✓" : formatTreeNumber(state.target))}</span>
+              <small>${mystery ? "Geheim" : (meta.shortLabel || meta.label)}</small>
             </button>
           `;
         }).join("")}
@@ -3374,18 +3411,26 @@ function renderV114RankAnchor(rank, options = {}) {
   `;
 }
 
-function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
+function renderV114Stage(chapter, chapterIndex, chapterMode) {
   const pathStates = chapter.paths.map(getV012PathState);
-  const allComplete = pathStates.every(path => path.done);
-  const sectionState = allComplete ? "complete" : (isCurrentSection ? "current" : "locked");
   const columnMap = pathStates.length === 1 ? [2] : pathStates.length === 2 ? [1, 3] : [1, 2, 3];
+  const hasVariants = Boolean((chapter.variants || []).length);
   const pathLineMarkup = columnMap.map(col => {
     if (col === 1) return `<path class="path path-1" d="M50 4 C45 8 34 12 29 22 L29 72" />`;
     if (col === 2) return `<path class="path path-2" d="M50 4 L50 72" />`;
     return `<path class="path path-3" d="M50 4 C55 8 66 12 71 22 L71 72" />`;
   }).join("");
+  const sectionClasses = [
+    "v114-stage-section",
+    chapterMode,
+    `paths-${pathStates.length}`,
+    hasVariants ? "has-variants" : "no-variants"
+  ].join(" ");
+  const rankLocked = chapterMode === "locked-preview" || chapterMode === "mystery-preview";
+  const hidePathTitles = chapterMode === "mystery-preview";
+
   return `
-    <section class="v114-stage-section ${sectionState}" data-tree-current="${isCurrentSection ? "true" : "false"}" data-rank-from="${chapter.from}">
+    <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
       <div class="v114-tree-stage">
         <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <path class="trunk trunk-left" d="M50 88 C49 84 34 82 29 72" />
@@ -3395,11 +3440,12 @@ function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
         </svg>
 
         <div class="v114-main-grid">
-          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${columnMap[index]}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong></div>`).join("")}
-          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, isCurrentSection, columnMap[index])).join("")}
+          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${columnMap[index]}; --path-accent:${path.accent};"><span></span><strong>${hidePathTitles ? "?" : path.title}</strong></div>`).join("")}
+          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, chapterMode, columnMap[index])).join("")}
         </div>
 
-        ${renderV114RankAnchor(chapter.from, { bottom: true })}
+        ${renderV114VariantBranch(chapter, chapterIndex, chapterMode)}
+        ${renderV114RankAnchor(chapter.from, { bottom: true, locked: rankLocked })}
       </div>
     </section>
   `;
@@ -3408,6 +3454,10 @@ function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
 function bindV114TreeNodeEvents() {
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
+      if (button.dataset.previewLocked === "true") {
+        alert("Dieses Ziel wird mit dem vorherigen Rang freigeschaltet.");
+        return;
+      }
       const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
       const path = chapter?.paths.find(item => item.key === button.dataset.path);
       const nodeIndex = Number(button.dataset.nodeIndex) || 0;
@@ -3429,7 +3479,8 @@ function renderTree() {
   const activeIndex = currentIndex === -1 ? V012_CHAPTERS.length - 1 : currentIndex;
   const chaptersDescending = [...visibleChapters].reverse();
   const topChapter = chaptersDescending[0] || V012_CHAPTERS[V012_CHAPTERS.length - 1];
-  const topLocked = topChapter ? !isV012ChapterComplete(topChapter) : false;
+  const topChapterIndex = topChapter ? V012_CHAPTERS.findIndex(chapter => chapter.from === topChapter.from && chapter.to === topChapter.to) : -1;
+  const topLocked = topChapterIndex >= activeIndex;
 
   skillTree.className = "skill-tree-v114";
   skillTree.innerHTML = `
@@ -3437,8 +3488,8 @@ function renderTree() {
       ${topChapter ? renderV114RankAnchor(topChapter.to, { top: true, locked: topLocked }) : ''}
       ${chaptersDescending.map((chapter) => {
         const globalChapterIndex = V012_CHAPTERS.findIndex(item => item.from === chapter.from && item.to === chapter.to);
-        const isCurrentSection = globalChapterIndex === activeIndex;
-        return renderV114Stage(chapter, globalChapterIndex, isCurrentSection);
+        const chapterMode = getV114ChapterMode(globalChapterIndex, activeIndex);
+        return renderV114Stage(chapter, globalChapterIndex, chapterMode);
       }).join("")}
     </div>
   `;

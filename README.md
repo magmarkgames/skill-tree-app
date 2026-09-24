@@ -1,8 +1,10 @@
-# Power Push v0.11.6
+# Power Push v0.11.7
 
 ## Neu
-- generierte Home-Icons im finalen Stil eingebaut
-- App-Logo oben links ersetzt
-- Skill-Tree-Section-Icon ersetzt
-- Disziplin-Icons für Push-up, Laufen, Klimmzüge und Core ersetzt
-- oberes Hero-Bild inklusive Quote auf ungefähr ein Drittel der Bildschirmhöhe reduziert
+- Bottom-Navigation wird im Training vollständig ausgeblendet
+- Training liegt jetzt zuverlässig über der gesamten App-Navigation
+- Skill-Tree auf Mobilgeräten sauber zentriert; Knoten sitzen auf ihren Verbindungslinien
+- Starter → Holz kompakter dargestellt
+- Skill-Tree zeigt jetzt den aktuellen Abschnitt plus Vorschau nach oben
+- nächster Abschnitt sichtbar gesperrt, darauffolgender Abschnitt als ?-Vorschau
+- zusätzliche mobile Abstände und kleinere Knoten gegen Rand-/Layoutprobleme
