@@ -6525,3 +6525,52 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .v114-variant-branch { width: min(70px, 19vw); top: 72px; }
   .v114-variant-node { min-height: 74px; border-radius: 18px; }
 }
+
+
+/* v0.11.5 fixed layout tune */
+.v114-tree-flow > .v114-rank-anchor.top {
+  margin-bottom: 12px;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: min(170px, 42vw);
+  transform: translateX(-50%);
+  margin-top: 0;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom .v114-rank-label {
+  margin-top: 2px;
+}
+.v114-stage-section {
+  min-height: 470px;
+}
+.v114-tree-stage {
+  min-height: 470px;
+}
+.v114-main-grid {
+  top: 56px;
+  bottom: 130px;
+}
+
+@media (max-width: 560px) {
+  .v114-stage-section,
+  .v114-tree-stage {
+    min-height: 450px;
+  }
+  .v114-main-grid {
+    top: 54px;
+    bottom: 124px;
+  }
+}
+
+@media (max-width: 420px) {
+  .v114-stage-section,
+  .v114-tree-stage {
+    min-height: 430px;
+  }
+  .v114-main-grid {
+    top: 50px;
+    bottom: 118px;
+  }
+}

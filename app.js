@@ -597,7 +597,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.5",
+    appVersion: "0.11.5-fixed",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3320,12 +3320,18 @@ function getV114VisibleChapters() {
 
 function renderV114Path(pathState, pathIndex, chapterIndex, isCurrentSection, gridColumn) {
   const firstOpenIndex = pathState.nodes.findIndex(item => !item.done);
+  const rowMap = pathState.nodes.length <= 1
+    ? [3]
+    : pathState.nodes.length === 2
+      ? [2, 4]
+      : [2, 3, 4];
   return pathState.nodes.map((node, nodeIndex) => {
     const active = isCurrentSection && !node.done && nodeIndex === firstOpenIndex;
     const classes = ["v114-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
     const label = node.label || pathState.title;
+    const row = rowMap[nodeIndex] || 4;
     return `
-      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${nodeIndex + 2};">
+      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${row};">
         <span class="v114-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
         <span class="v114-node-mini">${label}</span>
       </button>

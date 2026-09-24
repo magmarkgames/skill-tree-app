@@ -1,7 +1,3 @@
-# Power Push v0.11.5
+# Power Push v0.11.5 Fixed
 
-## Neu
-- Skill Tree auf die neue Wall/Incline/Push-up Progression umgestellt
-- Wall Push-ups als neue frühe Variante integriert
-- wiederkehrende Varianten-Knoten im Hauptbaum
-- Daily/Weekly-Challenges nur konzeptionell vorbereitet; das eigentliche Unlock-/Upload-System bauen wir danach aus
+Fixes the tree layout for early ranks. Start and Holz are now spaced correctly, the lower rank sits at the bottom of the stage, and single-node / two-node paths are vertically centered better.
