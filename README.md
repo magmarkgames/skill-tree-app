@@ -1,3 +1,7 @@
-# Power Push v0.11.4 Fixed
+# Power Push v0.11.5
 
-Fix für weißen Skill-Tree-Bildschirm. Fehlende Tree-Helferfunktionen wurden ergänzt, damit der durchgängige Baum wieder korrekt gerendert wird.
+## Neu
+- Skill Tree auf die neue Wall/Incline/Push-up Progression umgestellt
+- Wall Push-ups als neue frühe Variante integriert
+- wiederkehrende Varianten-Knoten im Hauptbaum
+- Daily/Weekly-Challenges nur konzeptionell vorbereitet; das eigentliche Unlock-/Upload-System bauen wir danach aus

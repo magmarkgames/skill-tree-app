@@ -57,6 +57,7 @@ const DEFAULT_PROGRESS = {
 
 const VARIANT_META = {
   standard: { label: "Standard", shortLabel: "Standard", color: "#4A90FF" },
+  wall: { label: "Wall", shortLabel: "Wall", color: "#7C8CFF" },
   wide: { label: "Wide", shortLabel: "Wide", color: "#8B6CFF" },
   diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F05C82" },
   pike: { label: "Pike", shortLabel: "Pike", color: "#43C889" },
@@ -74,6 +75,7 @@ const VARIANT_META = {
 // hier an ihren Unlock-Knoten gekoppelt werden.
 const VARIANT_UNLOCK_NODES = {
   standard: null,
+  wall: null,
   wide: "wideSkill",
   diamond: "diamondSkill",
   pike: null,
@@ -125,6 +127,7 @@ function createEmptyVariantStats() {
 const ASSET_PATHS = {
   variants: {
     standard: "variant-standard.webp",
+    wall: "variant-standard.webp",
     wide: "variant-wide.webp",
     diamond: "variant-diamond.webp",
     pike: "variant-pike.webp",
@@ -594,7 +597,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.4",
+    appVersion: "0.11.5",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3055,106 +3058,105 @@ const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
     paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [1, 3, 5], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [5, 10, 15], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [5, 15, 30], accent: "#39b86f" }
+      { key: "wallStart", title: "Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" }
+      ] }
     ],
-    variants: [
-      { variant: "wide", target: 3, label: "Wide entdecken", newUnlock: true },
-      { variant: "wide", target: 5, label: "5 Wide Push-ups" }
-    ]
+    variants: []
   },
   {
     from: "Holz", to: "Stein",
     paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [7, 10, 15], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [20, 30, 40], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [50, 100, 200], accent: "#39b86f" }
+      { key: "wall", title: "Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" }
+      ] },
+      { key: "incline", title: "Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
+      ] },
+      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
+        { metric: "total", target: 5, label: "gesamt" }
+      ] }
     ],
-    variants: [
-      { variant: "wide", target: 10, label: "10 Wide Push-ups" },
-      { variant: "diamond", target: 3, label: "Diamond entdecken", newUnlock: true }
-    ]
+    variants: []
   },
   {
     from: "Stein", to: "Bronze",
     paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [20, 25, 30], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [50, 65, 80], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [300, 500, 750], accent: "#39b86f" }
+      { key: "varianten", title: "Varianten", accent: "#9a69cc", nodes: [
+        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" },
+        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
+      ] },
+      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
+        { metric: "total", target: 10, label: "gesamt" },
+        { metric: "total", target: 25, label: "gesamt" }
+      ] },
+      { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 1, label: "Push-up" },
+        { metric: "standardMax", target: 3, label: "Push-ups" },
+        { metric: "standardMax", target: 5, label: "Push-ups" }
+      ] }
     ],
-    variants: [
-      { variant: "diamond", target: 5, label: "5 Diamond Push-ups" },
-      { variant: "diamond", target: 10, label: "10 Diamond Push-ups" },
-      { variant: "incline", target: 3, label: "Incline entdecken", newUnlock: true }
-    ]
+    variants: []
   },
   {
     from: "Bronze", to: "Silber",
     paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [35, 40, 50], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [100, 125, 150], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [1000, 1500, 2000], accent: "#39b86f" }
+      { key: "varianten", title: "Varianten", accent: "#9a69cc", nodes: [
+        { metric: "variantMax", variant: "wall", target: 10, label: "Wall" },
+        { metric: "variantMax", variant: "incline", target: 10, label: "Incline" },
+        { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
+      ] },
+      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
+        { metric: "total", target: 50, label: "gesamt" },
+        { metric: "total", target: 100, label: "gesamt" }
+      ] },
+      { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 8, label: "Push-ups" },
+        { metric: "standardMax", target: 10, label: "Push-ups" }
+      ] }
     ],
-    variants: [
-      { variant: "diamond", target: 15, label: "15 Diamond Push-ups" },
-      { variant: "incline", target: 10, label: "10 Incline Push-ups" },
-      { variant: "explosive", target: 5, label: "Explosive entdecken", newUnlock: true }
-    ]
-  },
-  {
-    from: "Silber", to: "Gold",
-    paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [55, 65, 75], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [175, 225, 300], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [3000, 5000, 7500], accent: "#39b86f" }
-    ],
-    variants: [
-      { variant: "explosive", target: 10, label: "10 Explosive" },
-      { variant: "explosive", target: 20, label: "20 Explosive" },
-      { variant: "archer", target: 5, label: "Archer entdecken", newUnlock: true }
-    ]
-  },
-  {
-    from: "Gold", to: "Platin",
-    paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [80, 90, 100], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [350, 450, 600], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [10000, 15000, 25000], accent: "#39b86f" }
-    ],
-    variants: [
-      { variant: "archer", target: 10, label: "10 Archer" },
-      { variant: "archer", target: 20, label: "20 Archer" },
-      { variant: "handstand", target: 3, label: "Handstand entdecken", newUnlock: true }
-    ]
-  },
-  {
-    from: "Platin", to: "Diamant",
-    paths: [
-      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [110, 125, 150], accent: "#4f9cf8" },
-      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [750, 1000, 1250], accent: "#f1a62f" },
-      { key: "volumen", title: "Gesamt", metric: "total", milestones: [35000, 50000, 75000], accent: "#39b86f" }
-    ],
-    variants: [
-      { variant: "handstand", target: 5, label: "5 Handstand" },
-      { variant: "handstand", target: 10, label: "10 Handstand" },
-      { variant: "pseudoPlanche", target: 3, label: "Planche entdecken", newUnlock: true }
-    ]
+    variants: []
   }
 ];
 
 const V012_VARIANT_UNLOCK_RANK = {
   standard: "Starter",
-  wide: "Starter",
-  diamond: "Holz",
-  incline: "Stein",
-  decline: "Stein",
-  explosive: "Bronze",
-  pike: "Bronze",
+  wall: "Starter",
+  wide: "Bronze",
+  diamond: "Silber",
+  pike: "Silber",
+  incline: "Holz",
+  decline: "Silber",
+  explosive: "Silber",
   archer: "Silber",
   handstand: "Gold",
   pseudoPlanche: "Platin"
 };
+
+function getV012PathNodes(path) {
+  if (Array.isArray(path.nodes) && path.nodes.length) {
+    return path.nodes.map((node, index) => ({
+      key: `${path.key}-${index}`,
+      metric: node.metric ?? path.metric,
+      variant: node.variant ?? path.variant ?? null,
+      target: Number(node.target) || 0,
+      label: node.label || path.title,
+      title: node.title || path.title
+    }));
+  }
+  return (path.milestones || []).map((target, index) => ({
+    key: `${path.key}-${index}`,
+    metric: path.metric,
+    variant: path.variant ?? null,
+    target: Number(target) || 0,
+    label: path.key === "kraft" ? "am Stück" : path.key === "workout" ? "Workout" : path.key === "volumen" ? "gesamt" : path.title,
+    title: path.title
+  }));
+}
+
+function getV012NodeValue(node) {
+  return getV012MetricValue(node.metric, node.variant ?? null);
+}
 
 function getV012MetricValue(metric, variant = null) {
   switch (metric) {
@@ -3169,10 +3171,7 @@ function getV012MetricValue(metric, variant = null) {
 
 function isV012ChapterComplete(chapter) {
   if (!chapter) return false;
-  return chapter.paths.every(path => {
-    const finalTarget = path.milestones[path.milestones.length - 1] || 0;
-    return getV012MetricValue(path.metric) >= finalTarget;
-  });
+  return chapter.paths.every(path => getV012PathState(path).done);
 }
 
 function getV012CurrentRankName() {
@@ -3198,14 +3197,24 @@ function isV012VariantUnlocked(variant) {
 }
 
 function getV012PathState(path) {
-  const current = getV012MetricValue(path.metric);
-  const finalTarget = path.milestones[path.milestones.length - 1] || 1;
+  const nodeDefs = getV012PathNodes(path);
+  const nodes = nodeDefs.map(node => {
+    const current = getV012NodeValue(node);
+    return {
+      ...node,
+      current,
+      done: current >= node.target,
+      displayValue: formatTreeNumber(node.target)
+    };
+  });
+  const doneCount = nodes.filter(node => node.done).length;
+  const finalCurrent = nodes.length ? nodes[nodes.length - 1].current : 0;
   return {
     ...path,
-    current,
-    done: current >= finalTarget,
-    percent: Math.max(0, Math.min(100, (current / finalTarget) * 100)),
-    nodes: path.milestones.map(target => ({ target, done: current >= target }))
+    current: finalCurrent,
+    done: nodes.length ? nodes.every(node => node.done) : false,
+    percent: nodes.length ? (doneCount / nodes.length) * 100 : 0,
+    nodes
   };
 }
 
@@ -3309,14 +3318,14 @@ function getV114VisibleChapters() {
   return V012_CHAPTERS.slice(0, currentIndex + 1);
 }
 
-function renderV114Path(pathState, pathIndex, chapterIndex, isCurrentSection) {
+function renderV114Path(pathState, pathIndex, chapterIndex, isCurrentSection, gridColumn) {
   const firstOpenIndex = pathState.nodes.findIndex(item => !item.done);
   return pathState.nodes.map((node, nodeIndex) => {
     const active = isCurrentSection && !node.done && nodeIndex === firstOpenIndex;
     const classes = ["v114-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
-    const label = pathState.key === "kraft" ? "am Stück" : pathState.key === "workout" ? "Workout" : "gesamt";
+    const label = node.label || pathState.title;
     return `
-      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${pathIndex + 1}; --grid-row:${nodeIndex + 2};">
+      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${gridColumn}; --grid-row:${nodeIndex + 2};">
         <span class="v114-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
         <span class="v114-node-mini">${label}</span>
       </button>
@@ -3362,7 +3371,13 @@ function renderV114RankAnchor(rank, options = {}) {
 function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
   const pathStates = chapter.paths.map(getV012PathState);
   const allComplete = pathStates.every(path => path.done);
-  const sectionState = allComplete ? 'complete' : (isCurrentSection ? 'current' : 'locked');
+  const sectionState = allComplete ? "complete" : (isCurrentSection ? "current" : "locked");
+  const columnMap = pathStates.length === 1 ? [2] : pathStates.length === 2 ? [1, 3] : [1, 2, 3];
+  const pathLineMarkup = columnMap.map(col => {
+    if (col === 1) return `<path class="path path-1" d="M50 4 C45 8 34 12 29 22 L29 72" />`;
+    if (col === 2) return `<path class="path path-2" d="M50 4 L50 72" />`;
+    return `<path class="path path-3" d="M50 4 C55 8 66 12 71 22 L71 72" />`;
+  }).join("");
   return `
     <section class="v114-stage-section ${sectionState}" data-tree-current="${isCurrentSection ? "true" : "false"}" data-rank-from="${chapter.from}">
       <div class="v114-tree-stage">
@@ -3370,18 +3385,14 @@ function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
           <path class="trunk trunk-left" d="M50 88 C49 84 34 82 29 72" />
           <path class="trunk trunk-center" d="M50 88 L50 72" />
           <path class="trunk trunk-right" d="M50 88 C51 84 66 82 71 72" />
-          <path class="path path-1" d="M50 4 C45 8 34 12 29 22 L29 72" />
-          <path class="path path-2" d="M50 4 L50 72" />
-          <path class="path path-3" d="M50 4 C55 8 66 12 71 22 L71 72" />
-          <path class="variant-link" d="M11 69 L11 54 L11 39 M11 54 C15 54 20 54 24 54 M11 39 C15 41 18 44 23 47" />
+          ${pathLineMarkup}
         </svg>
 
         <div class="v114-main-grid">
-          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${index + 1}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong></div>`).join("")}
-          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, isCurrentSection)).join("")}
+          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${columnMap[index]}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong></div>`).join("")}
+          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, isCurrentSection, columnMap[index])).join("")}
         </div>
 
-        ${renderV114VariantBranch(chapter, chapterIndex)}
         ${renderV114RankAnchor(chapter.from, { bottom: true })}
       </div>
     </section>
@@ -3393,21 +3404,13 @@ function bindV114TreeNodeEvents() {
     button.addEventListener("click", () => {
       const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
       const path = chapter?.paths.find(item => item.key === button.dataset.path);
+      const nodeIndex = Number(button.dataset.nodeIndex) || 0;
       if (!path) return;
-      const target = Number(button.dataset.target) || 0;
-      const current = getV012MetricValue(path.metric);
-      const text = path.key === "kraft" ? "Push-ups am Stück" : path.key === "workout" ? "Push-ups in einem Workout" : "Push-ups insgesamt";
-      alert(`${path.title}\n${formatTreeNumber(target)} ${text}\nAktuell: ${formatTreeNumber(current)}${current >= target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(target - current)}`}`);
-    });
-  });
-
-  skillTree.querySelectorAll('[data-tree-node="variant"]').forEach(button => {
-    button.addEventListener("click", () => {
-      const variant = button.dataset.variant;
-      const target = Number(button.dataset.target) || 0;
-      const meta = VARIANT_META[variant] || { label: variant };
-      const current = getVariantStats(variant).total;
-      alert(`${meta.label} Push-ups · Optional\nZiel: ${formatTreeNumber(target)} gesamt\nAktuell: ${formatTreeNumber(current)}\n\nDieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
+      const node = getV012PathState(path).nodes[nodeIndex];
+      if (!node) return;
+      const current = getV012NodeValue(node);
+      const detail = node.metric === "total" ? "Push-ups insgesamt" : node.variant ? `${node.label} Push-ups` : `${node.label} am Stück`;
+      alert(`${path.title}\n${formatTreeNumber(node.target)} ${detail}\nAktuell: ${formatTreeNumber(current)}${current >= node.target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(node.target - current)}`}`);
     });
   });
 }
@@ -3457,21 +3460,22 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
 
   if (chapter) {
     const candidates = chapter.paths.flatMap(path => {
-      const current = getV012MetricValue(path.metric);
-      return path.milestones.filter(target => current < target).map(target => ({ path, current, target }));
+      return getV012PathState(path).nodes
+        .filter(node => !node.done)
+        .map(node => ({ path, node, current: getV012NodeValue(node), target: node.target }));
     });
-    candidates.sort((a, b) => ((a.target - a.current) / a.target) - ((b.target - b.current) / b.target));
+    candidates.sort((a, b) => ((a.target - a.current) / Math.max(1, a.target)) - ((b.target - b.current) / Math.max(1, b.target)));
     const next = candidates[0];
     if (next) {
-      const percent = Math.max(0, Math.min(100, next.current / next.target * 100));
+      const percent = Math.max(0, Math.min(100, next.current / Math.max(1, next.target) * 100));
       homeNextGoalTitle.textContent = next.path.title;
       homeNextGoalValue.textContent = `${formatTreeNumber(Math.min(next.current, next.target))} / ${formatTreeNumber(next.target)}`;
       homeNextGoalProgress.style.width = `${percent}%`;
-      homeNextGoalText.textContent = next.path.key === "kraft"
-        ? `${formatTreeNumber(next.target)} Push-ups am Stück`
-        : next.path.key === "workout"
-          ? `${formatTreeNumber(next.target)} Push-ups in einem Workout`
-          : `${formatTreeNumber(next.target)} Push-ups insgesamt`;
+      homeNextGoalText.textContent = next.node.metric === "total"
+        ? `${formatTreeNumber(next.target)} Push-ups insgesamt`
+        : next.node.variant
+          ? `${formatTreeNumber(next.target)} ${next.node.label} Push-ups`
+          : `${formatTreeNumber(next.target)} Push-ups am Stück`;
     }
   } else {
     homeNextGoalTitle.textContent = "Diamant erreicht";
