@@ -598,7 +598,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.15",
+    appVersion: "0.11.16",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -767,19 +767,21 @@ function renderHomeDashboardLegacy(todayTotal, weekTotal, rankName) {
   homeNextRankLabel.textContent = nextRank || "Endgame";
 
   const goalNode = getHomeNextGoalNode();
-  if (goalNode) {
-    const current = Math.max(0, nodeValue(goalNode));
-    const target = Math.max(1, Number(goalNode.target) || 1);
-    const percent = Math.max(0, Math.min(100, current / target * 100));
-    homeNextGoalTitle.textContent = getNodeRequirementLabel(goalNode);
-    homeNextGoalValue.textContent = `${Math.min(current, target)} / ${target}`;
-    homeNextGoalProgress.style.width = `${percent}%`;
-    homeNextGoalText.textContent = getHomeGoalHint(goalNode, current, target);
-  } else {
-    homeNextGoalTitle.textContent = "Push-up Tree gemeistert";
-    homeNextGoalValue.textContent = "100 %";
-    homeNextGoalProgress.style.width = "100%";
-    homeNextGoalText.textContent = "Alle aktuell eingebauten Push-up Ziele sind abgeschlossen.";
+  if (homeNextGoalTitle && homeNextGoalValue && homeNextGoalProgress && homeNextGoalText) {
+    if (goalNode) {
+      const current = Math.max(0, nodeValue(goalNode));
+      const target = Math.max(1, Number(goalNode.target) || 1);
+      const percent = Math.max(0, Math.min(100, current / target * 100));
+      homeNextGoalTitle.textContent = getNodeRequirementLabel(goalNode);
+      homeNextGoalValue.textContent = `${Math.min(current, target)} / ${target}`;
+      homeNextGoalProgress.style.width = `${percent}%`;
+      homeNextGoalText.textContent = getHomeGoalHint(goalNode, current, target);
+    } else {
+      homeNextGoalTitle.textContent = "Push-up Tree gemeistert";
+      homeNextGoalValue.textContent = "100 %";
+      homeNextGoalProgress.style.width = "100%";
+      homeNextGoalText.textContent = "Alle aktuell eingebauten Push-up Ziele sind abgeschlossen.";
+    }
   }
 
   renderHomeTimedGoal("day", todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
@@ -3583,30 +3585,32 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
     ? getVariantIconSvg("standard", "home-starter-icon")
     : getRankIconSvg(displayRank, "home-rank-asset");
 
-  if (chapter) {
-    const candidates = chapter.paths.flatMap(path => {
-      return getV012PathState(path).nodes
-        .filter(node => !node.done)
-        .map(node => ({ path, node, current: getV012NodeValue(node), target: node.target }));
-    });
-    candidates.sort((a, b) => ((a.target - a.current) / Math.max(1, a.target)) - ((b.target - b.current) / Math.max(1, b.target)));
-    const next = candidates[0];
-    if (next) {
-      const percent = Math.max(0, Math.min(100, next.current / Math.max(1, next.target) * 100));
-      homeNextGoalTitle.textContent = next.path.title;
-      homeNextGoalValue.textContent = `${formatTreeNumber(Math.min(next.current, next.target))} / ${formatTreeNumber(next.target)}`;
-      homeNextGoalProgress.style.width = `${percent}%`;
-      homeNextGoalText.textContent = next.node.metric === "total"
-        ? `${formatTreeNumber(next.target)} Push-ups insgesamt`
-        : next.node.variant
-          ? `${formatTreeNumber(next.target)} ${next.node.label} Push-ups`
-          : `${formatTreeNumber(next.target)} Push-ups am Stück`;
+  if (homeNextGoalTitle && homeNextGoalValue && homeNextGoalProgress && homeNextGoalText) {
+    if (chapter) {
+      const candidates = chapter.paths.flatMap(path => {
+        return getV012PathState(path).nodes
+          .filter(node => !node.done)
+          .map(node => ({ path, node, current: getV012NodeValue(node), target: node.target }));
+      });
+      candidates.sort((a, b) => ((a.target - a.current) / Math.max(1, a.target)) - ((b.target - b.current) / Math.max(1, b.target)));
+      const next = candidates[0];
+      if (next) {
+        const percent = Math.max(0, Math.min(100, next.current / Math.max(1, next.target) * 100));
+        homeNextGoalTitle.textContent = next.path.title;
+        homeNextGoalValue.textContent = `${formatTreeNumber(Math.min(next.current, next.target))} / ${formatTreeNumber(next.target)}`;
+        homeNextGoalProgress.style.width = `${percent}%`;
+        homeNextGoalText.textContent = next.node.metric === "total"
+          ? `${formatTreeNumber(next.target)} Push-ups insgesamt`
+          : next.node.variant
+            ? `${formatTreeNumber(next.target)} ${next.node.label} Push-ups`
+            : `${formatTreeNumber(next.target)} Push-ups am Stück`;
+      }
+    } else {
+      homeNextGoalTitle.textContent = "Diamant erreicht";
+      homeNextGoalValue.textContent = "100 %";
+      homeNextGoalProgress.style.width = "100%";
+      homeNextGoalText.textContent = "Alle aktuell eingebauten Rangabschnitte sind geschafft.";
     }
-  } else {
-    homeNextGoalTitle.textContent = "Diamant erreicht";
-    homeNextGoalValue.textContent = "100 %";
-    homeNextGoalProgress.style.width = "100%";
-    homeNextGoalText.textContent = "Alle aktuell eingebauten Rangabschnitte sind geschafft.";
   }
 
   renderHomeRankPaths(chapter);
