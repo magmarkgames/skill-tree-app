@@ -3301,6 +3301,117 @@ function bindV012TreeNodeEvents(chapter) {
   });
 }
 
+
+function getV114VisibleChapters() {
+  const currentRank = getV012CurrentRankName();
+  const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
+  if (currentIndex === -1) return V012_CHAPTERS.slice();
+  return V012_CHAPTERS.slice(0, currentIndex + 1);
+}
+
+function renderV114Path(pathState, pathIndex, chapterIndex, isCurrentSection) {
+  const firstOpenIndex = pathState.nodes.findIndex(item => !item.done);
+  return pathState.nodes.map((node, nodeIndex) => {
+    const active = isCurrentSection && !node.done && nodeIndex === firstOpenIndex;
+    const classes = ["v114-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
+    const label = pathState.key === "kraft" ? "am Stück" : pathState.key === "workout" ? "Workout" : "gesamt";
+    return `
+      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${pathIndex + 1}; --grid-row:${nodeIndex + 2};">
+        <span class="v114-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
+        <span class="v114-node-mini">${label}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderV114VariantBranch(chapter, chapterIndex) {
+  const states = (chapter.variants || []).map(getV012VariantState);
+  if (!states.length) return "";
+  return `
+    <aside class="v114-variant-branch" aria-label="Optionale Varianten">
+      <div class="v114-variant-heading"><strong>Varianten</strong></div>
+      <div class="v114-variant-chain">
+        ${states.map((state) => {
+          const meta = VARIANT_META[state.variant] || { label: state.variant };
+          return `
+            <button class="v114-variant-node ${state.done ? "done" : ""} ${state.newUnlock ? "new" : ""}" type="button" data-tree-node="variant" data-chapter-index="${chapterIndex}" data-variant="${state.variant}" data-target="${state.target}" aria-label="${state.label}">
+              ${state.newUnlock ? '<span class="v114-variant-new">NEU</span>' : ''}
+              <span class="v114-variant-icon">${getVariantIconSvg(state.variant)}</span>
+              <span class="v114-variant-target">${state.done ? "✓" : formatTreeNumber(state.target)}</span>
+              <small>${meta.shortLabel || meta.label}</small>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </aside>
+  `;
+}
+
+function renderV114RankAnchor(rank, options = {}) {
+  const { locked = false, top = false, bottom = false } = options;
+  const label = rank === "Starter" ? "Start" : rank;
+  const classes = ["v114-rank-anchor", top ? "top" : "", bottom ? "bottom" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
+  return `
+    <div class="${classes}">
+      <span class="v114-rank-icon">${getV012RankIcon(rank)}</span>
+      <span class="v114-rank-label">${label}</span>
+    </div>
+  `;
+}
+
+function renderV114Stage(chapter, chapterIndex, isCurrentSection) {
+  const pathStates = chapter.paths.map(getV012PathState);
+  const allComplete = pathStates.every(path => path.done);
+  const sectionState = allComplete ? 'complete' : (isCurrentSection ? 'current' : 'locked');
+  return `
+    <section class="v114-stage-section ${sectionState}" data-tree-current="${isCurrentSection ? "true" : "false"}" data-rank-from="${chapter.from}">
+      <div class="v114-tree-stage">
+        <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path class="trunk trunk-left" d="M50 88 C49 84 34 82 29 72" />
+          <path class="trunk trunk-center" d="M50 88 L50 72" />
+          <path class="trunk trunk-right" d="M50 88 C51 84 66 82 71 72" />
+          <path class="path path-1" d="M50 4 C45 8 34 12 29 22 L29 72" />
+          <path class="path path-2" d="M50 4 L50 72" />
+          <path class="path path-3" d="M50 4 C55 8 66 12 71 22 L71 72" />
+          <path class="variant-link" d="M11 69 L11 54 L11 39 M11 54 C15 54 20 54 24 54 M11 39 C15 41 18 44 23 47" />
+        </svg>
+
+        <div class="v114-main-grid">
+          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${index + 1}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong></div>`).join("")}
+          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, isCurrentSection)).join("")}
+        </div>
+
+        ${renderV114VariantBranch(chapter, chapterIndex)}
+        ${renderV114RankAnchor(chapter.from, { bottom: true })}
+      </div>
+    </section>
+  `;
+}
+
+function bindV114TreeNodeEvents() {
+  skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
+      const path = chapter?.paths.find(item => item.key === button.dataset.path);
+      if (!path) return;
+      const target = Number(button.dataset.target) || 0;
+      const current = getV012MetricValue(path.metric);
+      const text = path.key === "kraft" ? "Push-ups am Stück" : path.key === "workout" ? "Push-ups in einem Workout" : "Push-ups insgesamt";
+      alert(`${path.title}\n${formatTreeNumber(target)} ${text}\nAktuell: ${formatTreeNumber(current)}${current >= target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(target - current)}`}`);
+    });
+  });
+
+  skillTree.querySelectorAll('[data-tree-node="variant"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const variant = button.dataset.variant;
+      const target = Number(button.dataset.target) || 0;
+      const meta = VARIANT_META[variant] || { label: variant };
+      const current = getVariantStats(variant).total;
+      alert(`${meta.label} Push-ups · Optional\nZiel: ${formatTreeNumber(target)} gesamt\nAktuell: ${formatTreeNumber(current)}\n\nDieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
+    });
+  });
+}
+
 function renderTree() {
   if (!skillTree) return;
   const visibleChapters = getV114VisibleChapters();
