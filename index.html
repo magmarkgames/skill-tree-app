@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.11.11</title>
-  <link rel="stylesheet" href="style.css?v=0.11.11" />
+  <title>Power Push – v0.11.12</title>
+  <link rel="stylesheet" href="style.css?v=0.11.12" />
 </head>
 <body>
   <main class="app-shell">
@@ -32,9 +32,9 @@
 
       <section class="home-hero-v17" aria-label="Power Push Motivation">
         <div class="home-hero-copy">
-          <p class="home-kicker">DRANBLEIBEN.</p>
-          <h1>Stärker werden –<br>Liegestütz für Liegestütz.</h1>
-          <p>Heute besser als gestern.<br>Morgen stärker.</p>
+          <p class="home-kicker">DEIN WEG.</p>
+          <h1>Trainiere.<br>Level auf.<br>Werde stärker.</h1>
+          <p>Jede Wiederholung bringt dich weiter.</p>
         </div>
       </section>
 
@@ -45,7 +45,7 @@
           </span>
           <div>
             <h2 id="homeTreeHeading">Skill Tree</h2>
-            <p>Wähle deine Disziplin und wachse Schritt für Schritt.</p>
+            <p>Trainiere. Schalte Knoten frei. Steige auf.</p>
           </div>
         </div>
 
@@ -88,9 +88,15 @@
 
           <div id="homeRankPaths" class="home-rank-paths" aria-label="Fortschritt im aktuellen Rang"></div>
 
-          <button id="openPushTreeBtn" class="home-open-tree-btn" type="button">
-            <span>Zum Skill Tree</span><span>›</span>
-          </button>
+          <div class="home-tree-actions">
+            <button id="homeTreeTrainingBtn" class="home-tree-training-btn" type="button">
+              <span class="home-tree-training-icon">▶</span>
+              <span>Training starten</span>
+            </button>
+            <button id="openPushTreeBtn" class="home-open-tree-btn home-open-tree-secondary" type="button">
+              <span>Skill Tree öffnen</span><span>›</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -123,11 +129,9 @@
       <p class="home-quote">„Konstanz heute. Ein stärkeres Ich morgen.“</p>
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
 
-      <nav class="home-bottom-nav" aria-label="Hauptnavigation">
+      <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Hauptnavigation">
         <button id="homeNavHomeBtn" class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="homeNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
         <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
       </nav>
     </section>
@@ -180,11 +184,9 @@
         </div>
       </section>
 
-      <nav class="home-bottom-nav history-bottom-nav" aria-label="Historie Navigation">
+      <nav class="home-bottom-nav history-bottom-nav home-bottom-nav-compact" aria-label="Historie Navigation">
         <button id="historyNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="historyNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
         <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>▦</span><small>Historie</small></button>
         <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
       </nav>
     </section>
@@ -196,7 +198,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.11.11</span>
+        <span class="profile-version-pill">v0.11.12</span>
       </header>
 
       <section class="profile-hero-card">
@@ -213,6 +215,20 @@
           <strong>1</strong>
           <span>Platzhalter</span>
         </div>
+      </section>
+
+      <section class="profile-section profile-history-section" aria-labelledby="profileHistoryHeading">
+        <div class="profile-section-head profile-history-head">
+          <div>
+            <p class="eyebrow">TRAINING</p>
+            <h2 id="profileHistoryHeading">Historie</h2>
+          </div>
+          <span id="profileHistoryCount" class="profile-section-count">0 Trainings</span>
+        </div>
+        <div id="profileHistoryList" class="history-list profile-history-list">
+          <div class="history-empty">Noch kein Training gespeichert.</div>
+        </div>
+        <button id="profileHistoryToggleBtn" class="profile-history-toggle hidden" type="button">Alle Trainings anzeigen</button>
       </section>
 
       <section class="profile-section">
@@ -271,11 +287,9 @@
         </div>
       </section>
 
-      <nav class="home-bottom-nav profile-bottom-nav" aria-label="Profil Navigation">
+      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Profil Navigation">
         <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="profileNavTreeBtn" class="home-nav-item" type="button"><span>⌁</span><small>Skill Tree</small></button>
         <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>▦</span><small>Historie</small></button>
         <button id="profileNavProfileBtn" class="home-nav-item active" type="button"><span>●</span><small>Profil</small></button>
       </nav>
     </section>
@@ -544,6 +558,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.11"></script>
+  <script type="module" src="app.js?v=0.11.12"></script>
 </body>
 </html>

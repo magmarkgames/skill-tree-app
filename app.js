@@ -415,6 +415,10 @@ const homeWeekGoalHint = document.getElementById("homeWeekGoalHint");
 const profilePushRankIcon = document.getElementById("profilePushRankIcon");
 const profilePushRankName = document.getElementById("profilePushRankName");
 const profilePushRankHint = document.getElementById("profilePushRankHint");
+const profileHistoryList = document.getElementById("profileHistoryList");
+const profileHistoryCount = document.getElementById("profileHistoryCount");
+const profileHistoryToggleBtn = document.getElementById("profileHistoryToggleBtn");
+let profileHistoryExpanded = false;
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -597,7 +601,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.11",
+    appVersion: "0.11.12",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -1844,8 +1848,64 @@ function renderProfile() {
   const currentIndex = Math.max(0, RANK_ORDER.indexOf(rankName));
   const nextRank = RANK_ORDER[currentIndex + 1];
   profilePushRankHint.textContent = nextRank
-    ? `Aktueller Rang · als Nächstes ${nextRank}`
+    ? `Als Nächstes: ${nextRank}`
     : "Höchsten Push-up Rang erreicht";
+
+  renderProfileHistory();
+}
+
+function createHistoryEntry(item) {
+  const entry = document.createElement("div");
+  entry.className = "history-entry";
+
+  const main = document.createElement("div");
+  main.className = "history-entry-main";
+
+  const when = document.createElement("strong");
+  when.textContent = formatWorkoutDate(item.date);
+
+  const details = document.createElement("span");
+  const sets = Array.isArray(item.sets) ? item.sets : [];
+  if (sets.length) {
+    const variants = [...new Set(sets.map(set => VARIANT_META[set.variant]?.label || "Standard"))];
+    details.textContent = `${sets.length} ${sets.length === 1 ? "Set" : "Sets"} · ${variants.join(", ")}`;
+  } else {
+    details.textContent = VARIANT_META[item?.variant]?.label || "Standard";
+  }
+
+  main.append(when, details);
+
+  const reps = document.createElement("div");
+  reps.className = "history-entry-reps";
+  const count = getWorkoutRepCount(item);
+  reps.textContent = `${count} Push-up${count === 1 ? "" : "s"}`;
+
+  entry.append(main, reps);
+  return entry;
+}
+
+function renderProfileHistory() {
+  if (!profileHistoryList || !profileHistoryCount) return;
+  const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory.slice(0, 200) : [];
+  profileHistoryCount.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"}`;
+  profileHistoryList.innerHTML = "";
+
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    empty.textContent = "Noch kein Training gespeichert.";
+    profileHistoryList.appendChild(empty);
+    profileHistoryToggleBtn?.classList.add("hidden");
+    return;
+  }
+
+  const visibleItems = profileHistoryExpanded ? items : items.slice(0, 5);
+  visibleItems.forEach(item => profileHistoryList.appendChild(createHistoryEntry(item)));
+
+  if (profileHistoryToggleBtn) {
+    profileHistoryToggleBtn.classList.toggle("hidden", items.length <= 5);
+    profileHistoryToggleBtn.textContent = profileHistoryExpanded ? "Weniger anzeigen" : "Alle Trainings anzeigen";
+  }
 }
 
 // ---------- Historie ----------
@@ -1865,38 +1925,7 @@ function renderHistory() {
     return;
   }
 
-  items.forEach(item => {
-    const entry = document.createElement("div");
-    entry.className = "history-entry";
-
-    const main = document.createElement("div");
-    main.className = "history-entry-main";
-
-    const when = document.createElement("strong");
-    when.textContent = formatWorkoutDate(item.date);
-
-    const details = document.createElement("span");
-    const sets = Array.isArray(item.sets) ? item.sets : [];
-    if (sets.length) {
-      const variants = [...new Set(sets.map(set => VARIANT_META[set.variant]?.label || "Standard"))];
-      const setText = `${sets.length} ${sets.length === 1 ? "Set" : "Sets"}`;
-      details.textContent = `${setText} · ${variants.join(", ")}`;
-    } else {
-      const mode = String(item.mode || "").startsWith("face-quick") ? "Quick Mode" : "Manuell";
-      const variant = VARIANT_META[item?.variant]?.label || "Standard";
-      details.textContent = `${variant} · ${mode}`;
-    }
-
-    main.append(when, details);
-
-    const reps = document.createElement("div");
-    reps.className = "history-entry-reps";
-    const count = getWorkoutRepCount(item);
-    reps.textContent = `${count} Push-up${count === 1 ? "" : "s"}`;
-
-    entry.append(main, reps);
-    historyList.appendChild(entry);
-  });
+  items.forEach(item => historyList.appendChild(createHistoryEntry(item)));
 }
 
 function formatWorkoutDate(isoString) {
@@ -3624,6 +3653,11 @@ window.addEventListener("resize", () => {
 });
 
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("homeTreeTrainingBtn")?.addEventListener("click", openTraining);
+profileHistoryToggleBtn?.addEventListener("click", () => {
+  profileHistoryExpanded = !profileHistoryExpanded;
+  renderProfileHistory();
+});
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("openTreeStatsBtn").addEventListener("click", openTreeStats);
 document.getElementById("closeTreeStatsBtn").addEventListener("click", closeTreeStats);
@@ -3633,15 +3667,15 @@ treeStatsSheet.addEventListener("click", (event) => {
 document.getElementById("openHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("openHomeStatsBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
-document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("homeNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
-document.getElementById("homeNavHistoryBtn").addEventListener("click", () => showView("history"));
+document.getElementById("homeNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("homeNavProfileBtn").addEventListener("click", () => showView("profile"));
 document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavHomeBtn").addEventListener("click", () => showView("home"));
-document.getElementById("profileNavTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("profileNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
-document.getElementById("profileNavHistoryBtn").addEventListener("click", () => showView("history"));
+document.getElementById("profileNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
 document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
