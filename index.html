@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.11.10</title>
-  <link rel="stylesheet" href="style.css?v=0.11.10" />
+  <title>Power Push – v0.11.11</title>
+  <link rel="stylesheet" href="style.css?v=0.11.11" />
 </head>
 <body>
   <main class="app-shell">
@@ -86,15 +86,7 @@
             <div class="home-progress-track"><span id="homeNextGoalProgress"></span></div>
           </div>
 
-          <div class="home-mini-tree" aria-label="Vorschau auf den Push-up Skill Tree">
-            <div class="home-mini-node done"><span>✓</span><small>Start</small></div>
-            <div class="home-mini-link active"></div>
-            <div class="home-mini-node current"><span>●</span><small>Aktuell</small></div>
-            <div class="home-mini-link"></div>
-            <div class="home-mini-node locked"><span>🔒</span><small id="homeNextRankLabel">Nächster Rang</small></div>
-            <div class="home-mini-link"></div>
-            <div class="home-mini-node mystery"><span>?</span><small>Danach</small></div>
-          </div>
+          <div id="homeRankPaths" class="home-rank-paths" aria-label="Fortschritt im aktuellen Rang"></div>
 
           <button id="openPushTreeBtn" class="home-open-tree-btn" type="button">
             <span>Zum Skill Tree</span><span>›</span>
@@ -123,27 +115,6 @@
         </article>
       </section>
 
-      <button id="openTrainingBtn" class="home-training-cta" type="button">
-        <span class="home-training-play">▶</span>
-        <span class="home-training-copy">
-          <strong>Push-up Training starten</strong>
-          <small>Trainiere den aktuell gewählten Tree.</small>
-        </span>
-        <span class="home-training-arrow">›</span>
-      </button>
-
-      <section class="home-support-grid" aria-label="Weitere Bereiche">
-        <button id="openHistoryBtn" class="home-support-card" type="button">
-          <span class="home-support-icon history">🗓</span>
-          <span><strong>Trainingshistorie</strong><small id="historyHomeHint">Deine Liegestütz-Einheiten</small></span>
-          <span>›</span>
-        </button>
-        <button id="openHomeStatsBtn" class="home-support-card" type="button">
-          <span class="home-support-icon stats">▥</span>
-          <span><strong>Statistiken</strong><small>Deine Fortschritte</small></span>
-          <span>›</span>
-        </button>
-      </section>
 
       <div class="home-compact-stats" aria-hidden="true">
         <span id="homeTodayStat">0</span><span id="homeWeekStat">0</span>
@@ -225,7 +196,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.11.10</span>
+        <span class="profile-version-pill">v0.11.11</span>
       </header>
 
       <section class="profile-hero-card">
@@ -573,6 +544,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.10"></script>
+  <script type="module" src="app.js?v=0.11.11"></script>
 </body>
 </html>

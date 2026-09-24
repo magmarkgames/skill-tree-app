@@ -405,7 +405,7 @@ const homeNextGoalTitle = document.getElementById("homeNextGoalTitle");
 const homeNextGoalText = document.getElementById("homeNextGoalText");
 const homeNextGoalValue = document.getElementById("homeNextGoalValue");
 const homeNextGoalProgress = document.getElementById("homeNextGoalProgress");
-const homeNextRankLabel = document.getElementById("homeNextRankLabel");
+const homeRankPaths = document.getElementById("homeRankPaths");
 const homeDayGoalValue = document.getElementById("homeDayGoalValue");
 const homeDayGoalBar = document.getElementById("homeDayGoalBar");
 const homeDayGoalHint = document.getElementById("homeDayGoalHint");
@@ -597,7 +597,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.10",
+    appVersion: "0.11.11",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -738,10 +738,12 @@ function render() {
   historyTotalStat.textContent = progress.pushupTotal;
 
   const history = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
-  if (history.length) {
-    historyHomeHint.textContent = `${history.length} ${history.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(history[0].date)}`;
-  } else {
-    historyHomeHint.textContent = "Noch kein Training gespeichert";
+  if (historyHomeHint) {
+    if (history.length) {
+      historyHomeHint.textContent = `${history.length} ${history.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(history[0].date)}`;
+    } else {
+      historyHomeHint.textContent = "Noch kein Training gespeichert";
+    }
   }
 
   updateVariantAvailability();
@@ -3507,6 +3509,61 @@ function syncTreeCanvasHeight() {
 }
 
 
+function getHomePathProgressState(path) {
+  const pathState = getV012PathState(path);
+  const nextNode = pathState.nodes.find(node => !node.done) || pathState.nodes[pathState.nodes.length - 1];
+  if (!nextNode) {
+    return {
+      title: path.title,
+      current: 0,
+      target: 0,
+      percent: 0,
+      done: false,
+      accent: path.accent || "#7f95b2"
+    };
+  }
+
+  const current = Math.min(nextNode.current, nextNode.target);
+  const target = nextNode.target;
+  return {
+    title: path.title,
+    current,
+    target,
+    percent: target > 0 ? Math.max(0, Math.min(100, (current / target) * 100)) : 100,
+    done: current >= target,
+    accent: path.accent || "#7f95b2"
+  };
+}
+
+function renderHomeRankPaths(chapter) {
+  if (!homeRankPaths) return;
+  if (!chapter || !Array.isArray(chapter.paths) || !chapter.paths.length) {
+    homeRankPaths.innerHTML = `
+      <div class="home-rank-paths-done">
+        <strong>Alle Pfade abgeschlossen</strong>
+        <small>Der aktuell eingebaute Push-up Tree ist komplett geschafft.</small>
+      </div>
+    `;
+    return;
+  }
+
+  homeRankPaths.innerHTML = `
+    <div class="home-rank-paths-title">Aktueller Rang: ${chapter.from}</div>
+    ${chapter.paths.map((path) => {
+      const state = getHomePathProgressState(path);
+      return `
+        <div class="home-rank-path-row ${state.done ? "done" : ""}" style="--path-accent:${state.accent};">
+          <div class="home-rank-path-head">
+            <strong>${path.title}</strong>
+            <span>${formatTreeNumber(state.current)} / ${formatTreeNumber(state.target)}</span>
+          </div>
+          <div class="home-rank-path-track"><span style="width:${state.percent}%"></span></div>
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
 function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
   const chapter = getV012CurrentChapter();
@@ -3516,8 +3573,6 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   homeRankIcon.innerHTML = displayRank === "Starter"
     ? getVariantIconSvg("standard", "home-starter-icon")
     : getRankIconSvg(displayRank, "home-rank-asset");
-
-  homeNextRankLabel.textContent = chapter?.to || "Endgame";
 
   if (chapter) {
     const candidates = chapter.paths.flatMap(path => {
@@ -3544,6 +3599,8 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
     homeNextGoalProgress.style.width = "100%";
     homeNextGoalText.textContent = "Alle aktuell eingebauten Rangabschnitte sind geschafft.";
   }
+
+  renderHomeRankPaths(chapter);
 
   // Tages- und Wochenziele bleiben bewusst reine Home-Bonus-Challenges.
   renderHomeTimedGoal("day", todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
@@ -3573,8 +3630,8 @@ document.getElementById("closeTreeStatsBtn").addEventListener("click", closeTree
 treeStatsSheet.addEventListener("click", (event) => {
   if (event.target === treeStatsSheet) closeTreeStats();
 });
-document.getElementById("openHistoryBtn").addEventListener("click", () => showView("history"));
-document.getElementById("openHomeStatsBtn").addEventListener("click", openTreeStats);
+document.getElementById("openHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("openHomeStatsBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("homeNavTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
@@ -3592,7 +3649,7 @@ document.getElementById("historyNavTrainingBtn")?.addEventListener("click", open
 document.getElementById("historyNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("historyNavProfileBtn")?.addEventListener("click", () => showView("profile"));
 
-document.getElementById("openTrainingBtn").addEventListener("click", openTraining);
+document.getElementById("openTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
 
 document.querySelector('[data-exercise="pushups"]').addEventListener("click", () => {

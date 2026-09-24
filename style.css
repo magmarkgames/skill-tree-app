@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.10 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.11 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.10 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.11 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.10 — subtle path background + perfectly centered rank anchors
+   v0.11.11 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.10 — topo background, clearer connectors, corrected rank centering
+   v0.11.11 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7103,5 +7103,110 @@ body.training-active .home-bottom-nav { display: none !important; }
   }
   .v114-tree-stage > .v114-rank-anchor.bottom {
     bottom: 6px;
+  }
+}
+
+
+/* ==========================================================================
+   v0.11.11 — more visible hero image + rank path progress card on home
+   ========================================================================== */
+
+/* Show a bit more of the large hero image: the white fade now starts much later. */
+.home-hero-v17 {
+  min-height: clamp(238px, 36vh, 308px) !important;
+}
+.home-v17::before {
+  height: clamp(332px, 43vh, 398px) !important;
+  background-image:
+    linear-gradient(90deg, rgba(247,251,255,.96) 0%, rgba(247,251,255,.93) 28%, rgba(247,251,255,.64) 46%, rgba(247,251,255,.18) 68%, rgba(247,251,255,0) 100%),
+    linear-gradient(180deg, rgba(255,255,255,0) 76%, rgba(248,251,255,.56) 90%, rgba(248,251,255,1) 100%),
+    url("home-hero-bg-v023.webp") !important;
+  background-position: center, center, 68% center !important;
+}
+
+/* Replace the old mini-rank strip with real path progress bars. */
+.home-rank-paths {
+  margin: 6px 14px 12px;
+  padding: 11px 12px 12px;
+  border: 1px solid #dce8f4;
+  border-radius: 16px;
+  background: rgba(255,255,255,.72);
+}
+.home-rank-paths-title {
+  margin-bottom: 10px;
+  color: #5f7898;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.home-rank-path-row + .home-rank-path-row {
+  margin-top: 10px;
+}
+.home-rank-path-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.home-rank-path-head strong {
+  color: #0d2d5a;
+  font-size: 12px;
+  font-weight: 900;
+}
+.home-rank-path-head span {
+  color: #67809f;
+  font-size: 11px;
+  font-weight: 800;
+}
+.home-rank-path-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce5ef;
+}
+.home-rank-path-track > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--path-accent) 70%, white 30%), var(--path-accent));
+}
+.home-rank-path-row.done .home-rank-path-track > span {
+  background: linear-gradient(90deg, #80d89b, #4fc776);
+}
+.home-rank-paths-done {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-rank-paths-done strong {
+  color: #0d2d5a;
+  font-size: 13px;
+}
+.home-rank-paths-done small {
+  color: #7287a2;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* On Home these actions are no longer needed because navigation already exists elsewhere. */
+#openTrainingBtn,
+.home-support-grid {
+  display: none !important;
+}
+
+@media (max-width: 390px) {
+  .home-hero-v17 {
+    min-height: clamp(226px, 34vh, 286px) !important;
+  }
+  .home-v17::before {
+    height: clamp(316px, 41vh, 368px) !important;
+  }
+  .home-rank-paths {
+    margin-left: 12px;
+    margin-right: 12px;
+    padding: 10px 11px 11px;
   }
 }
