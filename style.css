@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.8 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.9 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.8 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.9 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6874,5 +6874,105 @@ body.training-active .home-bottom-nav { display: none !important; }
   .v114-stage-section.no-variants .v114-main-grid {
     left: 1%;
     right: 1%;
+  }
+}
+
+
+/* ==========================================================================
+   v0.11.9 — subtle path background + perfectly centered rank anchors
+   ========================================================================== */
+
+.skill-tree-v114 {
+  position: relative;
+  isolation: isolate;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(112, 156, 222, .12), transparent 20%),
+    linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+.skill-tree-v114::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .72;
+  background:
+    radial-gradient(165% 42% at 50% -8%, transparent 60%, rgba(186, 202, 225, .28) 60.5%, transparent 61%),
+    radial-gradient(160% 44% at 50% 8%, transparent 61%, rgba(186, 202, 225, .24) 61.5%, transparent 62%),
+    radial-gradient(154% 46% at 50% 24%, transparent 62%, rgba(186, 202, 225, .21) 62.5%, transparent 63%),
+    radial-gradient(150% 48% at 50% 42%, transparent 63%, rgba(186, 202, 225, .18) 63.5%, transparent 64%),
+    radial-gradient(145% 50% at 50% 61%, transparent 64%, rgba(186, 202, 225, .15) 64.5%, transparent 65%);
+}
+.skill-tree-v114::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: min(58vw, 240px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: .52;
+  filter: blur(26px);
+  background: linear-gradient(180deg,
+    rgba(137, 170, 223, .06) 0%,
+    rgba(137, 170, 223, .14) 18%,
+    rgba(137, 170, 223, .08) 44%,
+    rgba(137, 170, 223, .12) 72%,
+    rgba(137, 170, 223, .04) 100%);
+}
+.v114-tree-flow {
+  position: relative;
+  z-index: 1;
+}
+
+/* Rank cards use the full width of the stage, so the icon and label stay
+   perfectly centered on the branch trunk on every phone width. */
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: none;
+  bottom: 10px;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom .v114-rank-icon,
+.v114-tree-stage > .v114-rank-anchor.bottom .v114-rank-label,
+.v114-tree-flow > .v114-rank-anchor.top .v114-rank-icon,
+.v114-tree-flow > .v114-rank-anchor.top .v114-rank-label {
+  margin-left: auto;
+  margin-right: auto;
+}
+.v114-rank-anchor {
+  gap: 10px;
+}
+.v114-rank-icon {
+  position: relative;
+}
+.v114-rank-label {
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .skill-tree-v114 {
+    border-radius: 24px;
+  }
+  .skill-tree-v114::after {
+    width: min(62vw, 220px);
+  }
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .skill-tree-v114::after {
+    width: min(66vw, 205px);
+  }
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 6px;
   }
 }
