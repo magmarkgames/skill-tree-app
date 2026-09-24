@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.9 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.10 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.9 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.10 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.9 — subtle path background + perfectly centered rank anchors
+   v0.11.10 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6971,6 +6971,135 @@ body.training-active .home-bottom-nav { display: none !important; }
 @media (max-width: 420px) {
   .skill-tree-v114::after {
     width: min(66vw, 205px);
+  }
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 6px;
+  }
+}
+
+
+/* ==========================================================================
+   v0.11.10 — topo background, clearer connectors, corrected rank centering
+   ========================================================================== */
+
+.skill-tree-v114 {
+  position: relative;
+  isolation: isolate;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #f6f9fd 0%, #edf3fb 100%);
+}
+.skill-tree-v114::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .42;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 360'%3E%3Cg fill='none' stroke='%23cbd3df' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 58c24-22 57-26 85-14 22 10 39 11 61-3 22-14 49-17 74-8 24 8 50 7 77-9'/%3E%3Cpath d='M8 77c33-32 74-39 108-24 22 10 43 12 66-3 24-16 56-18 83-8 24 8 48 6 87-14'/%3E%3Cpath d='M27 111c20-17 46-18 64-7 18 12 40 12 58-1 18-12 41-14 61-4 20 9 46 9 70-4 24-14 52-16 74-7'/%3E%3Cpath d='M16 130c28-24 63-27 88-12 18 10 37 10 55-2 22-14 47-17 74-7 24 9 49 10 73-3 25-14 39-15 54-10'/%3E%3Cpath d='M34 189c14-13 32-18 47-14 14 3 25 11 39 14 18 4 32-2 48-13 19-13 41-16 62-7 21 9 44 9 67-2 22-11 43-14 58-9'/%3E%3Cpath d='M18 208c21-21 48-28 72-20 18 6 34 16 52 16 18 0 31-10 45-20 16-11 37-14 57-8 19 6 43 7 67-2 25-9 47-11 69-3'/%3E%3Cpath d='M8 228c32-27 68-34 101-24 25 8 45 21 66 20 20-1 34-13 49-24 17-12 39-16 62-10 22 6 47 7 73-1'/%3E%3Cpath d='M35 279c15-12 35-16 52-9 13 5 24 13 39 15 17 2 31-5 45-15 17-12 40-16 61-9 18 6 38 7 59 0 22-7 43-8 60-3'/%3E%3Cpath d='M22 299c27-23 59-27 84-15 19 8 33 16 51 17 20 1 35-8 51-18 18-11 40-14 62-8 20 6 42 7 64 1 23-7 39-8 56-4'/%3E%3Cpath d='M90 18c-17 16-20 35-9 53 11 18 11 40-2 58-12 18-13 40-3 59 9 18 10 40-1 61-11 22-11 47 2 72'/%3E%3Cpath d='M112 8c-24 24-28 52-13 76 11 18 11 38-1 55-13 18-15 40-5 60 10 19 10 40-1 61-12 24-13 52 2 80'/%3E%3Cpath d='M252 8c16 17 19 36 8 53-10 18-10 39 2 58 13 20 15 43 5 63-9 18-11 39 0 60 11 21 12 46-1 70'/%3E%3Cpath d='M274 20c21 23 24 49 11 71-11 18-12 40 1 60 13 20 15 43 4 63-10 18-11 38 0 57 12 22 14 48 4 76'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  background-repeat: repeat;
+  background-position: center top;
+}
+.skill-tree-v114::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: min(58vw, 220px);
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: .28;
+  filter: blur(22px);
+  background: linear-gradient(180deg,
+    rgba(148, 168, 201, .03) 0%,
+    rgba(148, 168, 201, .12) 18%,
+    rgba(148, 168, 201, .05) 42%,
+    rgba(148, 168, 201, .10) 68%,
+    rgba(148, 168, 201, .03) 100%);
+}
+.v114-tree-flow {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tree connectors: slightly darker than the topo pattern, but still subtle. */
+.v114-tree-lines .trunk,
+.v114-tree-lines .path,
+.v114-tree-lines .path-1,
+.v114-tree-lines .path-2,
+.v114-tree-lines .path-3 {
+  stroke: #aab7ca !important;
+  stroke-width: 1.02;
+  opacity: .72;
+}
+.v114-stage-section.locked-preview .v114-tree-lines {
+  opacity: .58;
+}
+.v114-stage-section.mystery-preview .v114-tree-lines {
+  opacity: .34;
+}
+
+/* Rank anchors: center the complete rank group itself, not only its contents. */
+.v114-rank-anchor {
+  display: grid !important;
+  justify-items: center;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin-left: auto;
+  margin-right: auto;
+  gap: 10px;
+}
+.v114-tree-flow > .v114-rank-anchor.top {
+  margin-bottom: 22px;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  bottom: 10px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  transform: translateX(-50%);
+  margin: 0;
+}
+.v114-rank-icon,
+.v114-rank-label {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center;
+}
+.v114-rank-label {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .skill-tree-v114::before {
+    background-size: 260px 260px;
+    opacity: .4;
+  }
+  .skill-tree-v114::after {
+    width: min(62vw, 205px);
+    opacity: .25;
+  }
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .skill-tree-v114::before {
+    background-size: 230px 230px;
+    opacity: .38;
+  }
+  .skill-tree-v114::after {
+    width: min(66vw, 190px);
+  }
+  .v114-tree-flow > .v114-rank-anchor.top {
+    margin-bottom: 18px;
   }
   .v114-tree-stage > .v114-rank-anchor.bottom {
     bottom: 6px;
