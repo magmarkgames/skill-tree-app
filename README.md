@@ -1,3 +1,8 @@
-# Power Push v0.11.5 Fixed
+# Power Push v0.11.6
 
-Fixes the tree layout for early ranks. Start and Holz are now spaced correctly, the lower rank sits at the bottom of the stage, and single-node / two-node paths are vertically centered better.
+## Neu
+- generierte Home-Icons im finalen Stil eingebaut
+- App-Logo oben links ersetzt
+- Skill-Tree-Section-Icon ersetzt
+- Disziplin-Icons für Push-up, Laufen, Klimmzüge und Core ersetzt
+- oberes Hero-Bild inklusive Quote auf ungefähr ein Drittel der Bildschirmhöhe reduziert

@@ -6574,3 +6574,104 @@ h2 { margin-bottom: 0; font-size: 21px; }
     bottom: 118px;
   }
 }
+
+
+/* ==========================================================================
+   v0.11.6 — custom generated home icons + smaller hero
+   ========================================================================== */
+.home-logo,
+.home-tree-mark {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.home-logo::after,
+.home-tree-mark::after,
+.home-discipline-tab .discipline-icon::after {
+  display: none !important;
+}
+.home-logo {
+  width: 64px !important;
+  height: 64px !important;
+  flex-basis: 64px !important;
+  display: grid;
+  place-items: center;
+}
+.home-logo img {
+  width: 64px;
+  height: 64px;
+  display: block;
+  filter: drop-shadow(0 10px 18px rgba(31,126,232,.18));
+}
+.home-tree-mark {
+  width: 52px !important;
+  height: 52px !important;
+  flex-basis: 52px !important;
+  display: grid;
+  place-items: center;
+}
+.home-tree-mark img {
+  width: 52px;
+  height: 52px;
+  display: block;
+  filter: drop-shadow(0 8px 16px rgba(39,185,126,.16));
+}
+.home-discipline-tab {
+  gap: 6px;
+}
+.home-discipline-tab .discipline-icon {
+  width: 44px !important;
+  height: 44px !important;
+  margin: 0 0 2px !important;
+  display: grid;
+  place-items: center;
+  clip-path: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.home-discipline-tab .discipline-icon img {
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+.home-discipline-tab.active .discipline-icon img {
+  filter: drop-shadow(0 6px 10px rgba(20,116,225,.18));
+}
+.home-discipline-tab.locked-feature .discipline-icon img {
+  opacity: .92;
+}
+.home-hero-v17 {
+  min-height: clamp(220px, 33vh, 285px) !important;
+  margin-bottom: 6px;
+}
+.home-v17::before {
+  height: clamp(300px, 38vh, 360px) !important;
+  background-position: center, center, 68% center;
+}
+.home-hero-copy {
+  width: 54% !important;
+  padding: 8px 0 18px 2px !important;
+}
+.home-kicker {
+  margin-bottom: 8px;
+}
+.home-hero-copy h1 {
+  font-size: clamp(27px, 7vw, 36px) !important;
+}
+.home-hero-copy > p:last-child {
+  margin-top: 12px;
+  font-size: 12px !important;
+  max-width: 185px;
+}
+@media (max-width: 390px) {
+  .home-logo,
+  .home-logo img { width: 58px !important; height: 58px !important; }
+  .home-tree-mark,
+  .home-tree-mark img { width: 48px !important; height: 48px !important; }
+  .home-discipline-tab .discipline-icon,
+  .home-discipline-tab .discipline-icon img { width: 40px !important; height: 40px !important; }
+  .home-hero-v17 { min-height: clamp(210px, 31vh, 260px) !important; }
+  .home-v17::before { height: clamp(286px, 36vh, 330px) !important; }
+  .home-hero-copy { width: 56% !important; padding-top: 4px !important; padding-bottom: 14px !important; }
+  .home-hero-copy h1 { font-size: clamp(24px, 6.8vw, 32px) !important; }
+}
