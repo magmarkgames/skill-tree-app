@@ -52,6 +52,7 @@ const DEFAULT_PROGRESS = {
   pushupStreak: 0,
   lastTrainingDate: null,
   variantStats: {},
+  challengeProgress: createEmptyChallengeProgress(),
   trainingHistory: []
 };
 
@@ -113,8 +114,23 @@ const VARIANT_SUBTREE_LAYOUT = {
 };
 
 const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
-const HOME_DAY_TARGETS = [20, 50, 100, 200, 400, 700, 1000, 1500, 2500];
-const HOME_WEEK_TARGETS = [75, 150, 250, 500, 1000, 1500, 3000, 5000, 7500];
+const HOME_CHALLENGE_TIERS = {
+  day: [
+    { id: "day-1", level: "I", target: 50, unlockRank: "Bronze" },
+    { id: "day-2", level: "II", target: 100, unlockRank: "Silber" }
+  ],
+  week: [
+    { id: "week-1", level: "I", target: 250, unlockRank: "Bronze" },
+    { id: "week-2", level: "II", target: 500, unlockRank: "Silber" }
+  ]
+};
+
+function createEmptyChallengeProgress() {
+  return {
+    day: { completed: [], activeId: null, periodKey: null, baseline: 0 },
+    week: { completed: [], activeId: null, periodKey: null, baseline: 0 }
+  };
+}
 
 function createEmptyVariantStats() {
   return Object.fromEntries(
@@ -513,7 +529,7 @@ function loadProgress() {
     }
   }
 
-  return { ...DEFAULT_PROGRESS, trainingHistory: [] };
+  return { ...DEFAULT_PROGRESS, challengeProgress: createEmptyChallengeProgress(), trainingHistory: [] };
 }
 
 function safeReadJson(key) {
@@ -533,6 +549,22 @@ function looksLikeOldProgress(value) {
     "lastTrainingDate" in value ||
     "trainingHistory" in value
   );
+}
+
+function normalizeChallengeProgress(value) {
+  const fresh = createEmptyChallengeProgress();
+  for (const metric of ["day", "week"]) {
+    const source = value?.[metric];
+    if (!source || typeof source !== "object") continue;
+    const validIds = new Set((HOME_CHALLENGE_TIERS[metric] || []).map(tier => tier.id));
+    fresh[metric].completed = Array.isArray(source.completed)
+      ? [...new Set(source.completed.filter(id => validIds.has(id)))]
+      : [];
+    fresh[metric].activeId = validIds.has(source.activeId) ? source.activeId : null;
+    fresh[metric].periodKey = typeof source.periodKey === "string" ? source.periodKey : null;
+    fresh[metric].baseline = Math.max(0, Number(source.baseline) || 0);
+  }
+  return fresh;
 }
 
 function normalizeProgress(value) {
@@ -586,6 +618,7 @@ function normalizeProgress(value) {
     pushupStreak: Math.max(0, Number(value?.pushupStreak) || 0),
     lastTrainingDate: value?.lastTrainingDate || null,
     variantStats,
+    challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
     trainingHistory
   };
 }
@@ -598,7 +631,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.16",
+    appVersion: "0.11.17",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -827,41 +860,188 @@ function getHomeGoalHint(node, current, target) {
   return `Noch ${left} bis zum nächsten Skill.`;
 }
 
-function getHomeTimedGoalNode(metric) {
-  const current = metric === "day" ? getTodayTotal() : getCurrentWeekTotal();
-  const targets = metric === "day" ? HOME_DAY_TARGETS : HOME_WEEK_TARGETS;
-  if (!targets.length) return null;
+function getTimedChallengePeriodKey(metric, now = new Date()) {
+  return metric === "day"
+    ? localDateString(now)
+    : localDateString(startOfLocalWeek(now));
+}
 
-  // Dashboard goals describe THIS day/week only. They must not be skipped just
-  // because the same milestone was achieved on an older day or week.
-  const target = targets.find(value => current <= value) ?? targets[targets.length - 1];
-  return { type: "dashboardGoal", metric, target };
+function isV012RankAtLeast(currentRank, requiredRank) {
+  return V012_RANKS.indexOf(currentRank) >= V012_RANKS.indexOf(requiredRank);
+}
+
+function ensureChallengeProgressBucket(metric) {
+  if (!progress.challengeProgress || typeof progress.challengeProgress !== "object") {
+    progress.challengeProgress = createEmptyChallengeProgress();
+  }
+  if (!progress.challengeProgress[metric] || typeof progress.challengeProgress[metric] !== "object") {
+    progress.challengeProgress[metric] = createEmptyChallengeProgress()[metric];
+  }
+  const bucket = progress.challengeProgress[metric];
+  if (!Array.isArray(bucket.completed)) bucket.completed = [];
+  bucket.baseline = Math.max(0, Number(bucket.baseline) || 0);
+  return bucket;
+}
+
+function getTimedChallengeState(metric, currentValue) {
+  const tiers = HOME_CHALLENGE_TIERS[metric] || [];
+  const bucket = ensureChallengeProgressBucket(metric);
+  const rankName = getV012CurrentRankName();
+  const unlocked = tiers.filter(tier => isV012RankAtLeast(rankName, tier.unlockRank));
+  const periodKey = getTimedChallengePeriodKey(metric);
+  const current = Math.max(0, Number(currentValue) || 0);
+  let changed = false;
+
+  // Nothing runs before Bronze. Remember the current total so the first
+  // challenge really starts at the moment it becomes unlocked, not earlier.
+  if (!unlocked.length) {
+    if (bucket.activeId !== null || bucket.periodKey !== periodKey || bucket.baseline !== current) {
+      bucket.activeId = null;
+      bucket.periodKey = periodKey;
+      bucket.baseline = current;
+      changed = true;
+    }
+    if (changed) saveProgress();
+    return { status: "locked", tier: tiers[0] || null, current: 0, target: tiers[0]?.target || 0, percent: 0 };
+  }
+
+  const completedIds = new Set(bucket.completed);
+  let tier = unlocked.find(item => !completedIds.has(item.id)) || null;
+
+  // Every currently unlocked challenge is already completed. If the next tier
+  // is still rank-locked, keep the last completed tier visible with a green tick.
+  if (!tier) {
+    const lastCompleted = unlocked[unlocked.length - 1];
+    const nextTier = tiers[unlocked.length] || null;
+    if (bucket.activeId !== null) {
+      bucket.activeId = null;
+      changed = true;
+    }
+    if (bucket.periodKey !== periodKey) {
+      bucket.periodKey = periodKey;
+      bucket.baseline = current;
+      changed = true;
+    }
+    if (changed) saveProgress();
+    return {
+      status: nextTier ? "waiting-next" : "complete",
+      tier: lastCompleted,
+      nextTier,
+      current: lastCompleted?.target || 0,
+      target: lastCompleted?.target || 0,
+      percent: 100
+    };
+  }
+
+  // A tier is newly available (rank-up, or the previous tier has just been
+  // completed). Start it from THIS point in the day/week.
+  if (bucket.activeId !== tier.id) {
+    bucket.activeId = tier.id;
+    bucket.periodKey = periodKey;
+    bucket.baseline = current;
+    changed = true;
+  } else if (bucket.periodKey !== periodKey) {
+    // An unfinished challenge carries into the next day/week, but its counter
+    // starts fresh for the new period. Its identity does not fall back to I.
+    bucket.periodKey = periodKey;
+    bucket.baseline = 0;
+    changed = true;
+  }
+
+  let earned = Math.max(0, current - bucket.baseline);
+
+  if (earned >= tier.target) {
+    if (!bucket.completed.includes(tier.id)) {
+      bucket.completed.push(tier.id);
+      changed = true;
+    }
+    bucket.activeId = null;
+    bucket.periodKey = periodKey;
+    bucket.baseline = current;
+    changed = true;
+
+    const completedNow = new Set(bucket.completed);
+    const nextUnlocked = unlocked.find(item => !completedNow.has(item.id)) || null;
+    if (nextUnlocked) {
+      // Challenge II is already unlocked: continue immediately, but only reps
+      // performed after Challenge I was completed count towards II.
+      bucket.activeId = nextUnlocked.id;
+      bucket.periodKey = periodKey;
+      bucket.baseline = current;
+      saveProgress();
+      return {
+        status: "active",
+        tier: nextUnlocked,
+        current: 0,
+        target: nextUnlocked.target,
+        percent: 0,
+        advancedFrom: tier
+      };
+    }
+
+    saveProgress();
+    const nextTier = tiers.find(item => !completedNow.has(item.id)) || null;
+    return {
+      status: nextTier ? "waiting-next" : "complete",
+      tier,
+      nextTier,
+      current: tier.target,
+      target: tier.target,
+      percent: 100,
+      justCompleted: true
+    };
+  }
+
+  if (changed) saveProgress();
+  return {
+    status: "active",
+    tier,
+    current: Math.min(earned, tier.target),
+    target: tier.target,
+    percent: Math.max(0, Math.min(100, earned / Math.max(1, tier.target) * 100))
+  };
 }
 
 function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
   if (!valueEl || !barEl || !hintEl) return;
-  const node = getHomeTimedGoalNode(metric);
-  if (!node) {
-    valueEl.textContent = `${currentValue}`;
+  const state = getTimedChallengeState(metric, currentValue);
+  const isDay = metric === "day";
+  const card = document.getElementById(isDay ? "homeDayGoalCard" : "homeWeekGoalCard");
+  const icon = document.getElementById(isDay ? "homeDayGoalIcon" : "homeWeekGoalIcon");
+  const title = document.getElementById(isDay ? "homeDayGoalTitle" : "homeWeekGoalTitle");
+  const label = isDay ? "Tages-Challenge" : "Wochen-Challenge";
+  const tier = state.tier;
+
+  card?.classList.toggle("challenge-complete", state.status === "waiting-next" || state.status === "complete");
+  card?.classList.toggle("challenge-locked", state.status === "locked");
+
+  if (title) title.textContent = `${label} ${tier?.level || "I"}`;
+
+  if (state.status === "locked") {
+    valueEl.textContent = "🔒";
     barEl.style.width = "0%";
-    hintEl.textContent = "Noch kein Ziel angelegt.";
+    if (icon) icon.textContent = isDay ? "◎" : "▣";
+    hintEl.textContent = "Ab Bronze verfügbar.";
     return;
   }
 
-  const target = Math.max(1, Number(node.target) || 1);
-  const current = Math.max(0, Number(currentValue) || 0);
-  const percent = Math.max(0, Math.min(100, current / target * 100));
-  const left = Math.max(0, target - current);
-  valueEl.textContent = `${current} / ${target}`;
-  barEl.style.width = `${percent}%`;
-
-  if (left === 0) {
-    hintEl.textContent = metric === "day" ? "Tages-Plakette verdient!" : "Wochen-Plakette verdient!";
-  } else {
-    hintEl.textContent = metric === "day"
-      ? `Noch ${left} Push-ups bis zur Tages-Plakette.`
-      : `Noch ${left} Push-ups bis zur Wochen-Plakette.`;
+  if (state.status === "waiting-next" || state.status === "complete") {
+    valueEl.textContent = "✓";
+    barEl.style.width = "100%";
+    if (icon) icon.textContent = "✓";
+    hintEl.textContent = state.nextTier
+      ? `Geschafft · Challenge ${state.nextTier.level} ab ${state.nextTier.unlockRank}.`
+      : "Challenge geschafft!";
+    return;
   }
+
+  valueEl.textContent = `${Math.round(state.current)} / ${state.target}`;
+  barEl.style.width = `${state.percent}%`;
+  if (icon) icon.textContent = isDay ? "◎" : "▣";
+  const left = Math.max(0, state.target - state.current);
+  hintEl.textContent = isDay
+    ? `Noch ${left} Push-ups bis zur Tages-Plakette.`
+    : `Noch ${left} Push-ups bis zur Wochen-Plakette.`;
 }
 
 function getCurrentRankName() {
@@ -3090,7 +3270,7 @@ const V012_CHAPTERS = [
         { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
       ] },
       { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 5, label: "gesamt" }
+        { metric: "total", target: 5, label: "Gesamt" }
       ] }
     ],
     variants: []
@@ -3103,13 +3283,12 @@ const V012_CHAPTERS = [
         { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
       ] },
       { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 10, label: "gesamt" },
-        { metric: "total", target: 25, label: "gesamt" }
+        { metric: "total", target: 10, label: "Gesamt" },
+        { metric: "total", target: 25, label: "Gesamt" }
       ] },
       { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
         { metric: "standardMax", target: 1, label: "Push-up" },
-        { metric: "standardMax", target: 3, label: "Push-ups" },
-        { metric: "standardMax", target: 5, label: "Push-ups" }
+        { metric: "standardMax", target: 3, label: "Push-ups" }
       ] }
     ],
     variants: []
@@ -3120,14 +3299,16 @@ const V012_CHAPTERS = [
       { key: "varianten", title: "Varianten", accent: "#9a69cc", nodes: [
         { metric: "variantMax", variant: "wall", target: 10, label: "Wall" },
         { metric: "variantMax", variant: "incline", target: 10, label: "Incline" },
-        { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
+        { metric: "variantMax", variant: "wide", target: 1, label: "Wide Arm" }
       ] },
       { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 50, label: "gesamt" },
-        { metric: "total", target: 100, label: "gesamt" }
+        { metric: "total", target: 50, label: "Gesamt" },
+        { metric: "total", target: 75, label: "Gesamt" },
+        { metric: "total", target: 100, label: "Gesamt" }
       ] },
       { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 8, label: "Push-ups" },
+        { metric: "standardMax", target: 5, label: "Push-ups" },
+        { metric: "standardMax", target: 7, label: "Push-ups" },
         { metric: "standardMax", target: 10, label: "Push-ups" }
       ] }
     ],
@@ -3416,11 +3597,17 @@ function renderV114VariantBranch(chapter, chapterIndex, chapterMode) {
 function renderV114RankAnchor(rank, options = {}) {
   const { locked = false, top = false, bottom = false } = options;
   const label = rank === "Starter" ? "Start" : rank;
+  const unlockLabel = rank === "Bronze"
+    ? "Daily I · Weekly I"
+    : rank === "Silber"
+      ? "Daily II · Weekly II"
+      : "";
   const classes = ["v114-rank-anchor", top ? "top" : "", bottom ? "bottom" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
   return `
     <div class="${classes}">
       <span class="v114-rank-icon">${getV012RankIcon(rank)}</span>
       <span class="v114-rank-label">${label}</span>
+      ${unlockLabel ? `<span class="v114-rank-unlock">${unlockLabel} freigeschaltet</span>` : ""}
     </div>
   `;
 }
@@ -3734,7 +3921,7 @@ backupFileInput?.addEventListener("change", () => importProgressBackup(backupFil
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("Wirklich alle lokalen Testdaten löschen?")) return;
   [STORAGE_KEY, ...OLD_STORAGE_KEYS].forEach(key => localStorage.removeItem(key));
-  progress = { ...DEFAULT_PROGRESS, trainingHistory: [] };
+  progress = { ...DEFAULT_PROGRESS, challengeProgress: createEmptyChallengeProgress(), trainingHistory: [] };
   saveProgress();
   render();
 });

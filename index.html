@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.11.16</title>
-  <link rel="stylesheet" href="style.css?v=0.11.16" />
+  <title>Power Push – v0.11.17</title>
+  <link rel="stylesheet" href="style.css?v=0.11.17" />
 </head>
 <body>
   <main class="app-shell">
@@ -86,20 +86,20 @@
       </section>
 
       <section class="home-goals-grid" aria-label="Aktuelle Push-up Ziele">
-        <article class="home-goal-card">
+        <article id="homeDayGoalCard" class="home-goal-card challenge-locked">
           <div class="home-goal-card-top">
-            <span class="home-goal-icon day">◎</span>
-            <div><span>Tages-Challenge</span><small>Bonus-Plakette</small></div>
-            <strong id="homeDayGoalValue">0 / 0</strong>
+            <span id="homeDayGoalIcon" class="home-goal-icon day">◎</span>
+            <div><span id="homeDayGoalTitle">Tages-Challenge I</span><small>Bonus-Plakette</small></div>
+            <strong id="homeDayGoalValue">🔒</strong>
           </div>
           <div class="home-progress-track"><span id="homeDayGoalBar"></span></div>
           <p id="homeDayGoalHint">Dein nächstes Tagesziel wird geladen.</p>
         </article>
-        <article class="home-goal-card">
+        <article id="homeWeekGoalCard" class="home-goal-card challenge-locked">
           <div class="home-goal-card-top">
-            <span class="home-goal-icon week">▣</span>
-            <div><span>Wochen-Challenge</span><small>Bonus-Plakette</small></div>
-            <strong id="homeWeekGoalValue">0 / 0</strong>
+            <span id="homeWeekGoalIcon" class="home-goal-icon week">▣</span>
+            <div><span id="homeWeekGoalTitle">Wochen-Challenge I</span><small>Bonus-Plakette</small></div>
+            <strong id="homeWeekGoalValue">🔒</strong>
           </div>
           <div class="home-progress-track"><span id="homeWeekGoalBar"></span></div>
           <p id="homeWeekGoalHint">Dein nächstes Wochenziel wird geladen.</p>
@@ -183,7 +183,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.11.16</span>
+        <span class="profile-version-pill">v0.11.17</span>
       </header>
 
       <section class="profile-hero-card">
@@ -539,6 +539,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.16"></script>
+  <script type="module" src="app.js?v=0.11.17"></script>
 </body>
 </html>
