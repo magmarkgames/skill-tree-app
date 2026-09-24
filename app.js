@@ -594,7 +594,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.0",
+    appVersion: "0.11.1",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -693,7 +693,7 @@ function showView(name) {
     const scrollTreeToStart = () => {
       syncTreeCanvasHeight();
       treeScroll.scrollLeft = 0;
-      treeScroll.scrollTop = 0;
+      treeScroll.scrollTop = Math.max(0, treeScroll.scrollHeight - treeScroll.clientHeight);
     };
 
     // Two frames allow responsive badge dimensions to settle first. The small
@@ -3302,112 +3302,12 @@ function renderV11Journey(currentRank, chapterNumber) {
 
 function renderTree() {
   if (!skillTree) return;
-  const { chapter, states, completed, examUnlocked, nextGoal } = getV11ChapterSummary();
-  const currentRank = normalizeV11Rank(getCurrentRankName());
-  const themeClass = getV11RankThemeClass(currentRank);
-  const nextRank = chapter.next;
-  const goalPercent = nextGoal ? Math.max(6, nextGoal.percent) : 100;
-  const topSealDots = Array.from({ length: 4 }, (_, index) => `<span class="${index < completed ? 'done' : ''}"></span>`).join('');
-  const challengeCards = states.map(state => renderV11ChallengeCard(state, nextGoal?.id)).join('');
-  const nextRankMarkup = nextRank ? `
-    <div class="v11-next-rank">
-      <div class="v11-next-rank-icon">${getRankIconSvg(nextRank)}</div>
-      <span class="v11-next-rank-lock">🔒</span>
-      <strong>${nextRank}</strong>
-      <small>Nächstes Kapitel</small>
-    </div>
-  ` : `
-    <div class="v11-next-rank">
-      <div class="v11-next-rank-icon">${getRankIconSvg('Diamant')}</div>
-      <strong>Endgame</strong>
-      <small>Neue Kapitel folgen</small>
-    </div>
-  `;
-
-  const variantMarkup = (chapter.variantPath || []).map(variant => renderV11VariantItem(variant, chapter.currentVariant)).join('');
-
-  skillTree.className = 'skill-tree-v11';
-  skillTree.innerHTML = `
-    <div class="v11-tree-page">
-      <section class="v11-card v11-summary-card">
-        <div class="v11-rank-copy">
-          <div class="v11-rank-icon">${getRankIconSvg(currentRank)}</div>
-          <div>
-            <span class="v11-kicker">Power Push Journey</span>
-            <h2 class="v11-rank-title">Dein Rang: <span class="${themeClass}">${currentRank}</span></h2>
-            <div class="v11-rank-subline">Kapitel ${chapter.chapter}</div>
-          </div>
-        </div>
-        <div class="v11-seals">
-          <strong>${completed} / 4</strong>
-          <small>Siegel gesammelt</small>
-          <div class="v11-seal-dots">${topSealDots}</div>
-        </div>
-      </section>
-
-      <section class="v11-card v11-goal-card">
-        <div class="v11-goal-icon">${nextGoal ? getV11MetricIconHtml(nextGoal) : getRankIconSvg(currentRank)}</div>
-        <div class="v11-goal-copy">
-          <span class="v11-kicker">Nächstes Ziel</span>
-          <h2>${nextGoal ? nextGoal.title : 'Kapitel abgeschlossen'}</h2>
-          <p>${getV11GoalSubtitle(nextGoal)}</p>
-        </div>
-        <div class="v11-goal-meter">
-          <strong>${nextGoal ? `${Math.min(nextGoal.current, nextGoal.target)} / ${nextGoal.target}` : '100 %'}</strong>
-          <div class="v11-progress"><span style="width:${goalPercent}%"></span></div>
-          <small>${getV11GoalLeftText(nextGoal)}</small>
-        </div>
-      </section>
-
-      <section class="v11-card v11-sky-card">
-        <div class="v11-sky-quote">${chapter.skyQuote.replace(/\n/g, '<br>')}</div>
-        <div class="v11-sky-note">${chapter.skyNote.replace(/\n/g, '<br>')}</div>
-        ${nextRankMarkup}
-        <div class="v11-exam-card ${examUnlocked ? '' : 'locked'}">
-          <div class="v11-exam-badge">🏆</div>
-          <div class="v11-exam-copy">
-            <strong>${chapter.examTitle}</strong>
-            <small>${examUnlocked ? 'freigeschaltet' : 'noch gesperrt'}</small>
-            <p>${examUnlocked ? 'Du kannst den Aufstieg jetzt angehen.' : `Noch ${Math.max(0, 3 - completed)} Siegel bis zur Freischaltung.`}</p>
-            <button class="v11-exam-btn" type="button">${examUnlocked ? 'Prüfung starten →' : 'Weiter trainieren →'}</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="v11-chapter-zone">
-        ${challengeCards}
-      </section>
-
-      <section class="v11-journey-grid">
-        <article class="v11-card v11-rank-journey">
-          <div class="v11-journey-head">
-            <div>
-              <h3>Deine Reise</h3>
-              <p>Ein Kapitel nach dem anderen.</p>
-            </div>
-          </div>
-          <div class="v11-journey-line">
-            ${renderV11Journey(currentRank, chapter.chapter)}
-          </div>
-          <div class="v11-journey-foot">Hier beginnt deine Reise.</div>
-        </article>
-
-        <aside class="v11-card v11-variant-panel">
-          <div>
-            <h3>Skill-Pfad</h3>
-            <p>Varianten</p>
-          </div>
-          <div class="v11-variant-list">${variantMarkup}</div>
-          <div class="v11-variant-foot">Meistere Varianten. Werde vielseitiger.</div>
-        </aside>
-      </section>
-    </div>
-  `;
+  skillTree.className = 'tree tree-v10 skill-tree-v11';
+  renderTreeLegacy();
 }
 
 function syncTreeCanvasHeight() {
-  if (!skillTree) return;
-  skillTree.style.height = 'auto';
+  return syncTreeCanvasHeightLegacy();
 }
 
 function renderHomeDashboard(todayTotal, weekTotal, rankName) {

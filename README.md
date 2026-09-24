@@ -1,11 +1,10 @@
-# Power Push v0.11.0
+# Power Push v0.11.1
 
-## Fokus dieser Version
-- kompletter Skill-Tree-Umbau zu einer klareren, motivierenderen Kapitelreise
-- pro Rang vier sichtbare Herausforderungen statt einer überladenen Gesamtmatrix
-- sichtbares "Nächstes Ziel", damit der Nutzer sofort weiß, worauf er heute hinarbeitet
-- 3-von-4-Siegel-Logik pro Kapitel mit separater Prüfungs-Karte
-- kompakter Variantenpfad als motivierender Nebenast
+## Fix in dieser Version
+- Buttons bleiben funktional
+- Skill Tree mit echten Knoten und Verbindungen wiederhergestellt
+- Freischaltungen, Vorschau und Mystery-Knoten wieder sichtbar
+- Der Tree scrollt beim Öffnen wieder in den aktiven Bereich
 
-## Hinweis
-Diese Version ist bewusst ein konzeptioneller v0.11.0-Prototyp für den Skill Tree. Home, Training, Historie und Profil bleiben als funktionierende Basis bestehen, während der Skill Tree bereits auf die neue Kapitel-Logik umgestellt wurde.
+## Fokus
+Diese Version ist der stabile Hybrid: funktionierende Navigation plus Skill-Tree-Feeling mit Knoten und nach-und-nach-Freischaltungen.
