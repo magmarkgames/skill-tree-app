@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.17 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.18 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.18 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — subtle path background + perfectly centered rank anchors
+   v0.11.18 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — topo background, clearer connectors, corrected rank centering
+   v0.11.18 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — more visible hero image + rank path progress card on home
+   v0.11.18 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.18 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7336,7 +7336,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — stronger blue/white visual language + history as separate page
+   v0.11.18 — stronger blue/white visual language + history as separate page
    ========================================================================== */
 
 /* Overall light-blue canvas. */
@@ -7550,7 +7550,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — remove extra home labels and pull skill-tree card up
+   v0.11.18 — remove extra home labels and pull skill-tree card up
    ========================================================================== */
 
 /* Reduce empty space between hero image and skill-tree card. */
@@ -7608,14 +7608,14 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 
-/* v0.11.17 — remove duplicate next-goal section and use webp icons */
+/* v0.11.18 — remove duplicate next-goal section and use webp icons */
 .home-next-goal { display: none !important; }
 .home-rank-preview { padding-bottom: 10px !important; }
 .home-rank-paths { margin-top: 4px !important; }
 
 
 /* ==========================================================================
-   v0.11.17 — rank-unlocked Daily / Weekly challenge progression
+   v0.11.18 — rank-unlocked Daily / Weekly challenge progression
    ========================================================================== */
 .home-goal-card.challenge-locked {
   opacity: .72;
@@ -7652,4 +7652,87 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 .v114-rank-anchor.locked .v114-rank-unlock {
   opacity: .75;
+}
+
+
+/* ==========================================================================
+   v0.11.18 — always show full tree + stronger rank centering
+   ========================================================================== */
+
+/* Keep the complete tree visible while still using the same styling for future
+   sections. No more hidden / question-mark-only chapters. */
+.v114-stage-section.mystery-preview,
+.v114-variant-branch.mystery,
+.v114-skill-node.mystery {
+  opacity: 1 !important;
+}
+.v114-skill-node.mystery .v114-mystery-mark {
+  color: #8a9ab0;
+}
+
+/* Rank anchors: center them on the trunk itself and remove the subtle left/
+   right drift that could appear on some phones. */
+.v114-rank-anchor,
+.v114-tree-flow > .v114-rank-anchor.top,
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  width: fit-content !important;
+  min-width: 92px;
+  max-width: calc(100% - 20px);
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.v114-tree-flow > .v114-rank-anchor.top {
+  position: relative;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: absolute;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  bottom: 10px;
+}
+.v114-rank-icon,
+.v114-rank-label,
+.v114-rank-unlock {
+  align-self: center !important;
+  justify-self: center !important;
+  text-align: center !important;
+}
+.v114-rank-unlock {
+  width: max-content;
+  max-width: calc(100vw - 40px);
+  white-space: nowrap;
+}
+/* Place the small lock bubble so it doesn't visually pull the rank card to the right. */
+.v114-rank-anchor.locked .v114-rank-icon::after {
+  right: -6px;
+  bottom: -4px;
+}
+
+@media (max-width: 560px) {
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 8px;
+  }
+  .v114-rank-unlock {
+    font-size: 10px;
+    max-width: calc(100vw - 30px);
+  }
+}
+
+@media (max-width: 420px) {
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 6px;
+  }
+  .v114-rank-unlock {
+    white-space: normal;
+    line-height: 1.2;
+  }
 }

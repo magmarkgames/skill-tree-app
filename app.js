@@ -631,7 +631,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.17",
+    appVersion: "0.11.18",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3509,22 +3509,17 @@ function bindV012TreeNodeEvents(chapter) {
 
 
 function getV114VisibleChapters() {
-  const currentRank = getV012CurrentRankName();
-  const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
-  if (currentIndex === -1) return V012_CHAPTERS.slice();
-
-  // Keep the tree feeling continuous: show the active rank chapter plus the
-  // next two chapters. The immediate future stays visible but locked, while
-  // the chapter after that only reveals mystery nodes.
-  const lastVisibleIndex = Math.min(V012_CHAPTERS.length - 1, currentIndex + 2);
-  return V012_CHAPTERS.slice(0, lastVisibleIndex + 1);
+  // Always render the full skill tree so players can scroll through the whole
+  // long-term path at any time.
+  return V012_CHAPTERS.slice();
 }
 
 function getV114ChapterMode(globalChapterIndex, activeIndex) {
   if (globalChapterIndex < activeIndex) return "complete";
   if (globalChapterIndex === activeIndex) return "current";
-  if (globalChapterIndex === activeIndex + 1) return "locked-preview";
-  return "mystery-preview";
+  // Future chapters stay fully visible, but locked until earlier ranks are
+  // completed. This keeps the entire tree readable without hiding later goals.
+  return "locked-preview";
 }
 
 function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridColumn) {
