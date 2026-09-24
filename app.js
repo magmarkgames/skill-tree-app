@@ -594,7 +594,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.3",
+    appVersion: "0.11.4",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3296,147 +3296,34 @@ function bindV012TreeNodeEvents(chapter) {
       const target = Number(button.dataset.target) || 0;
       const meta = VARIANT_META[variant] || { label: variant };
       const current = getVariantStats(variant).total;
-      alert(`${meta.label} Push-ups · Optional\nZiel: ${target} gesamt\nAktuell: ${current}\n\nDieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
-    });
-  });
-}
-
-
-function getV113VisibleChapters() {
-  const currentRank = getV012CurrentRankName();
-  const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
-  if (currentIndex === -1) return V012_CHAPTERS.slice();
-  return V012_CHAPTERS.slice(0, currentIndex + 1);
-}
-
-function renderV113Path(pathState, pathIndex, chapterIndex, isCurrentSection) {
-  const firstOpenIndex = pathState.nodes.findIndex(item => !item.done);
-  return pathState.nodes.map((node, nodeIndex) => {
-    const active = isCurrentSection && !node.done && nodeIndex === firstOpenIndex;
-    const classes = ["v113-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
-    const label = pathState.key === "kraft" ? "am Stück" : pathState.key === "workout" ? "Workout" : "gesamt";
-    const row = 4 - nodeIndex;
-    return `
-      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${pathIndex + 1}; --grid-row:${row};">
-        <span class="v113-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
-        <span class="v113-node-mini">${label}</span>
-      </button>
-    `;
-  }).join("");
-}
-
-function renderV113VariantBranch(chapter, chapterIndex) {
-  const states = (chapter.variants || []).map(getV012VariantState);
-  if (!states.length) return "";
-  return `
-    <aside class="v113-variant-branch" aria-label="Optionale Varianten">
-      <div class="v113-variant-heading"><strong>Varianten</strong></div>
-      <div class="v113-variant-chain">
-        ${states.map((state) => {
-          const meta = VARIANT_META[state.variant] || { label: state.variant };
-          return `
-            <button class="v113-variant-node ${state.done ? "done" : ""} ${state.newUnlock ? "new" : ""}" type="button" data-tree-node="variant" data-chapter-index="${chapterIndex}" data-variant="${state.variant}" data-target="${state.target}" aria-label="${state.label}">
-              ${state.newUnlock ? '<span class="v113-variant-new">NEU</span>' : ''}
-              <span class="v113-variant-icon">${getVariantIconSvg(state.variant)}</span>
-              <span class="v113-variant-target">${state.done ? "✓" : formatTreeNumber(state.target)}</span>
-              <small>${meta.shortLabel || meta.label}</small>
-            </button>
-          `;
-        }).join("")}
-      </div>
-    </aside>
-  `;
-}
-
-function renderV113Section(chapter, chapterIndex, isCurrentSection) {
-  const pathStates = chapter.paths.map(getV012PathState);
-  const allComplete = pathStates.every(path => path.done);
-  const fromLabel = chapter.from === "Starter" ? "Start" : chapter.from;
-  const toLabel = chapter.to;
-  const sectionState = allComplete ? 'complete' : (isCurrentSection ? 'current' : 'locked');
-  return `
-    <section class="v113-tree-section ${sectionState}" data-tree-current="${isCurrentSection ? "true" : "false"}" data-rank-from="${chapter.from}">
-      <div class="v113-tree-stage">
-        <svg class="v113-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path class="trunk trunk-left" d="M50 88 C49 85 29 83 29 72" />
-          <path class="trunk trunk-center" d="M50 88 L50 72" />
-          <path class="trunk trunk-right" d="M50 88 C51 85 71 83 71 72" />
-          <path class="path path-1" d="M29 72 L29 56 L29 40 L29 24 C29 18 40 16 50 10" />
-          <path class="path path-2" d="M50 72 L50 56 L50 40 L50 24 L50 10" />
-          <path class="path path-3" d="M71 72 L71 56 L71 40 L71 24 C71 18 60 16 50 10" />
-          <path class="variant-link" d="M11 70 L11 56 L11 40 M11 56 C16 56 20 56 24 56 M11 40 C15 40 18 44 22 47" />
-        </svg>
-
-        <div class="v113-rank-node v113-rank-next ${allComplete ? "ready" : "locked"}">
-          <span class="v113-rank-icon">${getV012RankIcon(toLabel)}</span>
-          <span class="v113-rank-label">${toLabel}</span>
-        </div>
-
-        <div class="v113-main-grid">
-          ${pathStates.map((path, index) => `<div class="v113-path-label" style="--grid-column:${index + 1}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong></div>`).join("")}
-          ${pathStates.map((path, index) => renderV113Path(path, index, chapterIndex, isCurrentSection)).join("")}
-        </div>
-
-        ${renderV113VariantBranch(chapter, chapterIndex)}
-
-        <div class="v113-rank-node v113-rank-current">
-          <span class="v113-rank-icon">${getV012RankIcon(chapter.from)}</span>
-          <span class="v113-rank-label">${fromLabel}</span>
-        </div>
-      </div>
-    </section>
-  `;
-}
-
-function bindV113TreeNodeEvents() {
-  skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
-    button.addEventListener("click", () => {
-      const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
-      const path = chapter?.paths.find(item => item.key === button.dataset.path);
-      if (!path) return;
-      const target = Number(button.dataset.target) || 0;
-      const current = getV012MetricValue(path.metric);
-      const text = path.key === "kraft" ? "Push-ups am Stück" : path.key === "workout" ? "Push-ups in einem Workout" : "Push-ups insgesamt";
-      alert(`${path.title}
-${formatTreeNumber(target)} ${text}
-Aktuell: ${formatTreeNumber(current)}${current >= target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(target - current)}`}`);
-    });
-  });
-
-  skillTree.querySelectorAll('[data-tree-node="variant"]').forEach(button => {
-    button.addEventListener("click", () => {
-      const variant = button.dataset.variant;
-      const target = Number(button.dataset.target) || 0;
-      const meta = VARIANT_META[variant] || { label: variant };
-      const current = getVariantStats(variant).total;
-      alert(`${meta.label} Push-ups · Optional
-Ziel: ${formatTreeNumber(target)} gesamt
-Aktuell: ${formatTreeNumber(current)}
-
-Dieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
+      alert(`${meta.label} Push-ups · Optional\nZiel: ${formatTreeNumber(target)} gesamt\nAktuell: ${formatTreeNumber(current)}\n\nDieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
     });
   });
 }
 
 function renderTree() {
   if (!skillTree) return;
-  const visibleChapters = getV113VisibleChapters();
+  const visibleChapters = getV114VisibleChapters();
   const currentRank = getV012CurrentRankName();
   const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
   const activeIndex = currentIndex === -1 ? V012_CHAPTERS.length - 1 : currentIndex;
+  const chaptersDescending = [...visibleChapters].reverse();
+  const topChapter = chaptersDescending[0] || V012_CHAPTERS[V012_CHAPTERS.length - 1];
+  const topLocked = topChapter ? !isV012ChapterComplete(topChapter) : false;
 
-  skillTree.className = "skill-tree-v113";
+  skillTree.className = "skill-tree-v114";
   skillTree.innerHTML = `
-    <div class="v113-tree-scroll-stack">
-      ${visibleChapters.map((chapter, index) => {
+    <div class="v114-tree-flow">
+      ${topChapter ? renderV114RankAnchor(topChapter.to, { top: true, locked: topLocked }) : ''}
+      ${chaptersDescending.map((chapter) => {
         const globalChapterIndex = V012_CHAPTERS.findIndex(item => item.from === chapter.from && item.to === chapter.to);
-        const isCurrentSection = globalChapterIndex === activeIndex || (activeIndex === -1 && index === visibleChapters.length - 1);
-        return renderV113Section(chapter, globalChapterIndex, isCurrentSection);
+        const isCurrentSection = globalChapterIndex === activeIndex;
+        return renderV114Stage(chapter, globalChapterIndex, isCurrentSection);
       }).join("")}
     </div>
   `;
 
-  bindV113TreeNodeEvents();
+  bindV114TreeNodeEvents();
 }
 
 function syncTreeCanvasHeight() {

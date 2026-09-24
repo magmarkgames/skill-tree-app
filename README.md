@@ -1,14 +1,8 @@
-# Power Push v0.11.3
+# Power Push v0.11.4
 
-## Neu in v0.11.3
-- Skill Tree bleibt vertikal scrollbar
-- volle Bildschirmfläche statt eines einzelnen Karten-Fensters
-- frühere Rang-Abschnitte bleiben sichtbar und können zurückgescrollt werden
-- aktueller Rangabschnitt wird beim Öffnen automatisch fokussiert
-- Header-Erklärung, Pfad-Zähler und Fußtext aus dem Tree entfernt
-- Rang- und Variantenpositionen symmetrischer ausgerichtet
-
-## Skill-Tree-Logik
-- 3 Hauptpfade pro Rangabschnitt (Kraft, Workout, Gesamt)
-- optionaler Varianten-Zweig blockiert den Rang nicht
-- alle Hauptpfade eines Abschnitts müssen abgeschlossen werden, um den nächsten Rang zu erreichen
+## Neu in v0.11.4
+- Skill Tree jetzt in der richtigen Richtung: aktueller Rang oben, Start unten
+- ein großer, durchgängiger Baum statt umgedrehter Abschnittsreihenfolge
+- sichtbare Rangfolge von unten nach oben: Starter → Holz → Stein → Bronze ...
+- aktueller Abschnitt bleibt beim Öffnen im Fokus
+- alte Rangabschnitte bleiben nach unten hin scrollbar erhalten
