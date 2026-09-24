@@ -415,10 +415,7 @@ const homeWeekGoalHint = document.getElementById("homeWeekGoalHint");
 const profilePushRankIcon = document.getElementById("profilePushRankIcon");
 const profilePushRankName = document.getElementById("profilePushRankName");
 const profilePushRankHint = document.getElementById("profilePushRankHint");
-const profileHistoryList = document.getElementById("profileHistoryList");
-const profileHistoryCount = document.getElementById("profileHistoryCount");
-const profileHistoryToggleBtn = document.getElementById("profileHistoryToggleBtn");
-let profileHistoryExpanded = false;
+const profileHistorySummary = document.getElementById("profileHistorySummary");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -601,7 +598,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.12",
+    appVersion: "0.11.13",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -1851,7 +1848,15 @@ function renderProfile() {
     ? `Als Nächstes: ${nextRank}`
     : "Höchsten Push-up Rang erreicht";
 
-  renderProfileHistory();
+  if (profileHistorySummary) {
+    const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
+    if (!items.length) {
+      profileHistorySummary.textContent = "Noch kein Training gespeichert";
+    } else {
+      const latest = items[0];
+      profileHistorySummary.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(latest.date)}`;
+    }
+  }
 }
 
 function createHistoryEntry(item) {
@@ -1882,30 +1887,6 @@ function createHistoryEntry(item) {
 
   entry.append(main, reps);
   return entry;
-}
-
-function renderProfileHistory() {
-  if (!profileHistoryList || !profileHistoryCount) return;
-  const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory.slice(0, 200) : [];
-  profileHistoryCount.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"}`;
-  profileHistoryList.innerHTML = "";
-
-  if (!items.length) {
-    const empty = document.createElement("div");
-    empty.className = "history-empty";
-    empty.textContent = "Noch kein Training gespeichert.";
-    profileHistoryList.appendChild(empty);
-    profileHistoryToggleBtn?.classList.add("hidden");
-    return;
-  }
-
-  const visibleItems = profileHistoryExpanded ? items : items.slice(0, 5);
-  visibleItems.forEach(item => profileHistoryList.appendChild(createHistoryEntry(item)));
-
-  if (profileHistoryToggleBtn) {
-    profileHistoryToggleBtn.classList.toggle("hidden", items.length <= 5);
-    profileHistoryToggleBtn.textContent = profileHistoryExpanded ? "Weniger anzeigen" : "Alle Trainings anzeigen";
-  }
 }
 
 // ---------- Historie ----------
@@ -3654,10 +3635,6 @@ window.addEventListener("resize", () => {
 
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeTreeTrainingBtn")?.addEventListener("click", openTraining);
-profileHistoryToggleBtn?.addEventListener("click", () => {
-  profileHistoryExpanded = !profileHistoryExpanded;
-  renderProfileHistory();
-});
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("openTreeStatsBtn").addEventListener("click", openTreeStats);
 document.getElementById("closeTreeStatsBtn").addEventListener("click", closeTreeStats);
@@ -3672,6 +3649,7 @@ document.getElementById("homeNavTrainingBtn").addEventListener("click", openTrai
 document.getElementById("homeNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("homeNavProfileBtn").addEventListener("click", () => showView("profile"));
 document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
+document.getElementById("profileHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("profileNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("profileNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);

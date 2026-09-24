@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.12 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.13 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.12 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.13 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.12 — subtle path background + perfectly centered rank anchors
+   v0.11.13 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.12 — topo background, clearer connectors, corrected rank centering
+   v0.11.13 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.12 — more visible hero image + rank path progress card on home
+   v0.11.13 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.12 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.13 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7332,4 +7332,218 @@ body.training-active .home-bottom-nav { display: none !important; }
   .home-hero-copy h1 {
     font-size: clamp(27px, 7vw, 34px) !important;
   }
+}
+
+
+/* ==========================================================================
+   v0.11.13 — stronger blue/white visual language + history as separate page
+   ========================================================================== */
+
+/* Overall light-blue canvas. */
+.home-v17,
+.profile-view,
+.history-view-light {
+  background:
+    radial-gradient(circle at 88% 2%, rgba(50,145,255,.15), transparent 24%),
+    linear-gradient(180deg, #f7fbff 0%, #eaf5ff 52%, #e3f1ff 100%) !important;
+}
+
+/* Home cards: white surfaces with visibly blue borders/shadows. */
+.home-tree-hub {
+  border-color: #bfdcff !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 16px 38px rgba(35,116,214,.12) !important;
+}
+.home-tree-preview {
+  border-color: #c2ddfa !important;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(47,145,255,.13), transparent 32%),
+    linear-gradient(180deg, #f8fcff 0%, #edf7ff 100%) !important;
+}
+.home-rank-paths {
+  border-color: #c9e0f8 !important;
+  background: rgba(255,255,255,.82) !important;
+}
+.home-goal-card {
+  border-color: #c6def7 !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 10px 24px rgba(35,116,214,.09) !important;
+}
+
+/* Keep the whole dashboard progression system within the same blue family. */
+.home-progress-track {
+  background: #d7e6f5 !important;
+}
+.home-progress-track > span,
+.home-rank-path-track > span,
+.home-rank-path-row.done .home-rank-path-track > span {
+  background: linear-gradient(90deg, #61b6ff 0%, #258cf4 55%, #126dde 100%) !important;
+}
+.home-rank-path-track {
+  background: #d9e7f5 !important;
+}
+.home-goal-fraction {
+  background: #dceeff !important;
+  color: #126fdc !important;
+}
+.home-rank-paths-title,
+.home-rank-path-head span {
+  color: #557aa4 !important;
+}
+
+/* Daily + weekly challenges now both belong to the blue/white system. */
+.home-goal-icon.day {
+  background: #e3f2ff !important;
+  color: #187fe8 !important;
+}
+.home-goal-icon.week {
+  background: #dcecff !important;
+  color: #236fda !important;
+}
+
+/* Locked future disciplines are intentionally quiet and blue-grey instead of
+   looking like four unrelated product colors. */
+.home-discipline-tab {
+  border-color: #d4e6f7 !important;
+  background: #f4f9ff !important;
+}
+.home-discipline-tab.active {
+  border-color: #258bf2 !important;
+  background: linear-gradient(180deg,#ffffff,#eaf5ff) !important;
+  box-shadow: inset 0 0 0 1px rgba(37,139,242,.14), 0 6px 15px rgba(37,139,242,.09) !important;
+}
+.home-discipline-tab.locked-feature {
+  color: #7890ad !important;
+  opacity: .66 !important;
+}
+.home-discipline-tab.locked-feature .discipline-icon img {
+  filter: grayscale(1) saturate(.2) opacity(.72) !important;
+}
+
+/* The primary action stays strongly blue. */
+.home-tree-training-btn {
+  background: linear-gradient(135deg, #43a6ff 0%, #2188f4 46%, #1169dc 100%) !important;
+  box-shadow: 0 10px 23px rgba(24,111,220,.22) !important;
+}
+.home-open-tree-btn.home-open-tree-secondary {
+  color: #326d9f !important;
+}
+
+/* Bottom navigation: cleaner blue/white treatment. */
+.home-bottom-nav {
+  border-top-color: #cfe2f5 !important;
+  background: rgba(252,254,255,.96) !important;
+  box-shadow: 0 -10px 28px rgba(42,102,168,.08) !important;
+}
+.home-nav-item {
+  color: #7890ad !important;
+}
+.home-nav-item.active {
+  color: #1479e8 !important;
+}
+.home-nav-training > span {
+  background: linear-gradient(145deg, #43a7ff, #116fdf) !important;
+  box-shadow: 0 7px 17px rgba(20,113,224,.25) !important;
+}
+
+/* Profile surfaces now visually match Home. */
+.profile-hero-card,
+.profile-section,
+.profile-backup-section {
+  border-color: #c8e0f7 !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 12px 28px rgba(37,109,187,.08) !important;
+}
+.profile-rank-card {
+  border-color: #c9e0f7 !important;
+  background: linear-gradient(180deg,#fbfdff,#eef7ff) !important;
+}
+.profile-future-badge {
+  border-color: #c4dbf1 !important;
+  background: #f2f8ff !important;
+}
+
+/* History lives on its own screen again. The Profile only contains this link. */
+.profile-history-link-card {
+  width: 100%;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr) 24px;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 13px 15px;
+  border: 1px solid #bddbfa;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 95% 0%, rgba(62,158,255,.16), transparent 38%),
+    linear-gradient(180deg,#ffffff,#edf7ff);
+  color: #0b2b58 !important;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(37,109,187,.09);
+}
+.profile-history-link-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: linear-gradient(145deg,#e6f4ff,#cfe8ff);
+  color: #187fe8;
+  font-size: 21px;
+  font-weight: 900;
+}
+.profile-history-link-copy {
+  min-width: 0;
+}
+.profile-history-link-copy small,
+.profile-history-link-copy strong,
+.profile-history-link-copy > span {
+  display: block;
+}
+.profile-history-link-copy small {
+  color: #6c8db0;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.profile-history-link-copy strong {
+  margin-top: 2px;
+  color: #0b2b58;
+  font-size: 15px;
+}
+.profile-history-link-copy > span {
+  overflow: hidden;
+  margin-top: 4px;
+  color: #6e88a5;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-history-link-arrow {
+  color: #2585e9;
+  font-size: 28px;
+  text-align: center;
+}
+
+/* Hide the old embedded-profile-history styling if stale markup ever remains. */
+.profile-history-section,
+.profile-history-toggle {
+  display: none !important;
+}
+
+/* History page itself stays a full dedicated view and is pushed a touch bluer. */
+.history-header {
+  background: rgba(246,251,255,.97) !important;
+  border-bottom-color: #cfe3f7 !important;
+}
+.history-view-light .history-summary article,
+.history-content-card,
+.history-view-light .history-entry,
+.history-view-light .history-empty {
+  border-color: #c7dff7 !important;
+  background: rgba(255,255,255,.96) !important;
+}
+.history-view-light .history-entry-reps {
+  color: #1479e8 !important;
 }
