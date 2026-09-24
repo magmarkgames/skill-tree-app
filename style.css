@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.7 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.8 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6773,4 +6773,106 @@ body.training-active .home-bottom-nav { display: none !important; }
   .v114-stage-section.paths-1 .v114-tree-stage { min-height: 292px; }
   .v114-stage-section.paths-1 .v114-main-grid { top: 24px; bottom: 94px; }
   .v114-skill-node { width: min(86px, 23vw); height: min(86px, 23vw); }
+}
+
+
+/* ==========================================================================
+   v0.11.8 — tree line reach, inline labels, unified paths, green done nodes
+   ========================================================================== */
+
+/* Keep the top rank and the first visible nodes a bit more separated. */
+.v114-tree-flow > .v114-rank-anchor.top {
+  margin-bottom: 26px;
+}
+
+/* The colored helper strips + captions are no longer shown above the nodes.
+   The branch meaning now lives inside the node itself. */
+.v114-path-label {
+  display: none !important;
+}
+
+/* Let the three branches breathe and reach farther outward so the connector
+   lines visually touch the circles. */
+.v114-main-grid {
+  top: 16px;
+  bottom: 130px;
+  grid-template-rows: repeat(5, 1fr);
+  row-gap: 0;
+}
+.v114-stage-section.no-variants .v114-main-grid {
+  left: 2%;
+  right: 2%;
+}
+
+/* All branch lines use the same base tone for now. The currently active node
+   still keeps its own accent glow. */
+.v114-tree-lines .trunk,
+.v114-tree-lines .path,
+.v114-tree-lines .path-1,
+.v114-tree-lines .path-2,
+.v114-tree-lines .path-3 {
+  stroke: #c6d2e3 !important;
+  stroke-width: 1.15;
+  opacity: 1;
+}
+
+.v114-skill-node {
+  border-color: #c7d3e5;
+  background: rgba(255,255,255,.92);
+}
+.v114-skill-node.active {
+  border-color: color-mix(in srgb, var(--node-accent) 52%, white 48%);
+  box-shadow:
+    0 0 0 9px color-mix(in srgb, var(--node-accent) 16%, transparent),
+    0 14px 28px rgba(90, 113, 153, .10);
+}
+.v114-skill-node.done {
+  border-color: #73d796;
+  background: #73d796;
+  box-shadow: 0 14px 28px rgba(90, 113, 153, .08);
+}
+.v114-skill-node.done .v114-node-mark,
+.v114-skill-node.done .v114-node-mini {
+  color: #101418;
+}
+.v114-node-mark {
+  font-size: clamp(18px, 5vw, 24px);
+}
+.v114-node-mini {
+  margin-top: 6px;
+  color: #5b708f;
+  font-size: clamp(10px, 2.7vw, 12px);
+  font-weight: 850;
+}
+.v114-skill-node.preview-locked .v114-node-mini,
+.v114-skill-node.mystery .v114-node-mini {
+  color: #8798ae;
+}
+
+@media (max-width: 560px) {
+  .v114-tree-flow > .v114-rank-anchor.top {
+    margin-bottom: 22px;
+  }
+  .v114-main-grid {
+    top: 14px;
+    bottom: 124px;
+  }
+  .v114-stage-section.no-variants .v114-main-grid {
+    left: 1.5%;
+    right: 1.5%;
+  }
+}
+
+@media (max-width: 420px) {
+  .v114-tree-flow > .v114-rank-anchor.top {
+    margin-bottom: 20px;
+  }
+  .v114-main-grid {
+    top: 12px;
+    bottom: 118px;
+  }
+  .v114-stage-section.no-variants .v114-main-grid {
+    left: 1%;
+    right: 1%;
+  }
 }

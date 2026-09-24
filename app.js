@@ -597,7 +597,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.7",
+    appVersion: "0.11.8",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3338,7 +3338,7 @@ function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridCol
     ? [3]
     : pathState.nodes.length === 2
       ? [2, 4]
-      : [2, 3, 4];
+      : [1, 3, 5];
 
   return pathState.nodes.map((node, nodeIndex) => {
     const isCurrentSection = chapterMode === "current";
@@ -3353,8 +3353,8 @@ function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridCol
       forcedLocked ? "preview-locked" : "",
       mystery ? "mystery" : ""
     ].filter(Boolean).join(" ");
-    const label = node.label || pathState.title;
-    const row = rowMap[nodeIndex] || 4;
+    const label = pathState.title || node.label || "Ziel";
+    const row = rowMap[nodeIndex] || 5;
 
     if (mystery) {
       return `
@@ -3415,10 +3415,18 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
   const pathStates = chapter.paths.map(getV012PathState);
   const columnMap = pathStates.length === 1 ? [2] : pathStates.length === 2 ? [1, 3] : [1, 2, 3];
   const hasVariants = Boolean((chapter.variants || []).length);
+  const xMap = { 1: 18, 2: 50, 3: 82 };
   const pathLineMarkup = columnMap.map(col => {
-    if (col === 1) return `<path class="path path-1" d="M50 4 C45 8 34 12 29 22 L29 72" />`;
-    if (col === 2) return `<path class="path path-2" d="M50 4 L50 72" />`;
-    return `<path class="path path-3" d="M50 4 C55 8 66 12 71 22 L71 72" />`;
+    const x = xMap[col] ?? 50;
+    if (col === 2) return `<path class="path path-2" d="M50 8 L50 84" />`;
+    const controlX = col === 1 ? 34 : 66;
+    const curveX = col === 1 ? 24 : 76;
+    return `<path class="path path-${col}" d="M50 8 C${controlX} 12 ${curveX} 18 ${x} 30 L${x} 84" />`;
+  }).join("");
+  const trunkMarkup = columnMap.map(col => {
+    const x = xMap[col] ?? 50;
+    if (col === 2) return `<path class="trunk trunk-center" d="M50 94 L50 84" />`;
+    return `<path class="trunk trunk-${col === 1 ? "left" : "right"}" d="M50 94 C50 92 ${x} 90 ${x} 84" />`;
   }).join("");
   const sectionClasses = [
     "v114-stage-section",
@@ -3427,20 +3435,16 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
     hasVariants ? "has-variants" : "no-variants"
   ].join(" ");
   const rankLocked = chapterMode === "locked-preview" || chapterMode === "mystery-preview";
-  const hidePathTitles = chapterMode === "mystery-preview";
 
   return `
     <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
       <div class="v114-tree-stage">
         <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path class="trunk trunk-left" d="M50 88 C49 84 34 82 29 72" />
-          <path class="trunk trunk-center" d="M50 88 L50 72" />
-          <path class="trunk trunk-right" d="M50 88 C51 84 66 82 71 72" />
+          ${trunkMarkup}
           ${pathLineMarkup}
         </svg>
 
         <div class="v114-main-grid">
-          ${pathStates.map((path, index) => `<div class="v114-path-label" style="--grid-column:${columnMap[index]}; --path-accent:${path.accent};"><span></span><strong>${hidePathTitles ? "?" : path.title}</strong></div>`).join("")}
           ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, chapterMode, columnMap[index])).join("")}
         </div>
 
