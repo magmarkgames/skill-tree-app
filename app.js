@@ -594,7 +594,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.1",
+    appVersion: "0.11.2",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -723,7 +723,7 @@ function render() {
   homePushMeta.textContent = `${rankName} · Rekord ${progress.pushupMax}`;
   homeTodayStat.textContent = todayTotal;
   homeWeekStat.textContent = weekTotal;
-  homeTotalStat.textContent = progress.pushupTotal;
+  if (homeTotalStat) homeTotalStat.textContent = progress.pushupTotal;
   renderHomeDashboard(todayTotal, weekTotal, rankName);
 
   historyTodayStat.textContent = todayTotal;
@@ -844,26 +844,16 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
   barEl.style.width = `${percent}%`;
 
   if (left === 0) {
-    hintEl.textContent = metric === "day" ? "Tagesziel erreicht!" : "Wochenziel erreicht!";
+    hintEl.textContent = metric === "day" ? "Tages-Plakette verdient!" : "Wochen-Plakette verdient!";
   } else {
     hintEl.textContent = metric === "day"
-      ? `Noch ${left} Push-ups für heute.`
-      : `Noch ${left} Push-ups diese Woche.`;
+      ? `Noch ${left} Push-ups bis zur Tages-Plakette.`
+      : `Noch ${left} Push-ups bis zur Wochen-Plakette.`;
   }
 }
 
 function getCurrentRankName() {
-  if (isNodeDone(getNode("diamond4Rank"))) return "Diamant IV";
-  if (isNodeDone(getNode("diamond3Rank"))) return "Diamant III";
-  if (isNodeDone(getNode("diamond2Rank"))) return "Diamant II";
-  if (isNodeDone(getNode("diamondRank"))) return "Diamant I";
-  if (isNodeDone(getNode("platinumRank"))) return "Platin";
-  if (isNodeDone(getNode("goldRank"))) return "Gold";
-  if (isNodeDone(getNode("silverRank"))) return "Silber";
-  if (isNodeDone(getNode("bronzeRank"))) return "Bronze";
-  if (isNodeDone(getNode("stoneRank"))) return "Stein";
-  if (isNodeDone(getNode("woodRank"))) return "Holz";
-  return "Starter";
+  return getV012CurrentRankName();
 }
 
 function getNode(id) {
@@ -1163,14 +1153,7 @@ function isNodeAvailable(node) {
 }
 
 function isVariantUnlocked(variant) {
-  if (!VARIANT_META[variant]) return false;
-  const unlockNodeId = VARIANT_UNLOCK_NODES[variant];
-  if (!unlockNodeId) return true;
-  const unlockNode = getNode(unlockNodeId);
-  // Der große Skill-Knoten selbst ist der Freischaltmoment: sobald er erreichbar
-  // wird, taucht die Übung im Training auf. So entsteht kein Deadlock, bei dem
-  // man die Variante trainieren müsste, bevor man sie freischalten kann.
-  return !!unlockNode && (isNodeDone(unlockNode) || isNodeAvailable(unlockNode));
+  return isV012VariantUnlocked(variant);
 }
 
 function getDiscoveryGroupKey(node) {
@@ -3060,285 +3043,370 @@ function closeTreeStats() {
 
 
 // =====================================================================
-// v0.11.0 — Kapitelbasierter Skill Tree (vereinfachte, motivierende Reise)
+// v0.11.2 — Screen-sized rank chapters with three required paths
 // =====================================================================
-const V11_RANK_ORDER = ["Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
-const V11_CHAPTERS = {
-  Holz: {
-    chapter: 1,
-    next: "Stein",
-    examTitle: "Stein-Prüfung",
-    skyQuote: "\u201eKleine Schritte.\nGro\u00dfe Fortschritte.\u201c",
-    skyNote: "Die Reise beginnt mit einem einzigen sauberen Push-up.",
-    variantPath: ["standard", "wide", "diamond"],
-    currentVariant: "wide",
-    challenges: [
-      { id: "firstRep", title: "First Rep", label: "1 Push-up am St\u00fcck", metric: "standardMax", target: 1, icon: "max" },
-      { id: "starterVolume", title: "Volume", label: "25 insgesamt", metric: "total", target: 25, icon: "total" },
-      { id: "starterRoutine", title: "Routine Builder", label: "2 Trainingstage", metric: "trainingDays", target: 2, icon: "week" },
-      { id: "wideStart", title: "Wide", label: "5 Wide Push-ups", metric: "variantTotal", variant: "wide", target: 5, icon: "variant" }
+const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
+
+const V012_CHAPTERS = [
+  {
+    from: "Starter", to: "Holz",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [1, 3, 5], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [5, 10, 15], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [5, 15, 30], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "wide", target: 3, label: "Wide entdecken", newUnlock: true },
+      { variant: "wide", target: 5, label: "5 Wide Push-ups" }
     ]
   },
-  Stein: {
-    chapter: 2,
-    next: "Bronze",
-    examTitle: "Bronze-Pr\u00fcfung",
-    skyQuote: "\u201eDisziplin heute.\nSt\u00e4rke morgen.\u201c",
-    skyNote: "Jetzt entstehen Gewohnheit und Selbstvertrauen.",
-    variantPath: ["wide", "diamond", "archer"],
-    currentVariant: "diamond",
-    challenges: [
-      { id: "stoneIron", title: "Iron Set", label: "10 Push-ups am St\u00fcck", metric: "standardMax", target: 10, icon: "max" },
-      { id: "stoneVolume", title: "Volume", label: "75 insgesamt", metric: "total", target: 75, icon: "total" },
-      { id: "stoneRoutine", title: "Routine Builder", label: "4 Trainingstage", metric: "trainingDays", target: 4, icon: "week" },
-      { id: "stoneDiamond", title: "Diamond", label: "5 Diamond Push-ups", metric: "variantTotal", variant: "diamond", target: 5, icon: "variant" }
+  {
+    from: "Holz", to: "Stein",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [7, 10, 15], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [20, 30, 40], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [50, 100, 200], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "wide", target: 10, label: "10 Wide Push-ups" },
+      { variant: "diamond", target: 3, label: "Diamond entdecken", newUnlock: true }
     ]
   },
-  Bronze: {
-    chapter: 3,
-    next: "Silber",
-    examTitle: "Silber-Pr\u00fcfung",
-    skyQuote: "\u201eDisziplin heute.\nSt\u00e4rke morgen.\u201c",
-    skyNote: "Schlie\u00dfe 3 von 4 Herausforderungen, um die Pr\u00fcfung freizuschalten.",
-    variantPath: ["wide", "diamond", "archer"],
-    currentVariant: "diamond",
-    challenges: [
-      { id: "bronzeIron", title: "Iron Set", label: "20 Push-ups am St\u00fcck", metric: "standardMax", target: 20, icon: "max" },
-      { id: "bronzeVolume", title: "Volume", label: "250 insgesamt", metric: "total", target: 250, icon: "total" },
-      { id: "bronzeRoutine", title: "Routine Builder", label: "7 Trainingstage", metric: "trainingDays", target: 7, icon: "week" },
-      { id: "bronzeDiamond", title: "Diamond", label: "10 Diamond Push-ups", metric: "variantTotal", variant: "diamond", target: 10, icon: "variant" }
+  {
+    from: "Stein", to: "Bronze",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [20, 25, 30], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [50, 65, 80], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [300, 500, 750], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "diamond", target: 5, label: "5 Diamond Push-ups" },
+      { variant: "diamond", target: 10, label: "10 Diamond Push-ups" },
+      { variant: "incline", target: 3, label: "Incline entdecken", newUnlock: true }
     ]
   },
-  Silber: {
-    chapter: 4,
-    next: "Gold",
-    examTitle: "Gold-Pr\u00fcfung",
-    skyQuote: "\u201eBleib dran.\nDas n\u00e4chste Level wartet.\u201c",
-    skyNote: "Du bist kein Anf\u00e4nger mehr \u2013 jetzt kommt echte Belastbarkeit.",
-    variantPath: ["diamond", "explosive", "archer"],
-    currentVariant: "explosive",
-    challenges: [
-      { id: "silverIron", title: "Power Set", label: "35 Push-ups am St\u00fcck", metric: "standardMax", target: 35, icon: "max" },
-      { id: "silverVolume", title: "Volume", label: "750 insgesamt", metric: "total", target: 750, icon: "total" },
-      { id: "silverRoutine", title: "Routine Builder", label: "12 Trainingstage", metric: "trainingDays", target: 12, icon: "week" },
-      { id: "silverExplosive", title: "Explosive", label: "10 Explosive Push-ups", metric: "variantTotal", variant: "explosive", target: 10, icon: "variant" }
+  {
+    from: "Bronze", to: "Silber",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [35, 40, 50], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [100, 125, 150], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [1000, 1500, 2000], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "diamond", target: 15, label: "15 Diamond Push-ups" },
+      { variant: "incline", target: 10, label: "10 Incline Push-ups" },
+      { variant: "explosive", target: 5, label: "Explosive entdecken", newUnlock: true }
     ]
   },
-  Gold: {
-    chapter: 5,
-    next: "Platin",
-    examTitle: "Platin-Pr\u00fcfung",
-    skyQuote: "\u201eMehr Kontrolle.\nMehr Kraft.\u201c",
-    skyNote: "Hier z\u00e4hlt nicht nur Volumen, sondern echte Beherrschung.",
-    variantPath: ["explosive", "archer", "handstand"],
-    currentVariant: "archer",
-    challenges: [
-      { id: "goldIron", title: "Elite Set", label: "50 Push-ups am St\u00fcck", metric: "standardMax", target: 50, icon: "max" },
-      { id: "goldVolume", title: "Volume", label: "2.000 insgesamt", metric: "total", target: 2000, icon: "total" },
-      { id: "goldRoutine", title: "Routine Builder", label: "20 Trainingstage", metric: "trainingDays", target: 20, icon: "week" },
-      { id: "goldArcher", title: "Archer", label: "10 Archer Push-ups", metric: "variantTotal", variant: "archer", target: 10, icon: "variant" }
+  {
+    from: "Silber", to: "Gold",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [55, 65, 75], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [175, 225, 300], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [3000, 5000, 7500], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "explosive", target: 10, label: "10 Explosive" },
+      { variant: "explosive", target: 20, label: "20 Explosive" },
+      { variant: "archer", target: 5, label: "Archer entdecken", newUnlock: true }
     ]
   },
-  Platin: {
-    chapter: 6,
-    next: "Diamant",
-    examTitle: "Diamant-Pr\u00fcfung",
-    skyQuote: "\u201eWenig schaffen viele.\nDurchziehen wenige.\u201c",
-    skyNote: "Nur noch wenige Schritte bis zur obersten Stufe.",
-    variantPath: ["archer", "handstand", "pseudoPlanche"],
-    currentVariant: "handstand",
-    challenges: [
-      { id: "platinIron", title: "Master Set", label: "75 Push-ups am St\u00fcck", metric: "standardMax", target: 75, icon: "max" },
-      { id: "platinVolume", title: "Volume", label: "5.000 insgesamt", metric: "total", target: 5000, icon: "total" },
-      { id: "platinRoutine", title: "Routine Builder", label: "30 Trainingstage", metric: "trainingDays", target: 30, icon: "week" },
-      { id: "platinHandstand", title: "Handstand", label: "5 Handstand Push-ups", metric: "variantTotal", variant: "handstand", target: 5, icon: "variant" }
+  {
+    from: "Gold", to: "Platin",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [80, 90, 100], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [350, 450, 600], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [10000, 15000, 25000], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "archer", target: 10, label: "10 Archer" },
+      { variant: "archer", target: 20, label: "20 Archer" },
+      { variant: "handstand", target: 3, label: "Handstand entdecken", newUnlock: true }
     ]
   },
-  Diamant: {
-    chapter: 7,
-    next: null,
-    examTitle: "Endgame",
-    skyQuote: "\u201eDu bist weit gekommen.\nAber noch lange nicht fertig.\u201c",
-    skyNote: "Ab hier wird aus Fortschritt Meisterschaft.",
-    variantPath: ["handstand", "pseudoPlanche", "pseudoPlanche"],
-    currentVariant: "pseudoPlanche",
-    challenges: [
-      { id: "diamondIron", title: "Legend Set", label: "100 Push-ups am St\u00fcck", metric: "standardMax", target: 100, icon: "max" },
-      { id: "diamondVolume", title: "Volume", label: "10.000 insgesamt", metric: "total", target: 10000, icon: "total" },
-      { id: "diamondRoutine", title: "Routine Builder", label: "50 Trainingstage", metric: "trainingDays", target: 50, icon: "week" },
-      { id: "diamondPlanche", title: "Planche", label: "10 Pseudo Planche", metric: "variantTotal", variant: "pseudoPlanche", target: 10, icon: "variant" }
+  {
+    from: "Platin", to: "Diamant",
+    paths: [
+      { key: "kraft", title: "Kraft", metric: "standardMax", milestones: [110, 125, 150], accent: "#4f9cf8" },
+      { key: "workout", title: "Workout", metric: "workoutTotal", milestones: [750, 1000, 1250], accent: "#f1a62f" },
+      { key: "volumen", title: "Gesamt", metric: "total", milestones: [35000, 50000, 75000], accent: "#39b86f" }
+    ],
+    variants: [
+      { variant: "handstand", target: 5, label: "5 Handstand" },
+      { variant: "handstand", target: 10, label: "10 Handstand" },
+      { variant: "pseudoPlanche", target: 3, label: "Planche entdecken", newUnlock: true }
     ]
   }
+];
+
+const V012_VARIANT_UNLOCK_RANK = {
+  standard: "Starter",
+  wide: "Starter",
+  diamond: "Holz",
+  incline: "Stein",
+  decline: "Stein",
+  explosive: "Bronze",
+  pike: "Bronze",
+  archer: "Silber",
+  handstand: "Gold",
+  pseudoPlanche: "Platin"
 };
 
-function getV11RankThemeClass(rank) {
-  const map = { Holz: 'wood', Stein: 'stone', Bronze: 'bronze', Silber: 'silver', Gold: 'gold', Platin: 'platin', Diamant: 'diamant' };
-  return `highlight-${map[rank] || 'bronze'}`;
-}
-
-function normalizeV11Rank(rawRank) {
-  if (String(rawRank || '').startsWith('Diamant')) return 'Diamant';
-  if (!rawRank || rawRank === 'Starter') return 'Holz';
-  return rawRank;
-}
-
-function getV11Chapter() {
-  const displayRank = normalizeV11Rank(getCurrentRankName());
-  return V11_CHAPTERS[displayRank] || V11_CHAPTERS.Holz;
-}
-
-function getV11MetricValue(metric, variant) {
+function getV012MetricValue(metric, variant = null) {
   switch (metric) {
-    case 'standardMax': return progress.pushupMax;
-    case 'total': return progress.pushupTotal;
-    case 'trainingDays': return getTrainingDayCount();
-    case 'variantTotal': return getVariantStats(variant).total;
-    case 'variantMax': return getVariantStats(variant).max;
-    case 'day': return getTodayTotal();
-    case 'week': return getCurrentWeekTotal();
+    case "standardMax": return Math.max(0, Number(progress.pushupMax) || 0);
+    case "workoutTotal": return Math.max(getBestWorkoutTotal(), Math.max(0, Number(progress.pushupMax) || 0));
+    case "total": return Math.max(0, Number(progress.pushupTotal) || 0);
+    case "variantTotal": return getVariantStats(variant).total;
+    case "variantMax": return getVariantStats(variant).max;
     default: return 0;
   }
 }
 
-function getV11ChallengeState(challenge) {
-  const current = Math.max(0, Number(getV11MetricValue(challenge.metric, challenge.variant)) || 0);
-  const target = Math.max(1, Number(challenge.target) || 1);
-  const done = current >= target;
-  const percent = Math.max(0, Math.min(100, (current / target) * 100));
-  const left = Math.max(0, target - current);
-  return { ...challenge, current, target, done, percent, left };
+function isV012ChapterComplete(chapter) {
+  if (!chapter) return false;
+  return chapter.paths.every(path => {
+    const finalTarget = path.milestones[path.milestones.length - 1] || 0;
+    return getV012MetricValue(path.metric) >= finalTarget;
+  });
 }
 
-function getV11ChapterSummary() {
-  const chapter = getV11Chapter();
-  const states = chapter.challenges.map(getV11ChallengeState);
-  const completed = states.filter(item => item.done).length;
-  const examUnlocked = completed >= 3;
-  const nextGoal = states
-    .filter(item => !item.done)
-    .sort((a, b) => (a.left / a.target) - (b.left / b.target) || a.left - b.left)[0] || states[0] || null;
-  return { chapter, states, completed, examUnlocked, nextGoal };
+function getV012CurrentRankName() {
+  let rank = "Starter";
+  for (const chapter of V012_CHAPTERS) {
+    if (chapter.from !== rank) break;
+    if (!isV012ChapterComplete(chapter)) break;
+    rank = chapter.to;
+  }
+  return rank;
 }
 
-function getV11MetricIconHtml(challenge) {
-  if (challenge.variant) return getVariantIconSvg(challenge.variant);
-  return getMetricIconSvg(challenge.icon || 'max');
+function getV012CurrentChapter() {
+  const rank = getV012CurrentRankName();
+  return V012_CHAPTERS.find(chapter => chapter.from === rank) || null;
 }
 
-function getV11GoalLeftText(state) {
-  if (!state) return 'Alle Ziele dieses Kapitels geschafft.';
-  if (state.left <= 0) return 'Geschafft – die Prüfung wartet!';
-  if (state.metric === 'trainingDays') return `Noch ${state.left} Trainingstag${state.left === 1 ? '' : 'e'}.`;
-  return `Nur noch ${state.left}!`;
+function isV012VariantUnlocked(variant) {
+  if (!VARIANT_META[variant]) return false;
+  const requiredRank = V012_VARIANT_UNLOCK_RANK[variant] || "Starter";
+  const currentRank = getV012CurrentRankName();
+  return V012_RANKS.indexOf(currentRank) >= V012_RANKS.indexOf(requiredRank);
 }
 
-function getV11GoalSubtitle(state) {
-  if (!state) return 'Dieses Kapitel ist vollständig abgeschlossen.';
-  return state.label;
+function getV012PathState(path) {
+  const current = getV012MetricValue(path.metric);
+  const finalTarget = path.milestones[path.milestones.length - 1] || 1;
+  return {
+    ...path,
+    current,
+    done: current >= finalTarget,
+    percent: Math.max(0, Math.min(100, (current / finalTarget) * 100)),
+    nodes: path.milestones.map(target => ({ target, done: current >= target }))
+  };
 }
 
-function getV11VariantStatus(variant, currentVariant) {
-  const total = getVariantStats(variant).total;
-  if (total > 0) return 'done';
-  if (variant === currentVariant) return 'current';
-  return 'locked';
+function getV012VariantState(node) {
+  const current = getV012MetricValue("variantTotal", node.variant);
+  return { ...node, current, done: current >= node.target };
 }
 
-function renderV11ChallengeCard(state, currentId) {
+function formatTreeNumber(value) {
+  return new Intl.NumberFormat("de-DE").format(Math.max(0, Number(value) || 0));
+}
+
+function getV012RankIcon(rank, className = "") {
+  if (rank === "Starter") {
+    return `<span class="v112-start-symbol ${className}">${getVariantIconSvg("standard")}</span>`;
+  }
+  return getRankIconSvg(rank, className);
+}
+
+function renderV012Path(pathState, pathIndex) {
+  const current = pathState.current;
+  return pathState.nodes.map((node, nodeIndex) => {
+    const row = 4 - nodeIndex;
+    const active = !node.done && nodeIndex === pathState.nodes.findIndex(item => !item.done);
+    const classes = ["v112-skill-node", node.done ? "done" : "", active ? "active" : ""].filter(Boolean).join(" ");
+    const label = pathState.key === "kraft" ? "am Stück" : pathState.key === "workout" ? "Workout" : "gesamt";
+    return `
+      <button class="${classes}" type="button" data-tree-node="main" data-path="${pathState.key}" data-target="${node.target}" style="--node-accent:${pathState.accent}; --grid-column:${pathIndex + 1}; --grid-row:${row};">
+        <span class="v112-node-mark">${node.done ? "✓" : formatTreeNumber(node.target)}</span>
+        <span class="v112-node-mini">${label}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderV012VariantBranch(chapter) {
+  const states = (chapter.variants || []).map(getV012VariantState);
+  if (!states.length) return "";
   return `
-    <article class="v11-card v11-node-card ${state.done ? 'done' : ''} ${state.id === currentId ? 'current' : ''}">
-      <div class="v11-node-head">
-        <div class="v11-node-icon">${getV11MetricIconHtml(state)}</div>
-        <div>
-          <h3 class="v11-node-title">${state.title}</h3>
-          <p class="v11-node-label">${state.label}</p>
-        </div>
-        <span class="v11-node-check">${state.done ? '✓' : ''}</span>
+    <section class="v112-variant-branch" aria-label="Optionale Varianten">
+      <div class="v112-variant-heading">
+        <strong>VARIANTEN</strong>
+        <small>optional</small>
       </div>
-      <div class="v11-node-meta">
-        <span class="v11-node-fraction">${Math.min(state.current, state.target)} / ${state.target}</span>
+      <div class="v112-variant-chain">
+        ${states.map((state) => {
+          const meta = VARIANT_META[state.variant] || { label: state.variant };
+          return `
+            <button class="v112-variant-node ${state.done ? "done" : ""} ${state.newUnlock ? "new" : ""}" type="button" data-tree-node="variant" data-variant="${state.variant}" data-target="${state.target}" aria-label="${state.label}">
+              ${state.newUnlock ? '<span class="v112-variant-new">NEU</span>' : ''}
+              <span class="v112-variant-icon">${getVariantIconSvg(state.variant)}</span>
+              <span class="v112-variant-target">${state.done ? "✓" : state.target}</span>
+              <small>${meta.shortLabel || meta.label}</small>
+            </button>
+          `;
+        }).join("")}
       </div>
-      <div class="v11-progress"><span style="width:${state.done ? 100 : state.percent}%"></span></div>
-      <div class="v11-node-subcopy">${state.done ? 'Siegel gesammelt' : getV11GoalLeftText(state)}</div>
-    </article>
+    </section>
   `;
 }
 
-function renderV11VariantItem(variant, currentVariant) {
-  const meta = VARIANT_META[variant] || { label: variant };
-  const status = getV11VariantStatus(variant, currentVariant);
-  const statText = status === 'done'
-    ? `${getVariantStats(variant).total} Reps gesammelt`
-    : status === 'current'
-      ? 'Aktueller Fokus'
-      : 'Noch gesperrt';
-  return `
-    <div class="v11-variant-item ${status}">
-      <div class="v11-variant-icon">${getVariantIconSvg(variant)}</div>
-      <div class="v11-variant-copy"><strong>${meta.label}</strong><small>${statText}</small></div>
-      <span class="v11-variant-state"></span>
+function renderV012CompletedTree() {
+  skillTree.innerHTML = `
+    <div class="v112-complete-state">
+      <div class="v112-complete-rank">${getRankIconSvg("Diamant")}</div>
+      <p class="eyebrow">SKILL TREE</p>
+      <h2>Diamant erreicht</h2>
+      <p>Alle aktuell eingebauten Rangabschnitte sind abgeschlossen. Weitere Mastery-Ränge können später darauf aufbauen.</p>
     </div>
   `;
 }
 
-function renderV11Journey(currentRank, chapterNumber) {
-  const currentIndex = V11_RANK_ORDER.indexOf(currentRank);
-  const ranksToShow = V11_RANK_ORDER.slice(0, Math.max(currentIndex + 1, 1));
-  return ranksToShow.map((rank, idx) => {
-    const isCurrent = idx === currentIndex;
-    const isDone = idx < currentIndex;
-    return `
-      <div class="v11-rank-step ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}">
-        <div class="v11-step-icon">${getRankIconSvg(rank)}</div>
-        <div>
-          <strong class="${getV11RankThemeClass(rank)}">${rank}</strong>
-          <small>Kapitel ${idx + 1}</small>
-          <div class="v11-rank-pill">${isCurrent ? 'DU BIST HIER' : 'GESCHAFFT'}</div>
-        </div>
-      </div>
-    `;
-  }).reverse().join('');
+function bindV012TreeNodeEvents(chapter) {
+  skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const path = chapter.paths.find(item => item.key === button.dataset.path);
+      if (!path) return;
+      const target = Number(button.dataset.target) || 0;
+      const current = getV012MetricValue(path.metric);
+      const text = path.key === "kraft" ? "Push-ups am Stück" : path.key === "workout" ? "Push-ups in einem Workout" : "Push-ups insgesamt";
+      alert(`${path.title}\n${formatTreeNumber(target)} ${text}\nAktuell: ${formatTreeNumber(current)}${current >= target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(target - current)}`}`);
+    });
+  });
+
+  skillTree.querySelectorAll('[data-tree-node="variant"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const variant = button.dataset.variant;
+      const target = Number(button.dataset.target) || 0;
+      const meta = VARIANT_META[variant] || { label: variant };
+      const current = getVariantStats(variant).total;
+      alert(`${meta.label} Push-ups · Optional\nZiel: ${target} gesamt\nAktuell: ${current}\n\nDieser Zweig ist Bonus-Fortschritt und blockiert deinen Rang nicht.`);
+    });
+  });
 }
 
 function renderTree() {
   if (!skillTree) return;
-  skillTree.className = 'tree tree-v10 skill-tree-v11';
-  renderTreeLegacy();
+  const chapter = getV012CurrentChapter();
+  skillTree.className = "skill-tree-v112";
+  if (!chapter) {
+    renderV012CompletedTree();
+    return;
+  }
+
+  const currentRank = chapter.from;
+  const nextRank = chapter.to;
+  const pathStates = chapter.paths.map(getV012PathState);
+  const completedPaths = pathStates.filter(path => path.done).length;
+  const allComplete = completedPaths === pathStates.length;
+
+  skillTree.innerHTML = `
+    <div class="v112-tree-screen">
+      <header class="v112-tree-context">
+        <div>
+          <span>AKTUELLER ABSCHNITT</span>
+          <strong>${currentRank === "Starter" ? "Start" : currentRank} → ${nextRank}</strong>
+        </div>
+        <div class="v112-path-count"><strong>${completedPaths}/3</strong><small>Pfad${completedPaths === 1 ? "" : "e"} fertig</small></div>
+      </header>
+
+      <div class="v112-tree-stage">
+        <svg class="v112-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path class="trunk" d="M50 92 C50 86 22 84 22 74 M50 92 C50 86 50 84 50 74 M50 92 C50 86 78 84 78 74" />
+          <path class="path path-1" d="M22 74 L22 28 C22 18 42 18 50 8" />
+          <path class="path path-2" d="M50 74 L50 8" />
+          <path class="path path-3" d="M78 74 L78 28 C78 18 58 18 50 8" />
+          <path class="variant-link" d="M22 51 C13 48 12 40 8 34" />
+        </svg>
+
+        <div class="v112-rank-node v112-rank-next ${allComplete ? "ready" : "locked"}">
+          <span class="v112-rank-icon">${getV012RankIcon(nextRank)}</span>
+          <span class="v112-rank-label">${nextRank}</span>
+          <small>${allComplete ? "FREIGESCHALTET" : "NÄCHSTER RANG"}</small>
+        </div>
+
+        <div class="v112-main-grid">
+          ${pathStates.map(renderV012Path).join("")}
+          ${pathStates.map((path, index) => `<div class="v112-path-label" style="--grid-column:${index + 1}; --path-accent:${path.accent};"><span></span><strong>${path.title}</strong><small>${path.done ? "Fertig" : `${formatTreeNumber(Math.min(path.current, path.milestones[path.milestones.length - 1]))}/${formatTreeNumber(path.milestones[path.milestones.length - 1])}`}</small></div>`).join("")}
+        </div>
+
+        ${renderV012VariantBranch(chapter)}
+
+        <div class="v112-rank-node v112-rank-current">
+          <span class="v112-rank-icon">${getV012RankIcon(currentRank)}</span>
+          <span class="v112-rank-label">${currentRank === "Starter" ? "START" : currentRank}</span>
+          <small>${currentRank === "Starter" ? "HIER BEGINNT DEINE REISE" : "LETZTER RANG"}</small>
+        </div>
+      </div>
+
+      <footer class="v112-tree-note">
+        ${allComplete
+          ? `<strong>${nextRank} ist erreicht.</strong><span>Beim nächsten Öffnen geht es direkt mit dem nächsten Abschnitt weiter.</span>`
+          : `<strong>Alle 3 Hauptpfade führen zum Rang.</strong><span>Varianten sind optional und halten dich nicht auf.</span>`}
+      </footer>
+    </div>
+  `;
+
+  bindV012TreeNodeEvents(chapter);
 }
 
 function syncTreeCanvasHeight() {
-  return syncTreeCanvasHeightLegacy();
+  if (!skillTree) return;
+  skillTree.style.height = "auto";
 }
 
 function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
+  const chapter = getV012CurrentChapter();
+  const displayRank = getV012CurrentRankName();
 
-  const { chapter, nextGoal } = getV11ChapterSummary();
-  const displayRank = normalizeV11Rank(rankName);
-  homeRankName.textContent = rankName;
-  homeRankIcon.innerHTML = rankName === 'Starter'
-    ? getVariantIconSvg('standard', 'home-starter-icon')
-    : getRankIconSvg(displayRank, 'home-rank-asset');
+  homeRankName.textContent = displayRank;
+  homeRankIcon.innerHTML = displayRank === "Starter"
+    ? getVariantIconSvg("standard", "home-starter-icon")
+    : getRankIconSvg(displayRank, "home-rank-asset");
 
-  homeNextRankLabel.textContent = chapter.next || 'Endgame';
+  homeNextRankLabel.textContent = chapter?.to || "Endgame";
 
-  if (nextGoal) {
-    const current = Math.max(0, nextGoal.current);
-    const target = Math.max(1, nextGoal.target);
-    const percent = Math.max(0, Math.min(100, current / target * 100));
-    homeNextGoalTitle.textContent = nextGoal.title;
-    homeNextGoalValue.textContent = `${Math.min(current, target)} / ${target}`;
-    homeNextGoalProgress.style.width = `${percent}%`;
-    homeNextGoalText.textContent = nextGoal.label;
+  if (chapter) {
+    const candidates = chapter.paths.flatMap(path => {
+      const current = getV012MetricValue(path.metric);
+      return path.milestones.filter(target => current < target).map(target => ({ path, current, target }));
+    });
+    candidates.sort((a, b) => ((a.target - a.current) / a.target) - ((b.target - b.current) / b.target));
+    const next = candidates[0];
+    if (next) {
+      const percent = Math.max(0, Math.min(100, next.current / next.target * 100));
+      homeNextGoalTitle.textContent = next.path.title;
+      homeNextGoalValue.textContent = `${formatTreeNumber(Math.min(next.current, next.target))} / ${formatTreeNumber(next.target)}`;
+      homeNextGoalProgress.style.width = `${percent}%`;
+      homeNextGoalText.textContent = next.path.key === "kraft"
+        ? `${formatTreeNumber(next.target)} Push-ups am Stück`
+        : next.path.key === "workout"
+          ? `${formatTreeNumber(next.target)} Push-ups in einem Workout`
+          : `${formatTreeNumber(next.target)} Push-ups insgesamt`;
+    }
   } else {
-    homeNextGoalTitle.textContent = 'Push-up Tree gemeistert';
-    homeNextGoalValue.textContent = '100 %';
-    homeNextGoalProgress.style.width = '100%';
-    homeNextGoalText.textContent = 'Alle aktuell eingebauten Kapitelziele sind geschafft.';
+    homeNextGoalTitle.textContent = "Diamant erreicht";
+    homeNextGoalValue.textContent = "100 %";
+    homeNextGoalProgress.style.width = "100%";
+    homeNextGoalText.textContent = "Alle aktuell eingebauten Rangabschnitte sind geschafft.";
   }
 
-  renderHomeTimedGoal('day', todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
-  renderHomeTimedGoal('week', weekTotal, homeWeekGoalValue, homeWeekGoalBar, homeWeekGoalHint);
+  // Tages- und Wochenziele bleiben bewusst reine Home-Bonus-Challenges.
+  renderHomeTimedGoal("day", todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
+  renderHomeTimedGoal("week", weekTotal, homeWeekGoalValue, homeWeekGoalBar, homeWeekGoalHint);
 }
 
 // ---------- Events ----------

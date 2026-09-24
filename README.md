@@ -1,10 +1,13 @@
-# Power Push v0.11.1
+# Power Push v0.11.2
 
-## Fix in dieser Version
-- Buttons bleiben funktional
-- Skill Tree mit echten Knoten und Verbindungen wiederhergestellt
-- Freischaltungen, Vorschau und Mystery-Knoten wieder sichtbar
-- Der Tree scrollt beim Öffnen wieder in den aktiven Bereich
+## Skill Tree finalisiert
+- Ein Rangabschnitt passt auf ungefähr einen Smartphone-Bildschirm.
+- Unten steht der letzte erreichte Rang, oben der nächste Rang.
+- Drei Pflichtpfade: Kraft, Workout und Gesamtvolumen.
+- Alle drei Hauptpfade müssen abgeschlossen sein; es gibt keine Boss-Knoten.
+- Tages- und Wochenziele sind nur noch Bonus-Challenges auf dem Home Screen.
+- Varianten laufen als optionaler Seitenzweig und blockieren keinen Rangaufstieg.
+- Bereits freigeschaltete Varianten können in späteren Rangabschnitten erneut als Mastery-Knoten auftauchen.
+- Der Tree zeigt beim Öffnen automatisch nur den aktuell relevanten Rangabschnitt.
 
-## Fokus
-Diese Version ist der stabile Hybrid: funktionierende Navigation plus Skill-Tree-Feeling mit Knoten und nach-und-nach-Freischaltungen.
+Bestehende Trainingsdaten und lokale Speicherung bleiben erhalten.
