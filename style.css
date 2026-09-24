@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.13 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.14 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.14 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — subtle path background + perfectly centered rank anchors
+   v0.11.14 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — topo background, clearer connectors, corrected rank centering
+   v0.11.14 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — more visible hero image + rank path progress card on home
+   v0.11.14 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.14 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7336,7 +7336,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.13 — stronger blue/white visual language + history as separate page
+   v0.11.14 — stronger blue/white visual language + history as separate page
    ========================================================================== */
 
 /* Overall light-blue canvas. */
@@ -7546,4 +7546,63 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 .history-view-light .history-entry-reps {
   color: #1479e8 !important;
+}
+
+
+/* ==========================================================================
+   v0.11.14 — remove extra home labels and pull skill-tree card up
+   ========================================================================== */
+
+/* Reduce empty space between hero image and skill-tree card. */
+.home-hero-v17 {
+  margin-bottom: 0 !important;
+}
+.home-tree-hub {
+  margin-top: -8px !important;
+}
+
+/* Remove the extra small texts the user marked. */
+.home-kicker,
+.home-tree-heading p,
+#homePushMeta,
+.home-rank-paths-title,
+.home-next-goal-head > div > span {
+  display: none !important;
+}
+
+/* Re-balance spacing after removing those labels. */
+.home-hero-copy {
+  padding-top: 16px !important;
+}
+.home-tree-heading {
+  margin-bottom: 10px !important;
+}
+.home-rank-preview {
+  padding-top: 14px !important;
+  padding-bottom: 8px !important;
+}
+.home-rank-preview strong {
+  margin-top: 0 !important;
+}
+.home-next-goal {
+  padding-top: 4px !important;
+}
+.home-next-goal-head {
+  align-items: center !important;
+}
+.home-next-goal-head strong {
+  margin-top: 0 !important;
+  font-size: 18px !important;
+}
+.home-next-goal p {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 420px) {
+  .home-tree-hub {
+    margin-top: -10px !important;
+  }
+  .home-hero-copy {
+    padding-top: 18px !important;
+  }
 }

@@ -598,7 +598,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.13",
+    appVersion: "0.11.14",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -728,7 +728,7 @@ function render() {
   totalStat.textContent = progress.pushupTotal;
   rankStat.textContent = rankName;
 
-  homePushMeta.textContent = `${rankName} · Rekord ${progress.pushupMax}`;
+  if (homePushMeta) homePushMeta.textContent = "";
   homeTodayStat.textContent = todayTotal;
   homeWeekStat.textContent = weekTotal;
   if (homeTotalStat) homeTotalStat.textContent = progress.pushupTotal;
@@ -3558,7 +3558,6 @@ function renderHomeRankPaths(chapter) {
   }
 
   homeRankPaths.innerHTML = `
-    <div class="home-rank-paths-title">Aktueller Rang: ${chapter.from}</div>
     ${chapter.paths.map((path) => {
       const state = getHomePathProgressState(path);
       return `
