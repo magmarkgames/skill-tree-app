@@ -631,7 +631,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.18",
+    appVersion: "0.11.19",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3527,8 +3527,8 @@ function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridCol
   const rowMap = pathState.nodes.length <= 1
     ? [3]
     : pathState.nodes.length === 2
-      ? [2, 4]
-      : [1, 3, 5];
+      ? [4, 2]
+      : [5, 3, 1];
 
   return pathState.nodes.map((node, nodeIndex) => {
     const isCurrentSection = chapterMode === "current";
@@ -3543,7 +3543,7 @@ function renderV114Path(pathState, pathIndex, chapterIndex, chapterMode, gridCol
       forcedLocked ? "preview-locked" : "",
       mystery ? "mystery" : ""
     ].filter(Boolean).join(" ");
-    const label = pathState.title || node.label || "Ziel";
+    const label = node.label || pathState.title || "Ziel";
     const row = rowMap[nodeIndex] || 5;
 
     if (mystery) {
