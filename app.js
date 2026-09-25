@@ -631,7 +631,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.20",
+    appVersion: "0.11.21",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
