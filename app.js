@@ -631,7 +631,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.19",
+    appVersion: "0.11.20",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3602,7 +3602,7 @@ function renderV114RankAnchor(rank, options = {}) {
     <div class="${classes}">
       <span class="v114-rank-icon">${getV012RankIcon(rank)}</span>
       <span class="v114-rank-label">${label}</span>
-      ${unlockLabel ? `<span class="v114-rank-unlock">${unlockLabel} freigeschaltet</span>` : ""}
+      <span class="v114-rank-unlock ${unlockLabel ? "" : "is-placeholder"}" ${unlockLabel ? "" : 'aria-hidden="true"'}>${unlockLabel ? `${unlockLabel} freigeschaltet` : "&nbsp;"}</span>
     </div>
   `;
 }

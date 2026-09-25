@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.19 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.20 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.20 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — subtle path background + perfectly centered rank anchors
+   v0.11.20 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — topo background, clearer connectors, corrected rank centering
+   v0.11.20 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — more visible hero image + rank path progress card on home
+   v0.11.20 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.20 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7336,7 +7336,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — stronger blue/white visual language + history as separate page
+   v0.11.20 — stronger blue/white visual language + history as separate page
    ========================================================================== */
 
 /* Overall light-blue canvas. */
@@ -7550,7 +7550,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — remove extra home labels and pull skill-tree card up
+   v0.11.20 — remove extra home labels and pull skill-tree card up
    ========================================================================== */
 
 /* Reduce empty space between hero image and skill-tree card. */
@@ -7608,14 +7608,14 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 
-/* v0.11.19 — remove duplicate next-goal section and use webp icons */
+/* v0.11.20 — remove duplicate next-goal section and use webp icons */
 .home-next-goal { display: none !important; }
 .home-rank-preview { padding-bottom: 10px !important; }
 .home-rank-paths { margin-top: 4px !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — rank-unlocked Daily / Weekly challenge progression
+   v0.11.20 — rank-unlocked Daily / Weekly challenge progression
    ========================================================================== */
 .home-goal-card.challenge-locked {
   opacity: .72;
@@ -7656,7 +7656,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — always show full tree + stronger rank centering
+   v0.11.20 — always show full tree + stronger rank centering
    ========================================================================== */
 
 /* Keep the complete tree visible while still using the same styling for future
@@ -7739,7 +7739,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.19 — correct milestone order and fully centered rank anchors
+   v0.11.20 — correct milestone order and fully centered rank anchors
    ========================================================================== */
 
 /* Show chapter milestones from the current/lower rank upward to the next rank.
@@ -7798,5 +7798,151 @@ body.training-active .home-bottom-nav { display: none !important; }
   }
   .v114-rank-unlock {
     white-space: normal;
+  }
+}
+
+
+/* ==========================================================================
+   v0.11.20 — blue/white tree palette + fixed vertical rank alignment
+   ========================================================================== */
+
+/* Blue-white base palette */
+.skill-tree-v114 {
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%) !important;
+}
+.skill-tree-v114::before {
+  opacity: .28 !important;
+  filter: none;
+}
+.skill-tree-v114::after {
+  opacity: .22 !important;
+  filter: blur(24px);
+  background: linear-gradient(180deg,
+    rgba(47, 141, 255, .00) 0%,
+    rgba(47, 141, 255, .08) 18%,
+    rgba(47, 141, 255, .03) 42%,
+    rgba(47, 141, 255, .07) 68%,
+    rgba(47, 141, 255, .00) 100%) !important;
+}
+
+/* Tree lines darker than the topo background so they stay readable. */
+.v114-tree-lines .trunk,
+.v114-tree-lines .path,
+.v114-tree-lines .path-1,
+.v114-tree-lines .path-2,
+.v114-tree-lines .path-3 {
+  stroke: #a8b9cf !important;
+  opacity: .86 !important;
+}
+.v114-tree-lines .trunk {
+  stroke-width: 1.02 !important;
+}
+.v114-tree-lines .path {
+  stroke-width: .92 !important;
+}
+
+/* Node states */
+.v114-skill-node {
+  background: rgba(255,255,255,.96) !important;
+  border-color: #b9cae0 !important;
+  box-shadow: 0 10px 22px rgba(68, 100, 145, .06);
+}
+.v114-node-mark,
+.v114-node-mini {
+  color: #16345f !important;
+}
+.v114-skill-node.active {
+  border-color: #2f8dff !important;
+  box-shadow:
+    0 0 0 10px rgba(47, 141, 255, .14),
+    0 16px 30px rgba(47, 141, 255, .16) !important;
+}
+.v114-skill-node.active .v114-node-mark,
+.v114-skill-node.active .v114-node-mini {
+  color: #16345f !important;
+}
+.v114-skill-node.done {
+  background: #5fd38a !important;
+  border-color: #5fd38a !important;
+  box-shadow: 0 14px 26px rgba(95, 211, 138, .20) !important;
+}
+.v114-skill-node.done .v114-node-mark,
+.v114-skill-node.done .v114-node-mini {
+  color: #132017 !important;
+}
+.v114-skill-node.preview-locked,
+.v114-skill-node.mystery {
+  background: rgba(232, 238, 245, .88) !important;
+  border-color: #c7d3e4 !important;
+}
+.v114-skill-node.preview-locked .v114-node-mark,
+.v114-skill-node.preview-locked .v114-node-mini,
+.v114-skill-node.mystery .v114-node-mark,
+.v114-skill-node.mystery .v114-node-mini {
+  color: #9aa9bc !important;
+}
+
+/* Path colors - subtle, only to separate branches. */
+.v114-skill-node[style*="--node-accent:#7c8cff"] {
+  border-color: #bec7ff !important;
+}
+.v114-skill-node.active[style*="--node-accent:#7c8cff"] {
+  box-shadow: 0 0 0 10px rgba(124, 131, 255, .13), 0 16px 30px rgba(124, 131, 255, .14) !important;
+}
+.v114-skill-node[style*="--node-accent:#39b86f"] {
+  border-color: #b6e3d0 !important;
+}
+.v114-skill-node.active[style*="--node-accent:#39b86f"] {
+  box-shadow: 0 0 0 10px rgba(57, 185, 165, .12), 0 16px 30px rgba(57, 185, 165, .14) !important;
+}
+.v114-skill-node[style*="--node-accent:#4f9cf8"] {
+  border-color: #bfd9fb !important;
+}
+
+/* Rank anchors: always reserve the same vertical space so ranks with Daily/
+   Weekly unlock text do not sit higher than the other ranks. */
+.v114-rank-anchor,
+.v114-tree-flow > .v114-rank-anchor.top,
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  min-height: 132px !important;
+  gap: 8px !important;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  bottom: 0 !important;
+  padding-bottom: 8px !important;
+}
+.v114-rank-label {
+  color: #16345f !important;
+}
+.v114-rank-unlock {
+  min-height: 18px;
+  padding: 3px 10px;
+  border: 1px solid #d4e5f7;
+  background: rgba(243, 249, 255, .96);
+  color: #4f759d;
+}
+.v114-rank-unlock.is-placeholder {
+  visibility: hidden;
+}
+
+@media (max-width: 560px) {
+  .v114-rank-anchor,
+  .v114-tree-flow > .v114-rank-anchor.top,
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    min-height: 126px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .v114-rank-anchor,
+  .v114-tree-flow > .v114-rank-anchor.top,
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    min-height: 122px !important;
+  }
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    padding-bottom: 6px !important;
+  }
+  .v114-rank-unlock {
+    min-height: 16px;
   }
 }
