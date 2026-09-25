@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.22 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.23 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.23 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — subtle path background + perfectly centered rank anchors
+   v0.11.23 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — topo background, clearer connectors, corrected rank centering
+   v0.11.23 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — more visible hero image + rank path progress card on home
+   v0.11.23 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.23 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7336,7 +7336,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — stronger blue/white visual language + history as separate page
+   v0.11.23 — stronger blue/white visual language + history as separate page
    ========================================================================== */
 
 /* Overall light-blue canvas. */
@@ -7550,7 +7550,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — remove extra home labels and pull skill-tree card up
+   v0.11.23 — remove extra home labels and pull skill-tree card up
    ========================================================================== */
 
 /* Reduce empty space between hero image and skill-tree card. */
@@ -7608,14 +7608,14 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 
-/* v0.11.22 — remove duplicate next-goal section and use webp icons */
+/* v0.11.23 — remove duplicate next-goal section and use webp icons */
 .home-next-goal { display: none !important; }
 .home-rank-preview { padding-bottom: 10px !important; }
 .home-rank-paths { margin-top: 4px !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — rank-unlocked Daily / Weekly challenge progression
+   v0.11.23 — rank-unlocked Daily / Weekly challenge progression
    ========================================================================== */
 .home-goal-card.challenge-locked {
   opacity: .72;
@@ -7656,7 +7656,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — always show full tree + stronger rank centering
+   v0.11.23 — always show full tree + stronger rank centering
    ========================================================================== */
 
 /* Keep the complete tree visible while still using the same styling for future
@@ -7739,7 +7739,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — correct milestone order and fully centered rank anchors
+   v0.11.23 — correct milestone order and fully centered rank anchors
    ========================================================================== */
 
 /* Show chapter milestones from the current/lower rank upward to the next rank.
@@ -7803,7 +7803,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.22 — blue/white tree palette + fixed vertical rank alignment
+   v0.11.23 — blue/white tree palette + fixed vertical rank alignment
    ========================================================================== */
 
 /* Blue-white base palette */
@@ -7948,7 +7948,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 /* ==========================================================================
-   v0.11.22 — stitched stage background for the full skill tree
+   v0.11.23 — stitched stage background for the full skill tree
    ========================================================================== */
 
 /* Use the three generated stage scenes as one tall backdrop: meadow -> forest
@@ -8020,7 +8020,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 /* ==========================================================================
-   v0.11.22 — correct stage order + true edge-to-edge tree background
+   v0.11.23 — correct stage order + true edge-to-edge tree background
    ========================================================================== */
 
 /* The journey grows upward: Foundation meadow at the bottom, forest in the
@@ -8085,4 +8085,445 @@ body.training-active .home-bottom-nav { display: none !important; }
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
+}
+
+
+/* ==========================================================================
+   v0.11.23 — app-wide dark mode
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --dark-bg: #08111f;
+  --dark-bg-2: #0d1828;
+  --dark-panel: #111e30;
+  --dark-panel-2: #16263a;
+  --dark-panel-3: #1b2d43;
+  --dark-border: #29415d;
+  --dark-border-soft: #22364e;
+  --dark-text: #f4f8ff;
+  --dark-muted: #91a7c1;
+  --dark-blue: #4aa3ff;
+  --dark-blue-2: #197fe8;
+  --dark-green: #55d98a;
+}
+
+html,
+body,
+.app-shell {
+  background: var(--dark-bg) !important;
+  color: var(--dark-text) !important;
+}
+
+/* ---------- Home ---------- */
+.home-v17 {
+  --home-bg: var(--dark-bg);
+  --home-card: var(--dark-panel);
+  --home-text: var(--dark-text);
+  --home-muted: var(--dark-muted);
+  --home-line: var(--dark-border);
+  background:
+    radial-gradient(circle at 88% 2%, rgba(49,143,255,.13), transparent 26%),
+    linear-gradient(180deg, #091321 0%, #0b1728 54%, #08111f 100%) !important;
+  color: var(--dark-text) !important;
+}
+.home-v17::before {
+  background-image:
+    linear-gradient(90deg, rgba(8,17,31,.96) 0%, rgba(8,17,31,.91) 25%, rgba(8,17,31,.60) 48%, rgba(8,17,31,.20) 72%, rgba(8,17,31,.04) 100%),
+    linear-gradient(180deg, rgba(8,17,31,0) 68%, rgba(8,17,31,.66) 88%, #08111f 100%),
+    url("home-hero-bg-v023.webp") !important;
+}
+.home-brand-title,
+.home-hero-copy h1,
+.home-tree-heading h2,
+.home-rank-preview strong,
+.home-rank-path-head strong,
+.home-goal-card-top > div > span,
+.home-goal-card-top strong {
+  color: var(--dark-text) !important;
+}
+.home-brand-subtitle,
+.home-hero-copy > p:last-child,
+.home-rank-preview span,
+.home-rank-preview small,
+.home-rank-path-head span,
+.home-goal-card-top > div > small,
+.home-goal-card p,
+.home-quote {
+  color: var(--dark-muted) !important;
+}
+.home-icon-action {
+  border-color: var(--dark-border) !important;
+  background: rgba(17,30,48,.92) !important;
+  color: #dce9f8 !important;
+  box-shadow: 0 7px 18px rgba(0,0,0,.22) !important;
+}
+.home-tree-hub,
+.home-tree-preview,
+.home-rank-paths,
+.home-goal-card {
+  border-color: var(--dark-border) !important;
+  background: rgba(17,30,48,.94) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.20) !important;
+}
+.home-tree-preview {
+  background:
+    radial-gradient(circle at 94% 4%, rgba(58,156,255,.12), transparent 32%),
+    linear-gradient(180deg, #13243a 0%, #0f1d2f 100%) !important;
+}
+.home-rank-paths {
+  background: rgba(10,21,36,.58) !important;
+}
+.home-discipline-tab {
+  border-color: var(--dark-border-soft) !important;
+  background: #0f1d2f !important;
+  color: #91a7c1 !important;
+}
+.home-discipline-tab.active {
+  border-color: #2f91f2 !important;
+  background: linear-gradient(180deg, #162b43, #102237) !important;
+  color: #69b6ff !important;
+  box-shadow: inset 0 0 0 1px rgba(70,160,255,.16), 0 6px 16px rgba(0,0,0,.18) !important;
+}
+.home-discipline-tab.locked-feature {
+  color: #637a94 !important;
+  opacity: .62 !important;
+}
+.home-progress-track,
+.home-rank-path-track {
+  background: #25384e !important;
+}
+.home-progress-track > span,
+.home-rank-path-track > span,
+.home-rank-path-row.done .home-rank-path-track > span {
+  background: linear-gradient(90deg, #63b8ff 0%, #359cff 48%, #197fe8 100%) !important;
+}
+.home-goal-icon.day,
+.home-goal-icon.week {
+  background: #142e49 !important;
+  color: #5cb0ff !important;
+}
+.home-goal-card.challenge-locked {
+  opacity: .62;
+}
+.home-goal-card.challenge-complete {
+  border-color: #2d7d55 !important;
+  background: linear-gradient(180deg, #122b23 0%, #0f241e 100%) !important;
+}
+.home-goal-card.challenge-complete .home-goal-icon {
+  background: #173a2b !important;
+  color: #61dc92 !important;
+}
+.home-open-tree-btn.home-open-tree-secondary {
+  color: #77a9d6 !important;
+}
+.home-tree-training-btn {
+  background: linear-gradient(135deg, #3ca7ff 0%, #2187f0 48%, #1268d6 100%) !important;
+  box-shadow: 0 12px 26px rgba(11,92,190,.28) !important;
+}
+
+/* ---------- Shared bottom navigation ---------- */
+.home-bottom-nav {
+  border-top: 1px solid #20364f !important;
+  background: rgba(9,20,34,.96) !important;
+  box-shadow: 0 -12px 28px rgba(0,0,0,.28) !important;
+  backdrop-filter: blur(14px);
+}
+.home-nav-item {
+  color: #758aa4 !important;
+}
+.home-nav-item.active {
+  color: #61b1ff !important;
+}
+.home-nav-training > span {
+  background: linear-gradient(145deg, #46adff, #1673e2) !important;
+  box-shadow: 0 8px 20px rgba(23,113,220,.30) !important;
+}
+
+/* ---------- Profile ---------- */
+.profile-view,
+.history-view-light {
+  background:
+    radial-gradient(circle at 84% 0%, rgba(46,144,255,.11), transparent 27%),
+    linear-gradient(180deg, #091321 0%, #0b1728 55%, #08111f 100%) !important;
+  color: var(--dark-text) !important;
+}
+.profile-header,
+.history-header {
+  background: rgba(9,20,34,.94) !important;
+  border-bottom-color: #20364f !important;
+  backdrop-filter: blur(14px);
+}
+.profile-header h1,
+.history-header h1,
+.profile-identity h2,
+.profile-section-head h2,
+.profile-rank-copy strong,
+.history-section-head h2,
+.history-view-light .history-summary strong,
+.history-view-light .history-entry-main strong {
+  color: var(--dark-text) !important;
+}
+.profile-header .eyebrow,
+.history-header .eyebrow,
+.profile-placeholder-label,
+.profile-identity p,
+.profile-rank-copy span,
+.profile-rank-copy small,
+.history-header small,
+.history-view-light .history-summary span,
+.history-view-light .history-summary small,
+.history-view-light .history-entry-main span,
+.history-view-light .history-empty {
+  color: var(--dark-muted) !important;
+}
+.profile-version-pill,
+.history-view-light .history-count,
+.profile-section-count {
+  background: #14283e !important;
+  color: #82baf0 !important;
+}
+.profile-hero-card,
+.profile-section,
+.profile-backup-section,
+.profile-rank-card,
+.profile-history-link-card,
+.history-view-light .history-summary article,
+.history-content-card,
+.history-view-light .history-entry,
+.history-view-light .history-empty {
+  border-color: var(--dark-border) !important;
+  background: rgba(17,30,48,.95) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.19) !important;
+}
+.profile-rank-card {
+  background: linear-gradient(180deg, #14243a, #102033) !important;
+}
+.profile-avatar {
+  border-color: #2e5278 !important;
+  background: linear-gradient(145deg, #1a3048, #11253a) !important;
+  box-shadow: inset 0 0 0 2px #182c43, 0 9px 22px rgba(0,0,0,.20) !important;
+  color: #7c9fbe !important;
+}
+.profile-avatar span,
+.profile-avatar span::after {
+  background: #7894af !important;
+}
+.profile-level-box,
+.profile-future-badge {
+  border-color: #29415d !important;
+  background: #102033 !important;
+}
+.profile-level-box small,
+.profile-level-box span,
+.profile-future-badge strong,
+.profile-future-badge small {
+  color: #8298b1 !important;
+}
+.profile-level-box strong,
+.history-view-light .history-entry-reps,
+.profile-history-link-arrow {
+  color: #55aaff !important;
+}
+.profile-rank-action {
+  background: #17293f !important;
+  color: #5bacff !important;
+  box-shadow: 0 5px 15px rgba(0,0,0,.18) !important;
+}
+.profile-history-link-card {
+  color: var(--dark-text) !important;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(54,154,255,.12), transparent 40%),
+    linear-gradient(180deg, #14253a, #102033) !important;
+}
+.profile-history-link-icon {
+  background: linear-gradient(145deg, #193653, #142a42) !important;
+  color: #5bb0ff !important;
+}
+.profile-history-link-copy small,
+.profile-history-link-copy > span {
+  color: var(--dark-muted) !important;
+}
+.profile-history-link-copy strong {
+  color: var(--dark-text) !important;
+}
+
+/* ---------- Tree header / scenic tree ---------- */
+.tree-view,
+.tree-view-v11 {
+  background: #08111f !important;
+  color: var(--dark-text) !important;
+}
+.tree-header {
+  background: rgba(8,17,31,.96) !important;
+  border-bottom: 1px solid #20364f !important;
+  color: var(--dark-text) !important;
+}
+.tree-header h1,
+.tree-stats-btn {
+  color: var(--dark-text) !important;
+}
+.tree-header .eyebrow {
+  color: #7f9bb9 !important;
+}
+.tree-view .icon-btn,
+.tree-stats-btn {
+  border-color: #29415d !important;
+  background: #13243a !important;
+}
+.tree-scroll-v112 {
+  background: #08111f !important;
+}
+.skill-tree-v114::before {
+  /* Keep the generated stage scenery, but make it part of the dark theme. */
+  filter: saturate(.82) brightness(.62) contrast(1.05) !important;
+}
+.skill-tree-v114::after {
+  opacity: .72 !important;
+  filter: none !important;
+  background: linear-gradient(180deg,
+    rgba(4,10,18,.36) 0%,
+    rgba(4,10,18,.25) 18%,
+    rgba(4,10,18,.34) 44%,
+    rgba(4,10,18,.26) 70%,
+    rgba(4,10,18,.40) 100%) !important;
+}
+.v114-tree-lines .trunk,
+.v114-tree-lines .path,
+.v114-tree-lines .path-1,
+.v114-tree-lines .path-2,
+.v114-tree-lines .path-3 {
+  stroke: rgba(139,166,196,.72) !important;
+}
+.v114-skill-node {
+  border-color: #49647f !important;
+  background: rgba(12,25,41,.90) !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,.26) !important;
+  backdrop-filter: blur(4px);
+}
+.v114-node-mark,
+.v114-node-mini {
+  color: #e6f1ff !important;
+}
+.v114-skill-node.active {
+  border-color: #4aa3ff !important;
+  background: rgba(16,34,55,.94) !important;
+  box-shadow: 0 0 0 9px rgba(74,163,255,.16), 0 14px 28px rgba(0,0,0,.28) !important;
+}
+.v114-skill-node.done {
+  border-color: #55d98a !important;
+  background: #55d98a !important;
+}
+.v114-skill-node.done .v114-node-mark,
+.v114-skill-node.done .v114-node-mini {
+  color: #07140d !important;
+}
+.v114-skill-node.preview-locked,
+.v114-skill-node.mystery {
+  border-color: #354a61 !important;
+  background: rgba(18,31,47,.80) !important;
+}
+.v114-skill-node.preview-locked .v114-node-mark,
+.v114-skill-node.preview-locked .v114-node-mini,
+.v114-skill-node.mystery .v114-node-mark,
+.v114-skill-node.mystery .v114-node-mini {
+  color: #6f839a !important;
+}
+.v114-rank-label {
+  color: #f1f7ff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,.55);
+}
+.v114-rank-icon {
+  background: rgba(13,25,40,.72) !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,.26) !important;
+}
+.v114-rank-unlock {
+  border-color: #315476 !important;
+  background: rgba(11,25,41,.88) !important;
+  color: #8fb8dd !important;
+}
+.v114-node-lock {
+  border-color: #31506c !important;
+  background: #10243a !important;
+}
+
+/* ---------- Sheets / dialogs / training ---------- */
+.tree-stats-sheet,
+.sheet,
+.modal {
+  color: var(--dark-text) !important;
+}
+.tree-stats-sheet {
+  background: rgba(0,0,0,.62) !important;
+}
+.tree-stats-sheet-panel,
+.sheet-panel,
+.modal-panel,
+#trainingModal.selection-theme .modal-panel {
+  border-color: #29415d !important;
+  background: #0d1828 !important;
+  color: var(--dark-text) !important;
+}
+.tree-stats-sheet-head h2,
+#trainingModal.selection-theme .modal-head h2,
+#trainingModal.selection-theme .exercise-card strong,
+#trainingModal.selection-theme .variant-card strong,
+.set-prep-copy strong {
+  color: var(--dark-text) !important;
+}
+.tree-stats-sheet .eyebrow,
+#trainingModal.selection-theme .eyebrow,
+#trainingModal.selection-theme .exercise-card small,
+#trainingModal.selection-theme .variant-step-copy,
+#trainingModal.selection-theme .variant-card small,
+.set-prep-copy span,
+.set-prep-copy small {
+  color: var(--dark-muted) !important;
+}
+.tree-stats-sheet .icon-btn,
+#trainingModal.selection-theme .icon-btn {
+  border-color: #29415d !important;
+  background: #15263a !important;
+  color: var(--dark-text) !important;
+}
+.tree-stats-sheet-grid article,
+#trainingModal.selection-theme .exercise-card,
+#trainingModal.selection-theme .variant-card,
+.set-prep-panel,
+.workout-variant-btn {
+  border-color: #29415d !important;
+  background: #13243a !important;
+  color: var(--dark-text) !important;
+}
+#trainingModal.selection-theme .exercise-card.active,
+#trainingModal.selection-theme .variant-card.selected,
+.workout-variant-btn.selected {
+  border-color: #4aa3ff !important;
+  background: #17304b !important;
+  box-shadow: 0 0 0 2px rgba(74,163,255,.12) !important;
+}
+#trainingModal.selection-theme .exercise-icon,
+.workout-variant-btn > span {
+  background: #192d44 !important;
+}
+.secondary-btn {
+  border-color: #29415d !important;
+  background: #13243a !important;
+  color: #eaf3ff !important;
+}
+
+/* Inputs / utility surfaces */
+input,
+select,
+textarea {
+  border-color: #29415d !important;
+  background: #0d1b2d !important;
+  color: var(--dark-text) !important;
+}
+
+/* Reduce harsh white flashes on tap/transition. */
+.view,
+.modal-panel,
+.sheet-panel {
+  transition: background-color .18s ease, color .18s ease;
 }
