@@ -60,6 +60,7 @@ const VARIANT_META = {
   standard: { label: "Standard", shortLabel: "Standard", color: "#4A90FF" },
   wall: { label: "Wall", shortLabel: "Wall", color: "#7C8CFF" },
   wide: { label: "Wide", shortLabel: "Wide", color: "#8B6CFF" },
+  military: { label: "Military", shortLabel: "Military", color: "#6C9CFF" },
   diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F05C82" },
   pike: { label: "Pike", shortLabel: "Pike", color: "#43C889" },
   incline: { label: "Incline", shortLabel: "Incline", color: "#F3A94F" },
@@ -78,6 +79,7 @@ const VARIANT_UNLOCK_NODES = {
   standard: null,
   wall: null,
   wide: "wideSkill",
+  military: "militarySkill",
   diamond: "diamondSkill",
   pike: null,
   incline: null,
@@ -145,6 +147,7 @@ const ASSET_PATHS = {
     standard: "variant-standard.webp",
     wall: "variant-standard.webp",
     wide: "variant-wide.webp",
+    military: "variant-standard.webp",
     diamond: "variant-diamond.webp",
     pike: "variant-pike.webp",
     incline: "variant-incline.webp",
@@ -631,7 +634,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.23",
+    appVersion: "0.11.24",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3248,14 +3251,21 @@ function closeTreeStats() {
 // =====================================================================
 // v0.11.2 — Screen-sized rank chapters with three required paths
 // =====================================================================
-const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant"];
+const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant", "Meister", "Elite", "Legende"];
 
 const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
     paths: [
-      { key: "wallStart", title: "Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" }
+      { key: "wallBase", title: "Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" },
+        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" }
+      ] },
+      { key: "gesamtBase", title: "Gesamt", accent: "#39b86f", nodes: [
+        { metric: "total", target: 5, label: "Gesamt" }
+      ] },
+      { key: "inclineBase", title: "Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
       ] }
     ],
     variants: []
@@ -3263,14 +3273,17 @@ const V012_CHAPTERS = [
   {
     from: "Holz", to: "Stein",
     paths: [
-      { key: "wall", title: "Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" }
+      { key: "wallWood", title: "Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" },
+        { metric: "variantMax", variant: "wall", target: 8, label: "Wall" }
       ] },
-      { key: "incline", title: "Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
+      { key: "inclineWood", title: "Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 2, label: "Incline" },
+        { metric: "variantMax", variant: "incline", target: 3, label: "Incline" }
       ] },
-      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 5, label: "Gesamt" }
+      { key: "progressWood", title: "Fortschritt", accent: "#4f9cf8", nodes: [
+        { metric: "total", target: 10, label: "Gesamt" },
+        { metric: "standardMax", target: 1, label: "Standard" }
       ] }
     ],
     variants: []
@@ -3278,17 +3291,16 @@ const V012_CHAPTERS = [
   {
     from: "Stein", to: "Bronze",
     paths: [
-      { key: "varianten", title: "Varianten", accent: "#9a69cc", nodes: [
-        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" },
-        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
+      { key: "wallStone", title: "Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 10, label: "Wall" }
       ] },
-      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 10, label: "Gesamt" },
-        { metric: "total", target: 25, label: "Gesamt" }
+      { key: "standardStone", title: "Standard", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 2, label: "Standard" },
+        { metric: "standardMax", target: 3, label: "Standard" }
       ] },
-      { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 1, label: "Push-up" },
-        { metric: "standardMax", target: 3, label: "Push-ups" }
+      { key: "inclineWideStone", title: "Incline / Wide", accent: "#8b6cff", nodes: [
+        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" },
+        { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
       ] }
     ],
     variants: []
@@ -3296,20 +3308,56 @@ const V012_CHAPTERS = [
   {
     from: "Bronze", to: "Silber",
     paths: [
-      { key: "varianten", title: "Varianten", accent: "#9a69cc", nodes: [
-        { metric: "variantMax", variant: "wall", target: 10, label: "Wall" },
-        { metric: "variantMax", variant: "incline", target: 10, label: "Incline" },
-        { metric: "variantMax", variant: "wide", target: 1, label: "Wide Arm" }
+      { key: "inclineBronze", title: "Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 7, label: "Incline" },
+        { metric: "variantMax", variant: "incline", target: 10, label: "Incline" }
       ] },
-      { key: "gesamt", title: "Gesamt", accent: "#39b86f", nodes: [
-        { metric: "total", target: 50, label: "Gesamt" },
-        { metric: "total", target: 75, label: "Gesamt" },
-        { metric: "total", target: 100, label: "Gesamt" }
+      { key: "standardBronze", title: "Standard", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 5, label: "Standard" },
+        { metric: "standardMax", target: 7, label: "Standard" }
       ] },
-      { key: "pushups", title: "Push-ups", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 5, label: "Push-ups" },
-        { metric: "standardMax", target: 7, label: "Push-ups" },
-        { metric: "standardMax", target: 10, label: "Push-ups" }
+      { key: "wideBronze", title: "Wide / Military", accent: "#8b6cff", nodes: [
+        { metric: "variantMax", variant: "wide", target: 3, label: "Wide" },
+        { metric: "variantMax", variant: "wide", target: 5, label: "Wide" },
+        { metric: "variantMax", variant: "military", target: 1, label: "Military" }
+      ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Silber", to: "Gold",
+    paths: [
+      { key: "wideSilver", title: "Wide", accent: "#8b6cff", nodes: [
+        { metric: "variantMax", variant: "wide", target: 7, label: "Wide" },
+        { metric: "variantMax", variant: "wide", target: 10, label: "Wide" }
+      ] },
+      { key: "militarySilver", title: "Military", accent: "#6c9cff", nodes: [
+        { metric: "variantMax", variant: "military", target: 3, label: "Military" },
+        { metric: "variantMax", variant: "military", target: 5, label: "Military" }
+      ] },
+      { key: "goldPrep", title: "Gold Prep", accent: "#4f9cf8", nodes: [
+        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" },
+        { metric: "standardMax", target: 10, label: "Standard" },
+        { metric: "variantMax", variant: "diamond", target: 1, label: "Diamond" }
+      ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Gold", to: "Platin",
+    paths: [
+      { key: "inclineGold", title: "Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 20, label: "Incline" }
+      ] },
+      { key: "diamondGold", title: "Diamond", accent: "#f05c82", nodes: [
+        { metric: "variantMax", variant: "diamond", target: 3, label: "Diamond" },
+        { metric: "variantMax", variant: "diamond", target: 5, label: "Diamond" }
+      ] },
+      { key: "platinPrep", title: "Platin Prep", accent: "#4f9cf8", nodes: [
+        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" },
+        { metric: "variantMax", variant: "military", target: 7, label: "Military" },
+        { metric: "standardMax", target: 20, label: "Standard" },
+        { metric: "variantMax", variant: "decline", target: 1, label: "Decline" }
       ] }
     ],
     variants: []
@@ -3319,11 +3367,12 @@ const V012_CHAPTERS = [
 const V012_VARIANT_UNLOCK_RANK = {
   standard: "Starter",
   wall: "Starter",
-  wide: "Bronze",
+  incline: "Starter",
+  wide: "Stein",
+  military: "Bronze",
   diamond: "Silber",
+  decline: "Gold",
   pike: "Silber",
-  incline: "Holz",
-  decline: "Silber",
   explosive: "Silber",
   archer: "Silber",
   handstand: "Gold",
