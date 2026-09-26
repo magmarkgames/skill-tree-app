@@ -634,7 +634,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.24",
+    appVersion: "0.11.25",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3257,14 +3257,14 @@ const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
     paths: [
-      { key: "wallBase", title: "Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" },
-        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" }
+      { key: "start-wall-1", title: "1 Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" }
       ] },
-      { key: "gesamtBase", title: "Gesamt", accent: "#39b86f", nodes: [
+      { key: "start-pair", title: "Wall + Gesamt", accent: "#4f9cf8", nodes: [
+        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" },
         { metric: "total", target: 5, label: "Gesamt" }
       ] },
-      { key: "inclineBase", title: "Incline", accent: "#f3a94f", nodes: [
+      { key: "start-incline", title: "1 Incline", accent: "#f3a94f", nodes: [
         { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
       ] }
     ],
@@ -3273,16 +3273,18 @@ const V012_CHAPTERS = [
   {
     from: "Holz", to: "Stein",
     paths: [
-      { key: "wallWood", title: "Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" },
+      { key: "wood-wall", title: "5 Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" }
+      ] },
+      { key: "wood-pair-1", title: "Incline + Gesamt", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 2, label: "Incline" },
+        { metric: "total", target: 10, label: "Gesamt" }
+      ] },
+      { key: "wood-pair-2", title: "Incline + Wall", accent: "#7c8cff", nodes: [
+        { metric: "variantMax", variant: "incline", target: 3, label: "Incline" },
         { metric: "variantMax", variant: "wall", target: 8, label: "Wall" }
       ] },
-      { key: "inclineWood", title: "Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 2, label: "Incline" },
-        { metric: "variantMax", variant: "incline", target: 3, label: "Incline" }
-      ] },
-      { key: "progressWood", title: "Fortschritt", accent: "#4f9cf8", nodes: [
-        { metric: "total", target: 10, label: "Gesamt" },
+      { key: "wood-standard", title: "1 Standard", accent: "#4f9cf8", nodes: [
         { metric: "standardMax", target: 1, label: "Standard" }
       ] }
     ],
@@ -3291,15 +3293,17 @@ const V012_CHAPTERS = [
   {
     from: "Stein", to: "Bronze",
     paths: [
-      { key: "wallStone", title: "Wall", accent: "#7c8cff", nodes: [
+      { key: "stone-wall", title: "10 Wall", accent: "#7c8cff", nodes: [
         { metric: "variantMax", variant: "wall", target: 10, label: "Wall" }
       ] },
-      { key: "standardStone", title: "Standard", accent: "#4f9cf8", nodes: [
+      { key: "stone-pair", title: "Standard + Incline", accent: "#4f9cf8", nodes: [
         { metric: "standardMax", target: 2, label: "Standard" },
+        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
+      ] },
+      { key: "stone-standard", title: "3 Standard", accent: "#4f9cf8", nodes: [
         { metric: "standardMax", target: 3, label: "Standard" }
       ] },
-      { key: "inclineWideStone", title: "Incline / Wide", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" },
+      { key: "stone-wide", title: "1 Wide", accent: "#8b6cff", nodes: [
         { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
       ] }
     ],
@@ -3308,17 +3312,21 @@ const V012_CHAPTERS = [
   {
     from: "Bronze", to: "Silber",
     paths: [
-      { key: "inclineBronze", title: "Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 7, label: "Incline" },
+      { key: "bronze-incline-7", title: "7 Incline", accent: "#f3a94f", nodes: [
+        { metric: "variantMax", variant: "incline", target: 7, label: "Incline" }
+      ] },
+      { key: "bronze-pair-1", title: "Standard + Wide", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 5, label: "Standard" },
+        { metric: "variantMax", variant: "wide", target: 3, label: "Wide" }
+      ] },
+      { key: "bronze-incline-10", title: "10 Incline", accent: "#f3a94f", nodes: [
         { metric: "variantMax", variant: "incline", target: 10, label: "Incline" }
       ] },
-      { key: "standardBronze", title: "Standard", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 5, label: "Standard" },
-        { metric: "standardMax", target: 7, label: "Standard" }
+      { key: "bronze-pair-2", title: "Standard + Wide", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 7, label: "Standard" },
+        { metric: "variantMax", variant: "wide", target: 5, label: "Wide" }
       ] },
-      { key: "wideBronze", title: "Wide / Military", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "wide", target: 3, label: "Wide" },
-        { metric: "variantMax", variant: "wide", target: 5, label: "Wide" },
+      { key: "bronze-military", title: "1 Military", accent: "#6c9cff", nodes: [
         { metric: "variantMax", variant: "military", target: 1, label: "Military" }
       ] }
     ],
@@ -3327,17 +3335,21 @@ const V012_CHAPTERS = [
   {
     from: "Silber", to: "Gold",
     paths: [
-      { key: "wideSilver", title: "Wide", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "wide", target: 7, label: "Wide" },
-        { metric: "variantMax", variant: "wide", target: 10, label: "Wide" }
+      { key: "silver-wide-7", title: "7 Wide", accent: "#8b6cff", nodes: [
+        { metric: "variantMax", variant: "wide", target: 7, label: "Wide" }
       ] },
-      { key: "militarySilver", title: "Military", accent: "#6c9cff", nodes: [
+      { key: "silver-pair-1", title: "Military + Incline", accent: "#6c9cff", nodes: [
         { metric: "variantMax", variant: "military", target: 3, label: "Military" },
+        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" }
+      ] },
+      { key: "silver-military-5", title: "5 Military", accent: "#6c9cff", nodes: [
         { metric: "variantMax", variant: "military", target: 5, label: "Military" }
       ] },
-      { key: "goldPrep", title: "Gold Prep", accent: "#4f9cf8", nodes: [
-        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" },
-        { metric: "standardMax", target: 10, label: "Standard" },
+      { key: "silver-pair-2", title: "Wide + Standard", accent: "#8b6cff", nodes: [
+        { metric: "variantMax", variant: "wide", target: 10, label: "Wide" },
+        { metric: "standardMax", target: 10, label: "Standard" }
+      ] },
+      { key: "silver-diamond", title: "1 Diamond", accent: "#f05c82", nodes: [
         { metric: "variantMax", variant: "diamond", target: 1, label: "Diamond" }
       ] }
     ],
@@ -3346,17 +3358,21 @@ const V012_CHAPTERS = [
   {
     from: "Gold", to: "Platin",
     paths: [
-      { key: "inclineGold", title: "Incline", accent: "#f3a94f", nodes: [
+      { key: "gold-incline-20", title: "20 Incline", accent: "#f3a94f", nodes: [
         { metric: "variantMax", variant: "incline", target: 20, label: "Incline" }
       ] },
-      { key: "diamondGold", title: "Diamond", accent: "#f05c82", nodes: [
+      { key: "gold-pair-1", title: "Diamond + Wide", accent: "#f05c82", nodes: [
         { metric: "variantMax", variant: "diamond", target: 3, label: "Diamond" },
+        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" }
+      ] },
+      { key: "gold-military-7", title: "7 Military", accent: "#6c9cff", nodes: [
+        { metric: "variantMax", variant: "military", target: 7, label: "Military" }
+      ] },
+      { key: "gold-pair-2", title: "Standard + Diamond", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 20, label: "Standard" },
         { metric: "variantMax", variant: "diamond", target: 5, label: "Diamond" }
       ] },
-      { key: "platinPrep", title: "Platin Prep", accent: "#4f9cf8", nodes: [
-        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" },
-        { metric: "variantMax", variant: "military", target: 7, label: "Military" },
-        { metric: "standardMax", target: 20, label: "Standard" },
+      { key: "gold-decline", title: "1 Decline", accent: "#35bfe6", nodes: [
         { metric: "variantMax", variant: "decline", target: 1, label: "Decline" }
       ] }
     ],
@@ -3478,6 +3494,13 @@ function getV012RankIcon(rank, className = "") {
     return `<span class="v112-start-symbol ${className}">${getVariantIconSvg("standard")}</span>`;
   }
   return getRankIconSvg(rank, className);
+}
+
+function getV114NodeAccent(node, fallback = "#4f9cf8") {
+  if (node.variant && VARIANT_META[node.variant]?.color) return VARIANT_META[node.variant].color;
+  if (node.metric === "total") return "#39b86f";
+  if (node.metric === "standardMax") return VARIANT_META.standard.color;
+  return fallback;
 }
 
 function renderV012Path(pathState, pathIndex) {
@@ -3657,43 +3680,84 @@ function renderV114RankAnchor(rank, options = {}) {
 }
 
 function renderV114Stage(chapter, chapterIndex, chapterMode) {
-  const pathStates = chapter.paths.map(getV012PathState);
-  const columnMap = pathStates.length === 1 ? [2] : pathStates.length === 2 ? [1, 3] : [1, 2, 3];
-  const hasVariants = Boolean((chapter.variants || []).length);
-  const xMap = { 1: 18, 2: 50, 3: 82 };
-  const pathLineMarkup = columnMap.map(col => {
-    const x = xMap[col] ?? 50;
-    if (col === 2) return `<path class="path path-2" d="M50 8 L50 84" />`;
-    const controlX = col === 1 ? 34 : 66;
-    const curveX = col === 1 ? 24 : 76;
-    return `<path class="path path-${col}" d="M50 8 C${controlX} 12 ${curveX} 18 ${x} 30 L${x} 84" />`;
-  }).join("");
-  const trunkMarkup = columnMap.map(col => {
-    const x = xMap[col] ?? 50;
-    if (col === 2) return `<path class="trunk trunk-center" d="M50 94 L50 84" />`;
-    return `<path class="trunk trunk-${col === 1 ? "left" : "right"}" d="M50 94 C50 92 ${x} 90 ${x} 84" />`;
-  }).join("");
+  const rowStates = chapter.paths.map(getV012PathState);
+  const rowCount = Math.max(1, rowStates.length);
+  const rowYs = rowStates.map((_, index) => {
+    if (rowCount === 1) return 50;
+    const topY = 18;
+    const bottomY = 84;
+    return +(bottomY - (index * ((bottomY - topY) / (rowCount - 1)))).toFixed(2);
+  });
+  const firstIncompleteRowIndex = rowStates.findIndex(row => !row.done);
   const sectionClasses = [
     "v114-stage-section",
     chapterMode,
-    `paths-${pathStates.length}`,
-    hasVariants ? "has-variants" : "no-variants"
+    `rows-${rowCount}`,
+    "no-variants"
   ].join(" ");
   const rankLocked = chapterMode === "locked-preview" || chapterMode === "mystery-preview";
+
+  const lineMarkup = rowStates.map((rowState, rowIndex) => {
+    const y = rowYs[rowIndex];
+    const nodeCount = rowState.nodes.length;
+    if (nodeCount <= 1) return "";
+    if (nodeCount === 2) {
+      return `<path class="row-branch" d="M18 ${y} L50 ${y} L82 ${y}" />`;
+    }
+    return `<path class="row-branch" d="M18 ${y} L82 ${y}" />`;
+  }).join("");
+
+  const gridMarkup = rowStates.map((rowState, rowIndex) => {
+    const nodeCount = rowState.nodes.length;
+    const columns = nodeCount === 1 ? [2] : nodeCount === 2 ? [1, 3] : [1, 2, 3];
+    const isCurrentSection = chapterMode === "current";
+    return rowState.nodes.map((node, nodeIndex) => {
+      const forcedLocked = chapterMode === "locked-preview";
+      const mystery = chapterMode === "mystery-preview";
+      const done = chapterMode === "complete" || (!forcedLocked && !mystery && node.done);
+      const active = isCurrentSection && rowIndex === firstIncompleteRowIndex && !done;
+      const classes = [
+        "v114-skill-node",
+        done ? "done" : "",
+        active ? "active" : "",
+        forcedLocked ? "preview-locked" : "",
+        mystery ? "mystery" : ""
+      ].filter(Boolean).join(" ");
+      const label = node.label || rowState.title || "Ziel";
+      const gridRow = rowCount - rowIndex;
+      const gridColumn = columns[nodeIndex] || 2;
+      const accent = getV114NodeAccent(node, rowState.accent);
+
+      if (mystery) {
+        return `
+          <button class="${classes}" type="button" data-tree-node="mystery" aria-label="Geheimes Ziel" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow};">
+            <span class="v114-mystery-mark">?</span>
+          </button>
+        `;
+      }
+
+      return `
+        <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${rowState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" data-preview-locked="${forcedLocked ? "true" : "false"}" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow};">
+          <span class="v114-node-mark">${done ? "✓" : formatTreeNumber(node.target)}</span>
+          <span class="v114-node-mini">${label}</span>
+          ${forcedLocked ? '<span class="v114-node-lock" aria-hidden="true">🔒</span>' : ''}
+        </button>
+      `;
+    }).join("");
+  }).join("");
 
   return `
     <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
       <div class="v114-tree-stage">
         <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          ${trunkMarkup}
-          ${pathLineMarkup}
+          <path class="trunk trunk-center" d="M50 6 L50 94" />
+          ${lineMarkup}
         </svg>
 
-        <div class="v114-main-grid">
-          ${pathStates.map((path, index) => renderV114Path(path, index, chapterIndex, chapterMode, columnMap[index])).join("")}
+        <div class="v114-main-grid" style="--stage-rows:${rowCount};">
+          ${gridMarkup}
         </div>
 
-        ${renderV114VariantBranch(chapter, chapterIndex, chapterMode)}
         ${renderV114RankAnchor(chapter.from, { bottom: true, locked: rankLocked })}
       </div>
     </section>
@@ -3701,6 +3765,7 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
 }
 
 function bindV114TreeNodeEvents() {
+
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
       if (button.dataset.previewLocked === "true") {

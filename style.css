@@ -6677,7 +6677,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 
 
-/* ==========================================================================\n   v0.11.24 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
+/* ==========================================================================\n   v0.11.25 — training fullscreen + continuous, centered mobile skill tree\n   ========================================================================== */
 
 /* The bottom navigation used z-index:40 while the workout modal used 20. That
    made the app navigation sit on top of Training. Training is a real fullscreen
@@ -6777,7 +6777,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — tree line reach, inline labels, unified paths, green done nodes
+   v0.11.25 — tree line reach, inline labels, unified paths, green done nodes
    ========================================================================== */
 
 /* Keep the top rank and the first visible nodes a bit more separated. */
@@ -6879,7 +6879,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — subtle path background + perfectly centered rank anchors
+   v0.11.25 — subtle path background + perfectly centered rank anchors
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -6979,7 +6979,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — topo background, clearer connectors, corrected rank centering
+   v0.11.25 — topo background, clearer connectors, corrected rank centering
    ========================================================================== */
 
 .skill-tree-v114 {
@@ -7108,7 +7108,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — more visible hero image + rank path progress card on home
+   v0.11.25 — more visible hero image + rank path progress card on home
    ========================================================================== */
 
 /* Show a bit more of the large hero image: the white fade now starts much later. */
@@ -7213,7 +7213,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — simpler onboarding home + 3-item nav + history inside profile
+   v0.11.25 — simpler onboarding home + 3-item nav + history inside profile
    ========================================================================== */
 
 /* Clearer, shorter hero hierarchy. */
@@ -7336,7 +7336,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — stronger blue/white visual language + history as separate page
+   v0.11.25 — stronger blue/white visual language + history as separate page
    ========================================================================== */
 
 /* Overall light-blue canvas. */
@@ -7550,7 +7550,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — remove extra home labels and pull skill-tree card up
+   v0.11.25 — remove extra home labels and pull skill-tree card up
    ========================================================================== */
 
 /* Reduce empty space between hero image and skill-tree card. */
@@ -7608,14 +7608,14 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 
-/* v0.11.24 — remove duplicate next-goal section and use webp icons */
+/* v0.11.25 — remove duplicate next-goal section and use webp icons */
 .home-next-goal { display: none !important; }
 .home-rank-preview { padding-bottom: 10px !important; }
 .home-rank-paths { margin-top: 4px !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — rank-unlocked Daily / Weekly challenge progression
+   v0.11.25 — rank-unlocked Daily / Weekly challenge progression
    ========================================================================== */
 .home-goal-card.challenge-locked {
   opacity: .72;
@@ -7656,7 +7656,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — always show full tree + stronger rank centering
+   v0.11.25 — always show full tree + stronger rank centering
    ========================================================================== */
 
 /* Keep the complete tree visible while still using the same styling for future
@@ -7739,7 +7739,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — correct milestone order and fully centered rank anchors
+   v0.11.25 — correct milestone order and fully centered rank anchors
    ========================================================================== */
 
 /* Show chapter milestones from the current/lower rank upward to the next rank.
@@ -7803,7 +7803,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — blue/white tree palette + fixed vertical rank alignment
+   v0.11.25 — blue/white tree palette + fixed vertical rank alignment
    ========================================================================== */
 
 /* Blue-white base palette */
@@ -7948,7 +7948,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 /* ==========================================================================
-   v0.11.24 — stitched stage background for the full skill tree
+   v0.11.25 — stitched stage background for the full skill tree
    ========================================================================== */
 
 /* Use the three generated stage scenes as one tall backdrop: meadow -> forest
@@ -8020,7 +8020,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 }
 
 /* ==========================================================================
-   v0.11.24 — correct stage order + true edge-to-edge tree background
+   v0.11.25 — correct stage order + true edge-to-edge tree background
    ========================================================================== */
 
 /* The journey grows upward: Foundation meadow at the bottom, forest in the
@@ -8089,7 +8089,7 @@ body.training-active .home-bottom-nav { display: none !important; }
 
 
 /* ==========================================================================
-   v0.11.24 — app-wide dark mode
+   v0.11.25 — app-wide dark mode
    ========================================================================== */
 
 :root {
@@ -8530,7 +8530,7 @@ textarea {
 
 
 /* ==========================================================================
-   v0.11.24 — new first-rank progression + fixed 3-column tree layout shell
+   v0.11.25 — new first-rank progression + fixed 3-column tree layout shell
    ========================================================================== */
 
 /* Tree header floats above the tree without its own panel background. */
@@ -8696,4 +8696,146 @@ textarea {
   .v114-rank-anchor,
   .v114-tree-flow > .v114-rank-anchor.top,
   .v114-tree-stage > .v114-rank-anchor.bottom { min-height: 112px !important; }
+}
+
+
+/* ==========================================================================
+   v0.11.25 — mathematically centered tree layout with row-based progression
+   ========================================================================== */
+
+/* Fully transparent tree area under the header. */
+.tree-view,
+.tree-scroll,
+#treeScroll {
+  background: transparent !important;
+}
+
+/* Stage geometry: one centered trunk and row-based nodes.
+   Each chapter gets exactly as many rows as needed; 1 node sits in the middle,
+   2 nodes sit symmetrically on the outer columns. */
+.v114-tree-flow {
+  padding: 8px 0 24px !important;
+}
+.v114-stage-section,
+.v114-tree-stage {
+  min-height: 360px !important;
+}
+.v114-tree-lines {
+  position: absolute;
+  inset: 18px 10% 122px 10% !important;
+  width: auto !important;
+  height: auto !important;
+}
+.v114-main-grid {
+  position: absolute;
+  left: 10% !important;
+  right: 10% !important;
+  top: 18px !important;
+  bottom: 122px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(var(--stage-rows, 5), minmax(0, 1fr)) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  column-gap: 12px !important;
+  row-gap: 0 !important;
+}
+.v114-stage-section.rows-3 .v114-tree-stage,
+.v114-stage-section.rows-3 { min-height: 332px !important; }
+.v114-stage-section.rows-4 .v114-tree-stage,
+.v114-stage-section.rows-4 { min-height: 346px !important; }
+.v114-stage-section.rows-5 .v114-tree-stage,
+.v114-stage-section.rows-5 { min-height: 372px !important; }
+
+.v114-tree-lines .trunk,
+.v114-tree-lines .row-branch,
+.v114-tree-lines .path,
+.v114-tree-lines .path-1,
+.v114-tree-lines .path-2,
+.v114-tree-lines .path-3 {
+  fill: none;
+  stroke: rgba(111, 132, 163, .72) !important;
+  stroke-width: 1.05;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.v114-tree-lines .trunk {
+  stroke-width: 1.12;
+}
+
+/* Remove remaining layout leftovers from the old path-based stage. */
+.v114-stage-section.no-variants .v114-main-grid,
+.v114-stage-section.paths-1 .v114-main-grid,
+.v114-stage-section.paths-2 .v114-main-grid,
+.v114-stage-section.paths-3 .v114-main-grid {
+  left: 10% !important;
+  right: 10% !important;
+}
+.v114-stage-section.no-variants .v114-tree-lines,
+.v114-stage-section.paths-1 .v114-tree-lines,
+.v114-stage-section.paths-2 .v114-tree-lines,
+.v114-stage-section.paths-3 .v114-tree-lines {
+  inset: 18px 10% 122px 10% !important;
+}
+
+/* Rank anchors stay locked to the exact center and use equal reserved space. */
+.v114-rank-anchor,
+.v114-tree-flow > .v114-rank-anchor.top,
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  width: 100% !important;
+  min-height: 110px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  transform: none !important;
+  padding-bottom: 10px !important;
+}
+.v114-rank-icon,
+.v114-rank-label,
+.v114-rank-unlock {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+.v114-rank-unlock {
+  min-height: 18px !important;
+}
+.v114-rank-unlock.is-placeholder {
+  visibility: hidden !important;
+}
+
+/* Slightly smaller nodes so even 5-row chapters stay clean and centered. */
+.v114-skill-node {
+  width: min(88px, 23vw) !important;
+  height: min(88px, 23vw) !important;
+  border-radius: 22px !important;
+}
+.v114-node-mini {
+  line-height: 1.15;
+}
+
+@media (max-width: 560px) {
+  .v114-tree-lines { inset: 16px 8% 118px 8% !important; }
+  .v114-main-grid { left: 8% !important; right: 8% !important; top: 16px !important; bottom: 118px !important; column-gap: 8px !important; }
+  .v114-stage-section.rows-5 .v114-tree-stage,
+  .v114-stage-section.rows-5 { min-height: 360px !important; }
+}
+
+@media (max-width: 420px) {
+  .v114-tree-lines { inset: 14px 6% 114px 6% !important; }
+  .v114-main-grid { left: 6% !important; right: 6% !important; top: 14px !important; bottom: 114px !important; column-gap: 6px !important; }
+  .v114-skill-node { width: min(82px, 22vw) !important; height: min(82px, 22vw) !important; }
+  .v114-rank-anchor,
+  .v114-tree-flow > .v114-rank-anchor.top,
+  .v114-tree-stage > .v114-rank-anchor.bottom { min-height: 104px !important; }
 }
