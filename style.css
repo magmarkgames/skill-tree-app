@@ -9551,13 +9551,16 @@ html, body, .app-shell {
 }
 .profile-version-pill { letter-spacing: .04em; }
 
+
 /* ==========================================================================
-   v0.11.31 — lightweight hexagon skill nodes
-   Inline SVG symbols only: no new image assets required.
+   v0.11.33 — image-based hexagon skill nodes
+   Cleaner nodes: artwork only + slim progress pill.
    ========================================================================== */
 .v114-skill-node {
-  width: min(88px, 23vw) !important;
-  height: 104px !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: min(90px, 24vw) !important;
+  height: 102px !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -9568,46 +9571,48 @@ html, body, .app-shell {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  gap: 7px !important;
+  gap: 6px !important;
   color: var(--node-accent) !important;
 }
 .v114-node-hex {
   position: relative;
-  width: 72px;
-  height: 78px;
-  display: block;
-  flex: 0 0 auto;
-  clip-path: polygon(50% 0%, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%);
-  background: var(--node-accent);
-  padding: 3px;
-  filter: drop-shadow(0 7px 12px rgba(0,0,0,.22));
-}
-.v114-node-hex-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  width: 74px;
+  height: 74px;
   display: flex;
   align-items: center;
   justify-content: center;
-  clip-path: inherit;
-  background: linear-gradient(160deg, rgba(34,41,75,.98), rgba(15,19,38,.98));
+  flex: 0 0 auto;
+  background: transparent !important;
+  padding: 0 !important;
+  filter: none;
+}
+.v114-node-hex-inner {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  clip-path: none !important;
 }
 .v114-node-symbol {
-  width: 47px;
-  height: 47px;
+  width: 74px;
+  height: 74px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--node-accent);
 }
-.v114-node-symbol svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 4.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.v114-node-symbol .app-asset-icon,
+.v114-node-image {
+  width: 74px !important;
+  height: 74px !important;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 7px 10px rgba(0,0,0,.22));
 }
 .v114-node-progress {
   position: relative;
@@ -9642,8 +9647,8 @@ html, body, .app-shell {
 .v114-node-lock,
 .v114-node-check {
   position: absolute;
-  top: -1px;
-  right: -1px;
+  top: -2px;
+  right: -2px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -9653,7 +9658,7 @@ html, body, .app-shell {
   border: 1px solid rgba(255,255,255,.16);
   font-size: 10px;
   line-height: 1;
-  z-index: 2;
+  z-index: 3;
 }
 .v114-node-lock {
   background: #1a2136 !important;
@@ -9664,17 +9669,12 @@ html, body, .app-shell {
   color: #08140d;
   font-weight: 900;
 }
-
-/* exactly three visual states: locked, active, completed */
 .v114-skill-node.preview-locked {
-  opacity: .62 !important;
+  opacity: .74 !important;
 }
-.v114-skill-node.preview-locked .v114-node-hex {
-  background: #53617c !important;
-  filter: none;
-}
-.v114-skill-node.preview-locked .v114-node-symbol {
-  color: #8d99b8 !important;
+.v114-skill-node.preview-locked .v114-node-symbol .app-asset-icon,
+.v114-skill-node.preview-locked .v114-node-image {
+  filter: grayscale(.25) brightness(.7) saturate(.65);
 }
 .v114-skill-node.preview-locked .v114-node-progress-fill {
   background: #68748f !important;
@@ -9683,25 +9683,13 @@ html, body, .app-shell {
 .v114-skill-node.preview-locked .v114-node-progress-text {
   color: #aab2c8 !important;
 }
-.v114-skill-node.active .v114-node-hex {
-  background: var(--node-accent) !important;
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--node-accent) 30%, transparent)) drop-shadow(0 7px 12px rgba(0,0,0,.24));
+.v114-skill-node.active .v114-node-symbol .app-asset-icon,
+.v114-skill-node.active .v114-node-image {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--node-accent) 32%, transparent)) drop-shadow(0 8px 12px rgba(0,0,0,.24));
 }
-.v114-skill-node.active .v114-node-hex-inner {
-  background: linear-gradient(155deg, rgba(39,45,82,.98), rgba(16,20,41,.98)) !important;
-}
-.v114-skill-node.active .v114-node-symbol {
-  color: color-mix(in srgb, var(--node-accent) 72%, white 28%) !important;
-}
-.v114-skill-node.done .v114-node-hex {
-  background: #61D98C !important;
-  filter: drop-shadow(0 0 6px rgba(97,217,140,.16)) drop-shadow(0 7px 12px rgba(0,0,0,.22));
-}
-.v114-skill-node.done .v114-node-hex-inner {
-  background: linear-gradient(155deg, #14372b, #0e251d) !important;
-}
-.v114-skill-node.done .v114-node-symbol {
-  color: #78efaa !important;
+.v114-skill-node.done .v114-node-symbol .app-asset-icon,
+.v114-skill-node.done .v114-node-image {
+  filter: hue-rotate(58deg) saturate(1.15) brightness(1.08) drop-shadow(0 0 6px rgba(97,217,140,.16)) drop-shadow(0 8px 12px rgba(0,0,0,.22));
 }
 .v114-skill-node.done .v114-node-progress {
   border-color: rgba(97,217,140,.46);
@@ -9713,20 +9701,24 @@ html, body, .app-shell {
 .v114-skill-node.done .v114-node-progress-text {
   color: #f7fff9 !important;
 }
-
 .v114-node-mark,
 .v114-node-mini {
   display: none !important;
 }
-
 @media (max-width: 420px) {
   .v114-skill-node {
-    width: min(82px, 22vw) !important;
+    width: min(84px, 23vw) !important;
     height: 98px !important;
     gap: 6px !important;
   }
-  .v114-node-hex { width: 67px; height: 73px; }
-  .v114-node-symbol { width: 43px; height: 43px; }
+  .v114-node-hex,
+  .v114-node-hex-inner,
+  .v114-node-symbol,
+  .v114-node-symbol .app-asset-icon,
+  .v114-node-image {
+    width: 68px !important;
+    height: 68px !important;
+  }
   .v114-node-progress { width: 61px; height: 13px; }
   .v114-node-progress-text { font-size: 7.5px; }
 }

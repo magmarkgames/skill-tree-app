@@ -149,9 +149,9 @@ function createEmptyVariantStats() {
 const ASSET_PATHS = {
   variants: {
     standard: "variant-standard.webp",
-    wall: "variant-standard.webp",
+    wall: "variant-wall.webp",
     wide: "variant-wide.webp",
-    military: "variant-standard.webp",
+    military: "variant-military.webp",
     diamond: "variant-diamond.webp",
     pike: "variant-pike.webp",
     incline: "variant-incline.webp",
@@ -3528,19 +3528,10 @@ function getV114NodeAccent(node, fallback = "#4f9cf8") {
 }
 
 function getV114NodeSymbol(node) {
-  const key = node.variant || (node.metric === "standardMax" ? "standard" : node.metric === "total" ? "total" : "standard");
-  const common = 'viewBox="0 0 64 64" aria-hidden="true" focusable="false"';
-  const icons = {
-    wall: `<svg ${common}><path d="M54 8v48"/><path d="M10 50l9-17 12-10 13 1 8 7"/><path d="M44 24l8 7"/><circle cx="32" cy="21" r="3.5"/></svg>`,
-    incline: `<svg ${common}><rect x="43" y="34" width="13" height="18" rx="1.5"/><path d="M10 50l10-18 13-7 12 8"/><path d="M40 34l6 5"/><circle cx="34" cy="23" r="3.5"/></svg>`,
-    standard: `<svg ${common}><path d="M9 46l9-14 17-7 13 6 7 15"/><path d="M18 32l2 14M48 31l-2 15"/><circle cx="36" cy="23" r="3.5"/></svg>`,
-    wide: `<svg ${common}><path d="M12 42l12-8h16l12 8"/><path d="M22 34L11 45M42 34l11 11"/><circle cx="32" cy="28" r="4"/></svg>`,
-    military: `<svg ${common}><path d="M10 45l9-13 16-6 11 5 7 14"/><path d="M25 34l-1 12M39 33l1 13"/><circle cx="36" cy="24" r="3.5"/></svg>`,
-    diamond: `<svg ${common}><circle cx="32" cy="19" r="4"/><path d="M17 35l8-7h14l8 7-5 12H22z"/><path d="M27 39l5-5 5 5-5 5z"/></svg>`,
-    decline: `<svg ${common}><rect x="8" y="27" width="14" height="19" rx="1.5"/><path d="M18 29l13 5 14 5 10 8"/><path d="M44 39l-2 10M54 47l-2 5"/><circle cx="46" cy="38" r="3.5"/></svg>`,
-    total: `<svg ${common}><rect x="13" y="16" width="38" height="8" rx="4"/><rect x="13" y="29" width="30" height="8" rx="4"/><rect x="13" y="42" width="21" height="8" rx="4"/><path d="M49 35v16M41 43h16"/></svg>`
-  };
-  return icons[key] || icons.standard;
+  if (node.metric === "total") return getMetricIconSvg("total", "v114-node-image");
+  if (node.metric === "standardMax" && !node.variant) return getVariantIconSvg("standard", "v114-node-image");
+  if (node.variant) return getVariantIconSvg(node.variant, "v114-node-image");
+  return getVariantIconSvg("standard", "v114-node-image");
 }
 
 function getV114NodeProgress(node) {
