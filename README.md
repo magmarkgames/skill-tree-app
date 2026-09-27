@@ -1,4 +1,4 @@
-# Power Push v0.11.28
+# Power Push v0.11.29
 
 ## Neu
 - Bottom-Navigation wird im Training vollständig ausgeblendet

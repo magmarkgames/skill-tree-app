@@ -634,7 +634,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.28",
+    appVersion: "0.11.29",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3276,7 +3276,7 @@ const V012_CHAPTERS = [
       { key: "wood-wall", title: "5 Wall", accent: "#7c8cff", nodes: [
         { metric: "variantMax", variant: "wall", target: 5, label: "Wall" }
       ] },
-      { key: "wood-pair-1", title: "Incline + Gesamt", accent: "#f3a94f", nodes: [
+      { key: "wood-pair-1", title: "Incline + Gesamt", accent: "#4f9cf8", nodes: [
         { metric: "variantMax", variant: "incline", target: 2, label: "Incline" },
         { metric: "total", target: 10, label: "Gesamt" }
       ] },
@@ -3296,12 +3296,13 @@ const V012_CHAPTERS = [
       { key: "stone-wall", title: "10 Wall", accent: "#7c8cff", nodes: [
         { metric: "variantMax", variant: "wall", target: 10, label: "Wall" }
       ] },
-      { key: "stone-pair", title: "Standard + Incline", accent: "#4f9cf8", nodes: [
+      { key: "stone-pair-1", title: "Standard + Incline", accent: "#4f9cf8", nodes: [
         { metric: "standardMax", target: 2, label: "Standard" },
         { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
       ] },
-      { key: "stone-standard", title: "3 Standard", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 3, label: "Standard" }
+      { key: "stone-pair-2", title: "Standard + Gesamt", accent: "#4f9cf8", nodes: [
+        { metric: "standardMax", target: 3, label: "Standard" },
+        { metric: "total", target: 50, label: "Gesamt" }
       ] },
       { key: "stone-wide", title: "1 Wide", accent: "#8b6cff", nodes: [
         { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
@@ -3322,8 +3323,8 @@ const V012_CHAPTERS = [
       { key: "bronze-incline-10", title: "10 Incline", accent: "#f3a94f", nodes: [
         { metric: "variantMax", variant: "incline", target: 10, label: "Incline" }
       ] },
-      { key: "bronze-pair-2", title: "Standard + Wide", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 7, label: "Standard" },
+      { key: "bronze-pair-2", title: "Gesamt + Wide", accent: "#4f9cf8", nodes: [
+        { metric: "total", target: 75, label: "Gesamt" },
         { metric: "variantMax", variant: "wide", target: 5, label: "Wide" }
       ] },
       { key: "bronze-military", title: "1 Military", accent: "#6c9cff", nodes: [
@@ -3338,11 +3339,13 @@ const V012_CHAPTERS = [
       { key: "silver-wide-7", title: "7 Wide", accent: "#8b6cff", nodes: [
         { metric: "variantMax", variant: "wide", target: 7, label: "Wide" }
       ] },
-      { key: "silver-pair-1", title: "Military + Incline", accent: "#6c9cff", nodes: [
+      { key: "silver-triple-1", title: "Military + Standard + Gesamt", accent: "#6c9cff", nodes: [
         { metric: "variantMax", variant: "military", target: 3, label: "Military" },
-        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" }
+        { metric: "standardMax", target: 7, label: "Standard" },
+        { metric: "total", target: 100, label: "Gesamt" }
       ] },
-      { key: "silver-military-5", title: "5 Military", accent: "#6c9cff", nodes: [
+      { key: "silver-pair-1", title: "Incline + Military", accent: "#6c9cff", nodes: [
+        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" },
         { metric: "variantMax", variant: "military", target: 5, label: "Military" }
       ] },
       { key: "silver-pair-2", title: "Wide + Standard", accent: "#8b6cff", nodes: [
@@ -3361,9 +3364,10 @@ const V012_CHAPTERS = [
       { key: "gold-incline-20", title: "20 Incline", accent: "#f3a94f", nodes: [
         { metric: "variantMax", variant: "incline", target: 20, label: "Incline" }
       ] },
-      { key: "gold-pair-1", title: "Diamond + Wide", accent: "#f05c82", nodes: [
+      { key: "gold-triple-1", title: "Diamond + Wide + Gesamt", accent: "#f05c82", nodes: [
         { metric: "variantMax", variant: "diamond", target: 3, label: "Diamond" },
-        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" }
+        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" },
+        { metric: "total", target: 200, label: "Gesamt" }
       ] },
       { key: "gold-military-7", title: "7 Military", accent: "#6c9cff", nodes: [
         { metric: "variantMax", variant: "military", target: 7, label: "Military" }
@@ -3664,11 +3668,13 @@ function renderV114VariantBranch(chapter, chapterIndex, chapterMode) {
 function renderV114RankAnchor(rank, options = {}) {
   const { locked = false, top = false, bottom = false } = options;
   const label = rank === "Starter" ? "Start" : rank;
-  const unlockLabel = rank === "Bronze"
-    ? "Daily I · Weekly I"
-    : rank === "Silber"
-      ? "Daily II · Weekly II"
-      : "";
+  const unlockMap = {
+    Bronze: "Daily I · Weekly I",
+    Silber: "Daily II · Weekly II",
+    Gold: "Daily III · Weekly III",
+    Platin: "Daily IV · Weekly IV"
+  };
+  const unlockLabel = unlockMap[rank] || "";
   const classes = ["v114-rank-anchor", top ? "top" : "", bottom ? "bottom" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
   return `
     <div class="${classes}">
