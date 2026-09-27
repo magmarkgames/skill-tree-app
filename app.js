@@ -634,7 +634,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.27",
+    appVersion: "0.11.28",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3684,8 +3684,8 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
   const rowCount = Math.max(1, rowStates.length);
   const rowYs = rowStates.map((_, index) => {
     if (rowCount === 1) return 50;
-    const topY = 18;
-    const bottomY = 84;
+    const topY = 14;
+    const bottomY = 82;
     return +(bottomY - (index * ((bottomY - topY) / (rowCount - 1)))).toFixed(2);
   });
   const firstIncompleteRowIndex = rowStates.findIndex(row => !row.done);
@@ -3696,16 +3696,45 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
     "no-variants"
   ].join(" ");
   const rankLocked = chapterMode === "locked-preview" || chapterMode === "mystery-preview";
+  const getRowXs = (count) => count <= 1 ? [50] : count === 2 ? [18, 82] : [18, 50, 82];
+  const lineSegments = [];
 
-  const lineMarkup = rowStates.map((rowState, rowIndex) => {
-    const y = rowYs[rowIndex];
-    const nodeCount = rowState.nodes.length;
-    if (nodeCount <= 1) return "";
-    if (nodeCount === 2) {
-      return `<path class="row-branch" d="M18 ${y} L50 ${y} L82 ${y}" />`;
+  const connectPoints = (fromPoints, toPoints) => {
+    if (!fromPoints.length || !toPoints.length) return;
+    if (fromPoints.length === 1 && toPoints.length === 1) {
+      lineSegments.push(`<path class="row-link" d="M${fromPoints[0].x} ${fromPoints[0].y} L${toPoints[0].x} ${toPoints[0].y}" />`);
+      return;
     }
-    return `<path class="row-branch" d="M18 ${y} L82 ${y}" />`;
-  }).join("");
+    if (fromPoints.length === 1) {
+      toPoints.forEach(point => {
+        lineSegments.push(`<path class="row-link" d="M${fromPoints[0].x} ${fromPoints[0].y} L${point.x} ${point.y}" />`);
+      });
+      return;
+    }
+    if (toPoints.length === 1) {
+      fromPoints.forEach(point => {
+        lineSegments.push(`<path class="row-link" d="M${point.x} ${point.y} L${toPoints[0].x} ${toPoints[0].y}" />`);
+      });
+      return;
+    }
+    const pairs = Math.min(fromPoints.length, toPoints.length);
+    for (let index = 0; index < pairs; index += 1) {
+      lineSegments.push(`<path class="row-link" d="M${fromPoints[index].x} ${fromPoints[index].y} L${toPoints[index].x} ${toPoints[index].y}" />`);
+    }
+  };
+
+  const rowPoints = rowStates.map((rowState, rowIndex) => {
+    const xs = getRowXs(rowState.nodes.length);
+    return xs.map(x => ({ x, y: rowYs[rowIndex] }));
+  });
+
+  if (rowPoints.length) {
+    connectPoints([{ x: 50, y: 97 }], rowPoints[0]);
+    for (let rowIndex = 0; rowIndex < rowPoints.length - 1; rowIndex += 1) {
+      connectPoints(rowPoints[rowIndex], rowPoints[rowIndex + 1]);
+    }
+    connectPoints(rowPoints[rowPoints.length - 1], [{ x: 50, y: 3 }]);
+  }
 
   const gridMarkup = rowStates.map((rowState, rowIndex) => {
     const nodeCount = rowState.nodes.length;
@@ -3750,8 +3779,7 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
     <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
       <div class="v114-tree-stage">
         <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path class="trunk trunk-center" d="M50 6 L50 94" />
-          ${lineMarkup}
+          ${lineSegments.join("")}
         </svg>
 
         <div class="v114-main-grid" style="--stage-rows:${rowCount};">
@@ -3765,6 +3793,7 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
 }
 
 function bindV114TreeNodeEvents() {
+
 
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
