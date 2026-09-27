@@ -57,14 +57,14 @@ const DEFAULT_PROGRESS = {
 };
 
 const VARIANT_META = {
-  standard: { label: "Standard", shortLabel: "Standard", color: "#4A90FF" },
-  wall: { label: "Wall", shortLabel: "Wall", color: "#7C8CFF" },
-  wide: { label: "Wide", shortLabel: "Wide", color: "#8B6CFF" },
-  military: { label: "Military", shortLabel: "Military", color: "#6C9CFF" },
-  diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F05C82" },
+  standard: { label: "Standard", shortLabel: "Standard", color: "#4DA3FF" },
+  wall: { label: "Wall", shortLabel: "Wall", color: "#6C9CFF" },
+  wide: { label: "Wide", shortLabel: "Wide", color: "#E65BC8" },
+  military: { label: "Military", shortLabel: "Military", color: "#FF5D6C" },
+  diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F2A65A" },
   pike: { label: "Pike", shortLabel: "Pike", color: "#43C889" },
-  incline: { label: "Incline", shortLabel: "Incline", color: "#F3A94F" },
-  decline: { label: "Decline", shortLabel: "Decline", color: "#35BFE6" },
+  incline: { label: "Incline", shortLabel: "Incline", color: "#9B6CFF" },
+  decline: { label: "Decline", shortLabel: "Decline", color: "#4EDCE6" },
   explosive: { label: "Explosive", shortLabel: "Explosive", color: "#F0B429" },
   archer: { label: "Archer", shortLabel: "Archer", color: "#6D7CF6" },
   handstand: { label: "Handstand", shortLabel: "Handstand", color: "#28B8A7" },
@@ -3522,9 +3522,33 @@ function getV012RankIcon(rank, className = "") {
 
 function getV114NodeAccent(node, fallback = "#4f9cf8") {
   if (node.variant && VARIANT_META[node.variant]?.color) return VARIANT_META[node.variant].color;
-  if (node.metric === "total") return "#39b86f";
+  if (node.metric === "total") return "#F3C761";
   if (node.metric === "standardMax") return VARIANT_META.standard.color;
   return fallback;
+}
+
+function getV114NodeSymbol(node) {
+  const key = node.variant || (node.metric === "standardMax" ? "standard" : node.metric === "total" ? "total" : "standard");
+  const common = 'viewBox="0 0 64 64" aria-hidden="true" focusable="false"';
+  const icons = {
+    wall: `<svg ${common}><path d="M54 8v48"/><path d="M10 50l9-17 12-10 13 1 8 7"/><path d="M44 24l8 7"/><circle cx="32" cy="21" r="3.5"/></svg>`,
+    incline: `<svg ${common}><rect x="43" y="34" width="13" height="18" rx="1.5"/><path d="M10 50l10-18 13-7 12 8"/><path d="M40 34l6 5"/><circle cx="34" cy="23" r="3.5"/></svg>`,
+    standard: `<svg ${common}><path d="M9 46l9-14 17-7 13 6 7 15"/><path d="M18 32l2 14M48 31l-2 15"/><circle cx="36" cy="23" r="3.5"/></svg>`,
+    wide: `<svg ${common}><path d="M12 42l12-8h16l12 8"/><path d="M22 34L11 45M42 34l11 11"/><circle cx="32" cy="28" r="4"/></svg>`,
+    military: `<svg ${common}><path d="M10 45l9-13 16-6 11 5 7 14"/><path d="M25 34l-1 12M39 33l1 13"/><circle cx="36" cy="24" r="3.5"/></svg>`,
+    diamond: `<svg ${common}><circle cx="32" cy="19" r="4"/><path d="M17 35l8-7h14l8 7-5 12H22z"/><path d="M27 39l5-5 5 5-5 5z"/></svg>`,
+    decline: `<svg ${common}><rect x="8" y="27" width="14" height="19" rx="1.5"/><path d="M18 29l13 5 14 5 10 8"/><path d="M44 39l-2 10M54 47l-2 5"/><circle cx="46" cy="38" r="3.5"/></svg>`,
+    total: `<svg ${common}><rect x="13" y="16" width="38" height="8" rx="4"/><rect x="13" y="29" width="30" height="8" rx="4"/><rect x="13" y="42" width="21" height="8" rx="4"/><path d="M49 35v16M41 43h16"/></svg>`
+  };
+  return icons[key] || icons.standard;
+}
+
+function getV114NodeProgress(node) {
+  const target = Math.max(1, Number(node.target) || 1);
+  const raw = Math.max(0, Number(node.current ?? getV012NodeValue(node)) || 0);
+  const current = Math.min(raw, target);
+  const percent = Math.max(0, Math.min(100, current / target * 100));
+  return { current, target, percent };
 }
 
 function renderV012Path(pathState, pathIndex) {
@@ -3767,10 +3791,12 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
     const columns = nodeCount === 1 ? [2] : nodeCount === 2 ? [1, 3] : [1, 2, 3];
     const isCurrentSection = chapterMode === "current";
     return rowState.nodes.map((node, nodeIndex) => {
-      const forcedLocked = chapterMode === "locked-preview";
+      const chapterLocked = chapterMode === "locked-preview";
       const mystery = chapterMode === "mystery-preview";
-      const done = chapterMode === "complete" || (!forcedLocked && !mystery && node.done);
+      const done = chapterMode === "complete" || (!chapterLocked && !mystery && node.done);
       const active = isCurrentSection && rowIndex === firstIncompleteRowIndex && !done;
+      const prerequisiteLocked = isCurrentSection && rowIndex > firstIncompleteRowIndex && !done;
+      const forcedLocked = chapterLocked || prerequisiteLocked;
       const classes = [
         "v114-skill-node",
         done ? "done" : "",
@@ -3791,11 +3817,20 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
         `;
       }
 
+      const progressState = getV114NodeProgress(node);
       return `
-        <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${rowState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" data-preview-locked="${forcedLocked ? "true" : "false"}" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow};">
-          <span class="v114-node-mark">${done ? "✓" : formatTreeNumber(node.target)}</span>
-          <span class="v114-node-mini">${label}</span>
-          ${forcedLocked ? '<span class="v114-node-lock" aria-hidden="true">🔒</span>' : ''}
+        <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${rowState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" data-preview-locked="${forcedLocked ? "true" : "false"}" aria-label="${label}: ${formatTreeNumber(progressState.current)} von ${formatTreeNumber(progressState.target)}" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow}; --node-progress:${progressState.percent}%;">
+          <span class="v114-node-hex" aria-hidden="true">
+            <span class="v114-node-hex-inner">
+              <span class="v114-node-symbol">${getV114NodeSymbol(node)}</span>
+              ${forcedLocked ? '<span class="v114-node-lock" aria-hidden="true">🔒</span>' : ''}
+              ${done ? '<span class="v114-node-check" aria-hidden="true">✓</span>' : ''}
+            </span>
+          </span>
+          <span class="v114-node-progress" aria-hidden="true">
+            <span class="v114-node-progress-fill"></span>
+            <span class="v114-node-progress-text">${formatTreeNumber(progressState.current)}/${formatTreeNumber(progressState.target)}</span>
+          </span>
         </button>
       `;
     }).join("");
@@ -3823,10 +3858,6 @@ function bindV114TreeNodeEvents() {
 
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
-      if (button.dataset.previewLocked === "true") {
-        alert("Dieses Ziel wird mit dem vorherigen Rang freigeschaltet.");
-        return;
-      }
       const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
       const path = chapter?.paths.find(item => item.key === button.dataset.path);
       const nodeIndex = Number(button.dataset.nodeIndex) || 0;
@@ -3835,7 +3866,8 @@ function bindV114TreeNodeEvents() {
       if (!node) return;
       const current = getV012NodeValue(node);
       const detail = node.metric === "total" ? "Push-ups insgesamt" : node.variant ? `${node.label} Push-ups` : `${node.label} am Stück`;
-      alert(`${path.title}\n${formatTreeNumber(node.target)} ${detail}\nAktuell: ${formatTreeNumber(current)}${current >= node.target ? "\n\n✓ Abgeschlossen" : `\nNoch ${formatTreeNumber(node.target - current)}`}`);
+      const status = current >= node.target ? "✓ Abgeschlossen" : button.dataset.previewLocked === "true" ? "🔒 Gesperrt" : "● Aktiv";
+      alert(`${node.label || path.title}\nZiel: ${formatTreeNumber(node.target)} ${detail}\nAktuell: ${formatTreeNumber(current)}\nStatus: ${status}${current < node.target ? `\nNoch ${formatTreeNumber(node.target - current)}` : ""}`);
     });
   });
 }
