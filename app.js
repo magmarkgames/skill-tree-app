@@ -408,6 +408,7 @@ const homeView = document.getElementById("homeView");
 const treeView = document.getElementById("treeView");
 const historyView = document.getElementById("historyView");
 const profileView = document.getElementById("profileView");
+const skillsView = document.getElementById("skillsView");
 const treeScroll = document.getElementById("treeScroll");
 const skillTree = document.getElementById("skillTree");
 
@@ -445,6 +446,8 @@ const profilePushRankHint = document.getElementById("profilePushRankHint");
 const profileHistorySummary = document.getElementById("profileHistorySummary");
 const profileGenderMaleBtn = document.getElementById("profileGenderMaleBtn");
 const profileGenderFemaleBtn = document.getElementById("profileGenderFemaleBtn");
+const homeNextRankName = document.getElementById("homeNextRankName");
+const skillsPushupRank = document.getElementById("skillsPushupRank");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -645,7 +648,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.37",
+    appVersion: "0.11.38",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -720,10 +723,10 @@ async function importProgressBackup(file) {
 // ---------- Views / Dashboard ----------
 function setBottomNavActive(name) {
   const groups = {
-    home: [document.getElementById("homeNavHomeBtn"), document.getElementById("profileNavHomeBtn"), document.getElementById("historyNavHomeBtn")],
-    tree: [document.getElementById("homeNavTreeBtn"), document.getElementById("profileNavTreeBtn"), document.getElementById("historyNavTreeBtn")],
-    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("profileNavHistoryBtn"), document.getElementById("historyNavHistoryBtn")],
-    profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("profileNavProfileBtn"), document.getElementById("historyNavProfileBtn")]
+    home: [document.getElementById("homeNavHomeBtn"), document.getElementById("skillsNavHomeBtn"), document.getElementById("profileNavHomeBtn"), document.getElementById("historyNavHomeBtn")],
+    skills: [document.getElementById("homeNavSkillsBtn"), document.getElementById("skillsNavSkillsBtn"), document.getElementById("profileNavSkillsBtn"), document.getElementById("historyNavSkillsBtn")],
+    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("skillsNavHistoryBtn"), document.getElementById("profileNavHistoryBtn"), document.getElementById("historyNavHistoryBtn")],
+    profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("skillsNavProfileBtn"), document.getElementById("profileNavProfileBtn"), document.getElementById("historyNavProfileBtn")]
   };
   Object.values(groups).flat().forEach(btn => btn?.classList.remove("active"));
   (groups[name] || []).forEach(btn => btn?.classList.add("active"));
@@ -734,6 +737,7 @@ function showView(name) {
   treeView.classList.toggle("hidden", name !== "tree");
   historyView.classList.toggle("hidden", name !== "history");
   profileView.classList.toggle("hidden", name !== "profile");
+  skillsView?.classList.toggle("hidden", name !== "skills");
 
   setBottomNavActive(name);
   window.scrollTo(0, 0);
@@ -761,6 +765,14 @@ function showView(name) {
 
   if (name === "history") renderHistory();
   if (name === "profile") renderProfile();
+  if (name === "skills") renderSkills();
+}
+
+function renderSkills() {
+  if (skillsPushupRank) {
+    const rankName = getV012CurrentRankName();
+    skillsPushupRank.textContent = `${rankName} · Push-up aktiv`;
+  }
 }
 
 function render() {
@@ -800,6 +812,7 @@ function render() {
   if (!treeView.classList.contains("hidden")) renderTree();
   if (!historyView.classList.contains("hidden")) renderHistory();
   if (!profileView.classList.contains("hidden")) renderProfile();
+  if (!skillsView?.classList.contains("hidden")) renderSkills();
   renderLiveGoals();
 }
 
@@ -3982,55 +3995,67 @@ function renderHomeRankPaths(chapter) {
   `;
 }
 
+function buildProgressOrb(label, current, target, type = "side") {
+  const safeTarget = Math.max(1, Number(target) || 1);
+  const safeCurrent = Math.max(0, Number(current) || 0);
+  const percent = Math.max(0, Math.min(100, (Math.min(safeCurrent, safeTarget) / safeTarget) * 100));
+  const isRecord = type === "record";
+  if (isRecord) {
+    return `
+      <div class="orb-ring orb-ring-record" style="--progress:100%; --orb-color:#7fbaff;">
+        <div class="orb-content">
+          <span class="orb-kicker">Rekord am Stück</span>
+          <strong>${formatTreeNumber(safeCurrent)}</strong>
+          <small>Schlag diese Trophäe</small>
+        </div>
+      </div>
+      <span class="home-progress-caption">Bestwert</span>
+    `;
+  }
+  return `
+    <div class="orb-ring" style="--progress:${percent}%; --orb-color:${type === "daily" ? "#61d98c" : "#63a9ff"};">
+      <div class="orb-content">
+        <span class="orb-kicker">${label}</span>
+        <strong>${formatTreeNumber(safeCurrent)}<small>/${formatTreeNumber(safeTarget)}</small></strong>
+      </div>
+    </div>
+    <span class="home-progress-caption">${type === "daily" ? "Heute" : "Diese Woche"}</span>
+  `;
+}
+
+function renderHomeProgressOrbs(todayTotal, weekTotal) {
+  const dailyEl = document.getElementById("homeDailyCircle");
+  const recordEl = document.getElementById("homeRecordCircle");
+  const weeklyEl = document.getElementById("homeWeeklyCircle");
+  if (dailyEl) {
+    dailyEl.innerHTML = buildProgressOrb("Daily Push Ups", todayTotal, Math.max(progress.pushupBestDay || 0, todayTotal, 1), "daily");
+  }
+  if (recordEl) {
+    recordEl.innerHTML = buildProgressOrb("Rekord", progress.pushupMax, progress.pushupMax || 1, "record");
+  }
+  if (weeklyEl) {
+    weeklyEl.innerHTML = buildProgressOrb("Weekly Push Ups", weekTotal, Math.max(progress.pushupBestWeek || 0, weekTotal, 1), "weekly");
+  }
+}
+
 function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
   const chapter = getV012CurrentChapter();
   const displayRank = getV012CurrentRankName();
-  const accountName = getHomeAccountName();
-  if (homeHeroGreeting) {
-    homeHeroGreeting.textContent = `${getHeroGreeting()}${accountName ? `, ${accountName}` : ""}`;
-  }
-  if (homeHeroHeadline) homeHeroHeadline.textContent = "Keep going.";
-  if (homeHeroSubline) homeHeroSubline.textContent = "Discipline Today. Stronger Tomorrow.";
+  const nextRank = chapter?.to || "Max";
+
+  if (homeHeroGreeting) homeHeroGreeting.textContent = "GOOD EVENING,";
+  if (homeHeroHeadline) homeHeroHeadline.textContent = "Keep Going.";
+  if (homeHeroSubline) homeHeroSubline.textContent = "“Discipline Today, Success Tomorrow.”";
 
   homeRankName.textContent = displayRank;
+  if (homeNextRankName) homeNextRankName.textContent = nextRank;
   homeRankIcon.innerHTML = displayRank === "Starter"
     ? getVariantIconSvg("standard", "home-starter-icon")
     : getRankIconSvg(displayRank, "home-rank-asset");
 
-  if (homeNextGoalTitle && homeNextGoalValue && homeNextGoalProgress && homeNextGoalText) {
-    if (chapter) {
-      const candidates = chapter.paths.flatMap(path => {
-        return getV012PathState(path).nodes
-          .filter(node => !node.done)
-          .map(node => ({ path, node, current: getV012NodeValue(node), target: node.target }));
-      });
-      candidates.sort((a, b) => ((a.target - a.current) / Math.max(1, a.target)) - ((b.target - b.current) / Math.max(1, b.target)));
-      const next = candidates[0];
-      if (next) {
-        const percent = Math.max(0, Math.min(100, next.current / Math.max(1, next.target) * 100));
-        homeNextGoalTitle.textContent = next.path.title;
-        homeNextGoalValue.textContent = `${formatTreeNumber(Math.min(next.current, next.target))} / ${formatTreeNumber(next.target)}`;
-        homeNextGoalProgress.style.width = `${percent}%`;
-        homeNextGoalText.textContent = next.node.metric === "total"
-          ? `${formatTreeNumber(next.target)} Push-ups insgesamt`
-          : next.node.variant
-            ? `${formatTreeNumber(next.target)} ${next.node.label} Push-ups`
-            : `${formatTreeNumber(next.target)} Push-ups am Stück`;
-      }
-    } else {
-      homeNextGoalTitle.textContent = "Diamant erreicht";
-      homeNextGoalValue.textContent = "100 %";
-      homeNextGoalProgress.style.width = "100%";
-      homeNextGoalText.textContent = "Alle aktuell eingebauten Rangabschnitte sind geschafft.";
-    }
-  }
-
+  renderHomeProgressOrbs(todayTotal, weekTotal);
   renderHomeRankPaths(chapter);
-
-  // Tages- und Wochenziele bleiben bewusst reine Home-Bonus-Challenges.
-  renderHomeTimedGoal("day", todayTotal, homeDayGoalValue, homeDayGoalBar, homeDayGoalHint);
-  renderHomeTimedGoal("week", weekTotal, homeWeekGoalValue, homeWeekGoalBar, homeWeekGoalHint);
 }
 
 // ---------- Events ----------
@@ -4078,6 +4103,16 @@ document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => sh
 document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("historyNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("historyNavProfileBtn")?.addEventListener("click", () => showView("profile"));
+
+document.getElementById("homeNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
+document.getElementById("skillsNavHomeBtn")?.addEventListener("click", () => showView("home"));
+document.getElementById("skillsNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
+document.getElementById("skillsNavTrainingBtn")?.addEventListener("click", openTraining);
+document.getElementById("skillsNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("skillsNavProfileBtn")?.addEventListener("click", () => showView("profile"));
+document.getElementById("profileNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
+document.getElementById("historyNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
+document.getElementById("skillsPushupCard")?.addEventListener("click", () => showView("tree"));
 
 document.getElementById("openTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);
