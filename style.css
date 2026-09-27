@@ -9819,3 +9819,47 @@ body[data-hero-gender="female"] .home-v17 {
     min-width: 0;
   }
 }
+
+
+/* ==========================================================================
+   v0.11.36 — tighter home hero and single settings action
+   ========================================================================== */
+.home-brandbar {
+  margin-bottom: 4px !important;
+}
+.home-brand-actions {
+  gap: 0 !important;
+}
+.home-hero-v17 {
+  min-height: clamp(190px, 26vh, 230px) !important;
+  margin: 0 0 -64px !important;
+}
+.home-v17::before {
+  height: clamp(268px, 35vh, 320px) !important;
+  background-position: center, center, center 40% !important;
+}
+.home-hero-copy {
+  width: 54% !important;
+  padding: 4px 0 6px 2px !important;
+}
+.home-tree-hub {
+  margin-top: 0 !important;
+}
+@media (max-width: 420px) {
+  .home-hero-v17 {
+    min-height: clamp(182px, 24vh, 214px) !important;
+    margin-bottom: -58px !important;
+  }
+  .home-v17::before {
+    height: clamp(255px, 32vh, 300px) !important;
+    background-position: center, center, center 38% !important;
+  }
+  .home-hero-copy {
+    width: 56% !important;
+    padding: 2px 0 4px 0 !important;
+  }
+  .home-tree-hub {
+    padding: 14px !important;
+    border-radius: 22px !important;
+  }
+}
