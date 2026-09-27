@@ -1,4 +1,4 @@
-# Power Push v0.11.36
+# BodyPath v0.11.37
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -11,7 +11,10 @@
 - Klick auf einen Knoten zeigt weiterhin Detailinformationen
 
 
-## v0.11.36
+## v0.11.37
+- Neuer BodyPath-Header auf der Startseite: das Logo nutzt jetzt das ausgeschnittene quadratische Icon der neuen Marke.
+- Schriftzug oben links von „Power Push“ auf „BodyPath“ umgestellt, mit blauem Farbverlauf auf „Path“.
+- Einstellungen-Symbol auf der Startseite entfernt, damit der Mond im Header frei sichtbar bleibt.
 - Home-Header gestrafft: der Skill-Tree-Bereich sitzt nun deutlich höher, sodass direkt mehr von der App sichtbar ist.
 - Benachrichtigungsglocke auf der Startseite entfernt; übrig bleibt nur die Einstellungen-Aktion.
 - Neuer Home-Header mit generiertem Indigo-Night-Motiv.
