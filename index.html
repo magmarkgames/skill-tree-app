@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#0A0C18" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.11.29</title>
-  <link rel="stylesheet" href="style.css?v=0.11.29" />
+  <title>Power Push – v0.11.30</title>
+  <link rel="stylesheet" href="style.css?v=0.11.30" />
 </head>
 <body>
   <main class="app-shell">
@@ -21,7 +21,7 @@
           </span>
           <div>
             <p class="home-brand-title">Power Push</p>
-            <p class="home-brand-subtitle">Stärker. Jeden Tag.</p>
+            <p class="home-brand-subtitle">Discipline builds freedom.</p>
           </div>
         </div>
         <div class="home-brand-actions" aria-label="Schnellaktionen">
@@ -32,8 +32,9 @@
 
       <section class="home-hero-v17" aria-label="Power Push Motivation">
         <div class="home-hero-copy">
-                    <h1>Trainiere.<br>Level auf.<br>Werde stärker.</h1>
-          <p>Jede Wiederholung bringt dich weiter.</p>
+          <p id="homeHeroGreeting" class="home-hero-eyebrow">Good evening</p>
+          <h1 id="homeHeroHeadline">Keep going.</h1>
+          <p id="homeHeroSubline">Discipline Today. Stronger Tomorrow.</p>
         </div>
       </section>
 
@@ -89,20 +90,20 @@
         <article id="homeDayGoalCard" class="home-goal-card challenge-locked">
           <div class="home-goal-card-top">
             <span id="homeDayGoalIcon" class="home-goal-icon day">◎</span>
-            <div><span id="homeDayGoalTitle">Tages-Challenge I</span><small>Bonus-Plakette</small></div>
+            <div><span id="homeDayGoalTitle">Daily Challenge I</span><small>Unlockable bonus</small></div>
             <strong id="homeDayGoalValue">🔒</strong>
           </div>
           <div class="home-progress-track"><span id="homeDayGoalBar"></span></div>
-          <p id="homeDayGoalHint">Dein nächstes Tagesziel wird geladen.</p>
+          <p id="homeDayGoalHint">Your next daily challenge is loading.</p>
         </article>
         <article id="homeWeekGoalCard" class="home-goal-card challenge-locked">
           <div class="home-goal-card-top">
             <span id="homeWeekGoalIcon" class="home-goal-icon week">▣</span>
-            <div><span id="homeWeekGoalTitle">Wochen-Challenge I</span><small>Bonus-Plakette</small></div>
+            <div><span id="homeWeekGoalTitle">Weekly Challenge I</span><small>Unlockable bonus</small></div>
             <strong id="homeWeekGoalValue">🔒</strong>
           </div>
           <div class="home-progress-track"><span id="homeWeekGoalBar"></span></div>
-          <p id="homeWeekGoalHint">Dein nächstes Wochenziel wird geladen.</p>
+          <p id="homeWeekGoalHint">Your next weekly challenge is loading.</p>
         </article>
       </section>
 
@@ -111,7 +112,7 @@
         <span id="homeTodayStat">0</span><span id="homeWeekStat">0</span>
       </div>
 
-      <p class="home-quote">„Konstanz heute. Ein stärkeres Ich morgen.“</p>
+      <p class="home-quote">“Discipline today. Stronger tomorrow.”</p>
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
 
       <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Hauptnavigation">
@@ -182,7 +183,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.11.29</span>
+        <span class="profile-version-pill">v0.11.30</span>
       </header>
 
       <section class="profile-hero-card">

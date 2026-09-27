@@ -119,11 +119,15 @@ const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Pla
 const HOME_CHALLENGE_TIERS = {
   day: [
     { id: "day-1", level: "I", target: 50, unlockRank: "Bronze" },
-    { id: "day-2", level: "II", target: 100, unlockRank: "Silber" }
+    { id: "day-2", level: "II", target: 100, unlockRank: "Silber" },
+    { id: "day-3", level: "III", target: 150, unlockRank: "Gold" },
+    { id: "day-4", level: "IV", target: 200, unlockRank: "Platin" }
   ],
   week: [
     { id: "week-1", level: "I", target: 250, unlockRank: "Bronze" },
-    { id: "week-2", level: "II", target: 500, unlockRank: "Silber" }
+    { id: "week-2", level: "II", target: 500, unlockRank: "Silber" },
+    { id: "week-3", level: "III", target: 750, unlockRank: "Gold" },
+    { id: "week-4", level: "IV", target: 1000, unlockRank: "Platin" }
   ]
 };
 
@@ -431,6 +435,9 @@ const homeDayGoalHint = document.getElementById("homeDayGoalHint");
 const homeWeekGoalValue = document.getElementById("homeWeekGoalValue");
 const homeWeekGoalBar = document.getElementById("homeWeekGoalBar");
 const homeWeekGoalHint = document.getElementById("homeWeekGoalHint");
+const homeHeroGreeting = document.getElementById("homeHeroGreeting");
+const homeHeroHeadline = document.getElementById("homeHeroHeadline");
+const homeHeroSubline = document.getElementById("homeHeroSubline");
 const profilePushRankIcon = document.getElementById("profilePushRankIcon");
 const profilePushRankName = document.getElementById("profilePushRankName");
 const profilePushRankHint = document.getElementById("profilePushRankHint");
@@ -873,6 +880,19 @@ function isV012RankAtLeast(currentRank, requiredRank) {
   return V012_RANKS.indexOf(currentRank) >= V012_RANKS.indexOf(requiredRank);
 }
 
+function getHeroGreeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getHomeAccountName() {
+  const profileName = document.querySelector(".profile-identity h2")?.textContent?.trim() || "";
+  if (!profileName || /^dein name$/i.test(profileName) || /^your name$/i.test(profileName)) return "";
+  return profileName;
+}
+
 function ensureChallengeProgressBucket(metric) {
   if (!progress.challengeProgress || typeof progress.challengeProgress !== "object") {
     progress.challengeProgress = createEmptyChallengeProgress();
@@ -1012,7 +1032,7 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
   const card = document.getElementById(isDay ? "homeDayGoalCard" : "homeWeekGoalCard");
   const icon = document.getElementById(isDay ? "homeDayGoalIcon" : "homeWeekGoalIcon");
   const title = document.getElementById(isDay ? "homeDayGoalTitle" : "homeWeekGoalTitle");
-  const label = isDay ? "Tages-Challenge" : "Wochen-Challenge";
+  const label = isDay ? "Daily Challenge" : "Weekly Challenge";
   const tier = state.tier;
 
   card?.classList.toggle("challenge-complete", state.status === "waiting-next" || state.status === "complete");
@@ -1024,7 +1044,7 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
     valueEl.textContent = "🔒";
     barEl.style.width = "0%";
     if (icon) icon.textContent = isDay ? "◎" : "▣";
-    hintEl.textContent = "Ab Bronze verfügbar.";
+    hintEl.textContent = tier?.unlockRank ? `Unlocks at ${tier.unlockRank}.` : "Still locked.";
     return;
   }
 
@@ -1033,8 +1053,8 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
     barEl.style.width = "100%";
     if (icon) icon.textContent = "✓";
     hintEl.textContent = state.nextTier
-      ? `Geschafft · Challenge ${state.nextTier.level} ab ${state.nextTier.unlockRank}.`
-      : "Challenge geschafft!";
+      ? `Completed · Challenge ${state.nextTier.level} unlocks at ${state.nextTier.unlockRank}.`
+      : "Challenge completed!";
     return;
   }
 
@@ -1043,8 +1063,8 @@ function renderHomeTimedGoal(metric, currentValue, valueEl, barEl, hintEl) {
   if (icon) icon.textContent = isDay ? "◎" : "▣";
   const left = Math.max(0, state.target - state.current);
   hintEl.textContent = isDay
-    ? `Noch ${left} Push-ups bis zur Tages-Plakette.`
-    : `Noch ${left} Push-ups bis zur Wochen-Plakette.`;
+    ? `${left} push-ups left for your daily badge.`
+    : `${left} push-ups left for your weekly badge.`;
 }
 
 function getCurrentRankName() {
@@ -3910,6 +3930,12 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
   const chapter = getV012CurrentChapter();
   const displayRank = getV012CurrentRankName();
+  const accountName = getHomeAccountName();
+  if (homeHeroGreeting) {
+    homeHeroGreeting.textContent = `${getHeroGreeting()}${accountName ? `, ${accountName}` : ""}`;
+  }
+  if (homeHeroHeadline) homeHeroHeadline.textContent = "Keep going.";
+  if (homeHeroSubline) homeHeroSubline.textContent = "Discipline Today. Stronger Tomorrow.";
 
   homeRankName.textContent = displayRank;
   homeRankIcon.innerHTML = displayRank === "Starter"

@@ -1,10 +1,9 @@
-# Power Push v0.11.29
+# Power Push v0.11.30
 
 ## Neu
-- Bottom-Navigation wird im Training vollständig ausgeblendet
-- Training liegt jetzt zuverlässig über der gesamten App-Navigation
-- Skill-Tree auf Mobilgeräten sauber zentriert; Knoten sitzen auf ihren Verbindungslinien
-- Starter → Holz kompakter dargestellt
-- Skill-Tree zeigt jetzt den aktuellen Abschnitt plus Vorschau nach oben
-- nächster Abschnitt sichtbar gesperrt, darauffolgender Abschnitt als ?-Vorschau
-- zusätzliche mobile Abstände und kleinere Knoten gegen Rand-/Layoutprobleme
+- kompletter Darkmode auf die "Indigo Night"-Farbwelt umgestellt
+- Home-Header jetzt mit "Good morning / afternoon / evening" + optionalem Accountnamen
+- neuer Hero-Spruch: "Keep going." / "Discipline Today. Stronger Tomorrow."
+- Daily Challenge I-IV und Weekly Challenge I-IV eingebaut
+- höhere Challenge-Stufen werden erst sichtbar/aktiv, wenn der Rang freigeschaltet ist UND die vorige Stufe abgeschlossen wurde
+- Versionsnummer auf v0.11.30 angehoben
