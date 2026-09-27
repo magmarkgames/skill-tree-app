@@ -1629,6 +1629,39 @@ h2 { margin-bottom: 0; font-size: 21px; }
   -webkit-user-drag: none;
 }
 
+.rank-asset-stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.rank-asset-stack img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.rank-asset-stack .rank-skill-img {
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  width: 42%;
+  height: 42%;
+  transform: translate(-50%, -46%);
+}
+.rank-asset-stack .rank-frame-img {
+  filter: drop-shadow(0 8px 18px rgba(17, 26, 48, .18));
+}
+.rank-asset-stack .rank-skill-img {
+  filter: drop-shadow(0 5px 10px rgba(10, 18, 34, .18));
+}
+
 /* The generated badge already contains its own hexagon, rim, glow and depth. */
 .tree-v10 .rank-node {
   overflow: visible;
@@ -3558,6 +3591,8 @@ h2 { margin-bottom: 0; font-size: 21px; }
   border-radius: 0 !important;
 }
 .tree-v10 .rank-node.done .rank-symbol .app-asset-icon,
+.tree-v10 .rank-node.done .rank-symbol .rank-frame-img,
+.tree-v10 .rank-node.done .rank-symbol .rank-skill-img,
 .tree-v10 .variant-skill-node.done .variant-skill-node-icon .app-asset-icon {
   filter:
     drop-shadow(0 0 1px #ffffff)
@@ -3731,6 +3766,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 .home-rank-icon { width: 72px; height: 72px; display: grid; place-items: center; }
 .home-rank-icon img { width: 72px; height: 72px; object-fit: contain; }
+.home-rank-icon > .rank-asset-stack { width: 72px; height: 72px; }
 .home-rank-preview span { display: block; color: #7285a0; font-size: 10px; }
 .home-rank-preview strong { display: block; margin-top: 2px; color: #0d2e5c; font-size: 20px; line-height: 1.1; }
 .home-rank-preview small { display: block; margin-top: 5px; color: #7388a5; font-size: 10px; }
@@ -3840,6 +3876,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .discipline-icon { font-size: 17px; }
   .home-rank-preview { grid-template-columns: 62px 1fr; }
   .home-rank-icon, .home-rank-icon img { width: 62px; height: 62px; }
+  .home-rank-icon > .rank-asset-stack { width: 62px; height: 62px; }
   .home-mini-node { min-width: 37px; }
   .home-mini-node > span { width: 34px; height: 34px; }
   .home-goal-card { padding: 10px; }
@@ -4372,6 +4409,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
   background: linear-gradient(135deg, #f8fbff, #edf6ff);
 }
 .profile-rank-icon, .profile-rank-icon img { width: 84px; height: 84px; object-fit: contain; }
+.profile-rank-icon > .rank-asset-stack { width: 84px; height: 84px; }
 .profile-rank-copy span { color: #6c83a0; font-size: 10px; font-weight: 800; }
 .profile-rank-copy strong { display: block; margin: 2px 0; color: #0b2b58; font-size: 24px; }
 .profile-rank-copy small { color: #7187a2; font-size: 10px; }
@@ -4408,6 +4446,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .profile-avatar { width: 70px; height: 70px; }
   .profile-rank-card { grid-template-columns: 72px minmax(0,1fr) 34px; }
   .profile-rank-icon, .profile-rank-icon img { width: 72px; height: 72px; }
+  .profile-rank-icon > .rank-asset-stack { width: 72px; height: 72px; }
   .profile-future-grid { gap: 6px; }
 }
 
@@ -4466,6 +4505,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
 .home-tree-preview { border-radius: 22px; }
 .home-rank-preview { grid-template-columns: 82px 1fr; gap: 14px; padding: 14px 16px 4px; }
 .home-rank-icon, .home-rank-icon img { width: 82px; height: 82px; }
+.home-rank-icon > .rank-asset-stack { width: 82px; height: 82px; }
 .home-rank-preview span { font-size: 11px; }
 .home-rank-preview strong { font-size: 23px; }
 .home-rank-preview small { font-size: 11px; }
@@ -4514,6 +4554,7 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .discipline-icon, .discipline-icon svg { width: 21px; height: 21px; }
   .home-rank-preview { grid-template-columns: 72px 1fr; }
   .home-rank-icon, .home-rank-icon img { width: 72px; height: 72px; }
+  .home-rank-icon > .rank-asset-stack { width: 72px; height: 72px; }
 }
 
 
@@ -5737,7 +5778,8 @@ h2 { margin-bottom: 0; font-size: 21px; }
   text-align: center;
 }
 .v112-complete-rank { width: 110px; height: 110px; }
-.v112-complete-rank .app-asset-icon { width: 100%; height: 100%; }
+.v112-complete-rank .app-asset-icon,
+.v112-complete-rank > .rank-asset-stack { width: 100%; height: 100%; }
 .v112-complete-state h2 { margin: 12px 0 7px; color: #183052; font-size: 30px; }
 .v112-complete-state p:last-child { max-width: 420px; margin: 0; color: #7286a7; line-height: 1.5; }
 
@@ -5989,7 +6031,8 @@ h2 { margin-bottom: 0; font-size: 21px; }
 
 .v113-rank-icon .app-asset-icon,
 .v113-rank-icon .v112-start-symbol,
-.v113-rank-icon .v112-start-symbol .app-asset-icon {
+.v113-rank-icon .v112-start-symbol .app-asset-icon,
+.v113-rank-icon > .rank-asset-stack {
   width: 62px;
   height: 62px;
 }
@@ -6295,7 +6338,8 @@ h2 { margin-bottom: 0; font-size: 21px; }
 }
 .v114-rank-icon .app-asset-icon,
 .v114-rank-icon .v112-start-symbol,
-.v114-rank-icon .v112-start-symbol .app-asset-icon {
+.v114-rank-icon .v112-start-symbol .app-asset-icon,
+.v114-rank-icon > .rank-asset-stack {
   width: 62px;
   height: 62px;
 }
@@ -6509,7 +6553,8 @@ h2 { margin-bottom: 0; font-size: 21px; }
   .v114-rank-icon { width: 78px; height: 78px; border-radius: 24px; }
   .v114-rank-icon .app-asset-icon,
   .v114-rank-icon .v112-start-symbol,
-  .v114-rank-icon .v112-start-symbol .app-asset-icon { width: 56px; height: 56px; }
+  .v114-rank-icon .v112-start-symbol .app-asset-icon,
+  .v114-rank-icon > .rank-asset-stack { width: 56px; height: 56px; }
   .v114-stage-section, .v114-tree-stage { min-height: 370px; }
   .v114-main-grid { left: 22%; right: 5%; top: 18px; bottom: 90px; column-gap: 6px; }
   .v114-skill-node { width: min(95px, 25vw); height: min(95px, 25vw); }

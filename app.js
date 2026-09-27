@@ -169,13 +169,13 @@ const ASSET_PATHS = {
     week: "metric-week.webp"
   },
   ranks: {
-    Holz: "rank-wood.webp",
-    Stein: "rank-stone.webp",
-    Bronze: "rank-bronze.webp",
-    Silber: "rank-silver.webp",
-    Gold: "rank-gold.webp",
-    Platin: "rank-platinum.webp",
-    Diamant: "rank-diamond.webp"
+    Holz: { frame: "rank-frame-wood.webp", icon: "rank-skill-pushup.webp" },
+    Stein: { frame: "rank-frame-stone.webp", icon: "rank-skill-pushup.webp" },
+    Bronze: { frame: "rank-frame-bronze.webp", icon: "rank-skill-pushup.webp" },
+    Silber: { frame: "rank-frame-silver.webp", icon: "rank-skill-pushup.webp" },
+    Gold: { frame: "rank-frame-gold.webp", icon: "rank-skill-pushup.webp" },
+    Platin: { frame: "rank-frame-platinum.webp", icon: "rank-skill-pushup.webp" },
+    Diamant: { frame: "rank-frame-diamond.webp", icon: "rank-skill-pushup.webp" }
   }
 };
 
@@ -202,8 +202,14 @@ function getMetricIconSvg(metric, className = "") {
 
 function getRankIconSvg(rank, className = "") {
   const assetRank = String(rank || "").startsWith("Diamant") ? "Diamant" : rank;
-  const src = ASSET_PATHS.ranks[assetRank] || ASSET_PATHS.ranks.Holz;
-  return assetImg(src, `${rank} Rang`, className);
+  const asset = ASSET_PATHS.ranks[assetRank] || ASSET_PATHS.ranks.Holz;
+  const outerClass = ["rank-asset-stack", className].filter(Boolean).join(" ");
+  return `
+    <span class="${outerClass}" role="img" aria-label="${rank} Rank">
+      <img class="rank-frame-img" src="${asset.frame}" alt="" loading="eager" decoding="async" draggable="false" />
+      <img class="rank-skill-img" src="${asset.icon}" alt="" loading="eager" decoding="async" draggable="false" />
+    </span>
+  `;
 }
 
 function renderStaticIcons() {
