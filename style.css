@@ -10246,3 +10246,84 @@ body[data-hero-gender="female"] .home-v17 {
     font-size: 18px;
   }
 }
+
+
+/* ======================================================================
+   v0.11.39 — cleaner progress orbs + one-line nav + English labels
+   ====================================================================== */
+.home-record-trio {
+  gap: 14px !important;
+  margin-bottom: 8px !important;
+}
+.home-progress-orb .orb-ring {
+  padding: 7px !important;
+}
+.home-progress-orb .orb-content {
+  inset: 14px !important;
+  gap: 0 !important;
+}
+.home-progress-orb-large .orb-content {
+  inset: 18px !important;
+}
+.home-progress-orb .orb-kicker,
+.home-progress-orb .orb-content small {
+  display: none !important;
+}
+.home-progress-orb strong {
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+.home-progress-orb strong small {
+  display: inline !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: rgba(199,211,255,.72) !important;
+}
+.home-progress-orb-large strong {
+  font-size: 52px !important;
+}
+.home-progress-caption {
+  margin-top: 10px !important;
+}
+.home-focus-divider {
+  height: 1px;
+  margin: 18px 2px 20px;
+  background: linear-gradient(90deg, rgba(122,141,219,0), rgba(122,141,219,.34), rgba(122,141,219,0));
+}
+.home-rank-rail {
+  margin: 0 0 18px !important;
+}
+.home-bottom-nav {
+  align-items: center !important;
+  padding: 8px 10px max(10px, env(safe-area-inset-bottom)) !important;
+  min-height: calc(78px + env(safe-area-inset-bottom)) !important;
+}
+.home-nav-item {
+  align-content: center !important;
+  justify-items: center !important;
+  gap: 2px !important;
+  min-height: 54px !important;
+  font-size: 17px !important;
+}
+.home-nav-item small {
+  font-size: 8px !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+.home-nav-training > span {
+  width: 40px !important;
+  height: 40px !important;
+  margin-top: -10px !important;
+}
+.home-nav-item.active::after {
+  bottom: -1px !important;
+}
+@media (max-width: 390px) {
+  .home-record-trio { gap: 10px !important; }
+  .home-progress-orb strong { font-size: 19px !important; }
+  .home-progress-orb strong small { font-size: 11px !important; }
+  .home-progress-orb-large strong { font-size: 42px !important; }
+  .home-bottom-nav { padding-left: 6px !important; padding-right: 6px !important; }
+  .home-nav-item small { font-size: 7px !important; }
+}

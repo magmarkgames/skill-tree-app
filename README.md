@@ -1,4 +1,4 @@
-# BodyPath v0.11.38
+# BodyPath v0.11.39
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -11,7 +11,7 @@
 - Klick auf einen Knoten zeigt weiterhin Detailinformationen
 
 
-## v0.11.38
+## v0.11.39
 - Neuer BodyPath-Header auf der Startseite: das Logo nutzt jetzt das ausgeschnittene quadratische Icon der neuen Marke.
 - Schriftzug oben links von „Power Push“ auf „BodyPath“ umgestellt, mit blauem Farbverlauf auf „Path“.
 - Einstellungen-Symbol auf der Startseite entfernt, damit der Mond im Header frei sichtbar bleibt.

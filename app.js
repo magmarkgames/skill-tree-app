@@ -648,7 +648,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.38",
+    appVersion: "0.11.39",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -771,7 +771,7 @@ function showView(name) {
 function renderSkills() {
   if (skillsPushupRank) {
     const rankName = getV012CurrentRankName();
-    skillsPushupRank.textContent = `${rankName} · Push-up aktiv`;
+    skillsPushupRank.textContent = `${getRankDisplayName(rankName)} · Active push-up skill`;
   }
 }
 
@@ -801,9 +801,9 @@ function render() {
   const history = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
   if (historyHomeHint) {
     if (history.length) {
-      historyHomeHint.textContent = `${history.length} ${history.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(history[0].date)}`;
+      historyHomeHint.textContent = `${history.length} ${history.length === 1 ? "workout" : "workouts"} · latest ${formatWorkoutDate(history[0].date)}`;
     } else {
-      historyHomeHint.textContent = "Noch kein Training gespeichert";
+      historyHomeHint.textContent = "No workouts saved yet";
     }
   }
 
@@ -2088,7 +2088,7 @@ function renderProfile() {
   applyHeroGender();
   if (!profilePushRankName || !profilePushRankIcon) return;
   const rankName = getCurrentRankName();
-  profilePushRankName.textContent = rankName;
+  profilePushRankName.textContent = getRankDisplayName(rankName);
   profilePushRankIcon.innerHTML = rankName === "Starter"
     ? getVariantIconSvg("standard", "profile-starter-icon")
     : getRankIconSvg(rankName, "profile-rank-asset");
@@ -2096,16 +2096,16 @@ function renderProfile() {
   const currentIndex = Math.max(0, RANK_ORDER.indexOf(rankName));
   const nextRank = RANK_ORDER[currentIndex + 1];
   profilePushRankHint.textContent = nextRank
-    ? `Als Nächstes: ${nextRank}`
-    : "Höchsten Push-up Rang erreicht";
+    ? `Next: ${getRankDisplayName(nextRank)}`
+    : "Highest push-up rank reached";
 
   if (profileHistorySummary) {
     const items = Array.isArray(progress.trainingHistory) ? progress.trainingHistory : [];
     if (!items.length) {
-      profileHistorySummary.textContent = "Noch kein Training gespeichert";
+      profileHistorySummary.textContent = "No workouts saved yet";
     } else {
       const latest = items[0];
-      profileHistorySummary.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"} · zuletzt ${formatWorkoutDate(latest.date)}`;
+      profileHistorySummary.textContent = `${items.length} ${items.length === 1 ? "workout" : "workouts"} · latest ${formatWorkoutDate(latest.date)}`;
     }
   }
 }
@@ -2146,7 +2146,7 @@ function renderHistory() {
     ? progress.trainingHistory.slice(0, 200)
     : [];
 
-  historyCount.textContent = `${items.length} ${items.length === 1 ? "Training" : "Trainings"}`;
+  historyCount.textContent = `${items.length} ${items.length === 1 ? "Workout" : "Workouts"}`;
   historyList.innerHTML = "";
 
   if (!items.length) {
@@ -2176,7 +2176,7 @@ function formatWorkoutDate(isoString) {
     minute: "2-digit"
   }).format(date);
 
-  if (itemDay === today) return `Heute, ${time} Uhr`;
+  if (itemDay === today) return `Today, ${time}`;
   if (itemDay === yesterday) return `Gestern, ${time} Uhr`;
 
   const datePart = new Intl.DateTimeFormat("de-DE", {
@@ -3521,6 +3521,23 @@ function getV012CurrentChapter() {
   return V012_CHAPTERS.find(chapter => chapter.from === rank) || null;
 }
 
+function getRankDisplayName(rank) {
+  const map = {
+    "Starter": "Starter",
+    "Holz": "Wood",
+    "Stein": "Stone",
+    "Bronze": "Bronze",
+    "Silber": "Silver",
+    "Gold": "Gold",
+    "Platin": "Platinum",
+    "Diamant": "Diamond",
+    "Meister": "Master",
+    "Elite": "Elite",
+    "Legende": "Legend"
+  };
+  return map[rank] || rank || "-";
+}
+
 function isV012VariantUnlocked(variant) {
   if (!VARIANT_META[variant]) return false;
   const requiredRank = V012_VARIANT_UNLOCK_RANK[variant] || "Starter";
@@ -3985,7 +4002,7 @@ function renderHomeRankPaths(chapter) {
       return `
         <div class="home-rank-path-row ${state.done ? "done" : ""}" style="--path-accent:${state.accent};">
           <div class="home-rank-path-head">
-            <strong>${path.title}</strong>
+            <strong>${String(path.title).replace("Gesamt", "Total")}</strong>
             <span>${formatTreeNumber(state.current)} / ${formatTreeNumber(state.target)}</span>
           </div>
           <div class="home-rank-path-track"><span style="width:${state.percent}%"></span></div>
@@ -4003,23 +4020,20 @@ function buildProgressOrb(label, current, target, type = "side") {
   if (isRecord) {
     return `
       <div class="orb-ring orb-ring-record" style="--progress:100%; --orb-color:#7fbaff;">
-        <div class="orb-content">
-          <span class="orb-kicker">Rekord am Stück</span>
+        <div class="orb-content orb-content-record">
           <strong>${formatTreeNumber(safeCurrent)}</strong>
-          <small>Schlag diese Trophäe</small>
         </div>
       </div>
-      <span class="home-progress-caption">Bestwert</span>
+      <span class="home-progress-caption">Best</span>
     `;
   }
   return `
     <div class="orb-ring" style="--progress:${percent}%; --orb-color:${type === "daily" ? "#61d98c" : "#63a9ff"};">
-      <div class="orb-content">
-        <span class="orb-kicker">${label}</span>
+      <div class="orb-content orb-content-side">
         <strong>${formatTreeNumber(safeCurrent)}<small>/${formatTreeNumber(safeTarget)}</small></strong>
       </div>
     </div>
-    <span class="home-progress-caption">${type === "daily" ? "Heute" : "Diese Woche"}</span>
+    <span class="home-progress-caption">${type === "daily" ? "Today" : "This Week"}</span>
   `;
 }
 
@@ -4048,8 +4062,8 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
   if (homeHeroHeadline) homeHeroHeadline.textContent = "Keep Going.";
   if (homeHeroSubline) homeHeroSubline.textContent = "“Discipline Today, Success Tomorrow.”";
 
-  homeRankName.textContent = displayRank;
-  if (homeNextRankName) homeNextRankName.textContent = nextRank;
+  homeRankName.textContent = getRankDisplayName(displayRank);
+  if (homeNextRankName) homeNextRankName.textContent = nextRank === "Max" ? "Max" : getRankDisplayName(nextRank);
   homeRankIcon.innerHTML = displayRank === "Starter"
     ? getVariantIconSvg("standard", "home-starter-icon")
     : getRankIconSvg(displayRank, "home-rank-asset");

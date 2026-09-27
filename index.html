@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.38</title>
-  <link rel="stylesheet" href="style.css?v=0.11.38" />
+  <title>BodyPath – v0.11.39</title>
+  <link rel="stylesheet" href="style.css?v=0.11.39" />
 </head>
 <body>
   <main class="app-shell">
@@ -39,33 +39,35 @@
         <div id="homeRankIcon" class="home-rank-icon home-rank-icon-hidden" aria-hidden="true"></div>
         <h2 id="homeFocusHeading" class="sr-only-home">Push-up Fokus</h2>
 
-        <div class="home-record-trio" aria-label="Push-up Fokuswerte">
+        <div class="home-record-trio" aria-label="Push-up focus values">
           <article id="homeDailyCircle" class="home-progress-orb home-progress-orb-small" aria-label="Daily Push-ups"></article>
           <article id="homeRecordCircle" class="home-progress-orb home-progress-orb-large" aria-label="Rekord am Stück"></article>
           <article id="homeWeeklyCircle" class="home-progress-orb home-progress-orb-small" aria-label="Weekly Push-ups"></article>
         </div>
 
-        <div class="home-rank-rail" aria-label="Aktueller und nächster Rang">
+        <div class="home-focus-divider" aria-hidden="true"></div>
+
+        <div class="home-rank-rail" aria-label="Current and next rank">
           <div class="home-rank-rail-copy">
-            <span>Aktueller Rang</span>
+            <span>Current Rank</span>
             <strong id="homeRankName">Starter</strong>
           </div>
           <span class="home-rank-rail-arrow" aria-hidden="true">›</span>
           <div class="home-rank-rail-copy home-rank-rail-copy-next">
-            <span>Nächster Rang</span>
+            <span>Next Rank</span>
             <strong id="homeNextRankName">Holz</strong>
           </div>
         </div>
 
-        <div id="homeRankPaths" class="home-rank-paths home-rank-paths-v1138" aria-label="Fortschritt im aktuellen Rang"></div>
+        <div id="homeRankPaths" class="home-rank-paths home-rank-paths-v1138" aria-label="Progress in current rank"></div>
 
         <div class="home-tree-actions">
           <button id="homeTreeTrainingBtn" class="home-tree-training-btn" type="button">
             <span class="home-tree-training-icon">▶</span>
-            <span>Training starten</span>
+            <span>Start Training</span>
           </button>
           <button id="openPushTreeBtn" class="home-open-tree-btn home-open-tree-secondary" type="button">
-            <span>Skill Tree öffnen</span><span>›</span>
+            <span>Open Skill Tree</span><span>›</span>
           </button>
         </div>
       </section>
@@ -77,12 +79,12 @@
       <p class="home-quote">“Discipline today. Stronger tomorrow.”</p>
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
 
-      <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Hauptnavigation">
+      <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Main navigation">
         <button id="homeNavHomeBtn" class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
         <button id="homeNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>Historie</small></button>
-        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
+        <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
+        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
       </nav>
     </section>
 
@@ -109,36 +111,36 @@
       <header class="view-header history-header history-header-no-back">
         <div>
           <p class="eyebrow">BODYPATH</p>
-          <h1 id="historyHeading">Historie</h1>
-          <small>Deine gespeicherten Push-up-Workouts</small>
+          <h1 id="historyHeading">History</h1>
+          <small>Your saved push-up workouts</small>
         </div>
-        <span id="historyCount" class="history-count">0 Trainings</span>
+        <span id="historyCount" class="history-count">0 Workouts</span>
       </header>
 
       <section class="history-summary">
-        <article><span>Heute</span><strong id="historyTodayStat">0</strong><small>Push-ups</small></article>
-        <article><span>Diese Woche</span><strong id="historyWeekStat">0</strong><small>Push-ups</small></article>
-        <article><span>Gesamt</span><strong id="historyTotalStat">0</strong><small>Push-ups</small></article>
+        <article><span>Today</span><strong id="historyTodayStat">0</strong><small>Push-ups</small></article>
+        <article><span>This Week</span><strong id="historyWeekStat">0</strong><small>Push-ups</small></article>
+        <article><span>Total</span><strong id="historyTotalStat">0</strong><small>Push-ups</small></article>
       </section>
 
       <section class="history-content-card">
         <div class="history-section-head">
           <div>
-            <p class="eyebrow">DEINE EINHEITEN</p>
-            <h2>Trainingsverlauf</h2>
+            <p class="eyebrow">YOUR WORKOUTS</p>
+            <h2>Workout History</h2>
           </div>
         </div>
         <div id="historyList" class="history-list">
-          <div class="history-empty">Noch kein Training gespeichert.</div>
+          <div class="history-empty">No workouts saved yet.</div>
         </div>
       </section>
 
-      <nav class="home-bottom-nav history-bottom-nav home-bottom-nav-compact" aria-label="Historie Navigation">
+      <nav class="home-bottom-nav history-bottom-nav home-bottom-nav-compact" aria-label="History navigation">
         <button id="historyNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
         <button id="historyNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>◷</span><small>Historie</small></button>
-        <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
+        <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>◷</span><small>History</small></button>
+        <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
       </nav>
     </section>
 
@@ -150,12 +152,12 @@
           <h1 id="skillsHeading">Skills</h1>
           <small>Wähle deine Disziplin</small>
         </div>
-        <span class="profile-version-pill">v0.11.38</span>
+        <span class="profile-version-pill">v0.11.39</span>
       </header>
 
       <section class="skills-intro-card">
-        <strong>Push-ups sind live.</strong>
-        <p>Weitere Skills kommen nach und nach dazu. Gesperrte Bereiche werden im Verlauf freigeschaltet.</p>
+        <strong>Push-ups are live.</strong>
+        <p>More skills will be added over time. Locked areas unlock as you progress.</p>
       </section>
 
       <section class="skills-grid" aria-label="Skill-Auswahl">
@@ -167,26 +169,26 @@
         <article class="skills-card skills-card-locked" aria-label="Pull Ups – noch gesperrt">
           <span class="skills-card-icon"><img src="icon-pullup.webp" alt="" /></span>
           <strong>Pull Ups</strong>
-          <small>🔒 Gesperrt</small>
+          <small>🔒 Locked</small>
         </article>
         <article class="skills-card skills-card-locked" aria-label="Core – noch gesperrt">
           <span class="skills-card-icon"><img src="icon-core.webp" alt="" /></span>
           <strong>Core</strong>
-          <small>🔒 Gesperrt</small>
+          <small>🔒 Locked</small>
         </article>
         <article class="skills-card skills-card-locked" aria-label="Laufen – noch gesperrt">
           <span class="skills-card-icon"><img src="icon-run.webp" alt="" /></span>
           <strong>Laufen</strong>
-          <small>🔒 Gesperrt</small>
+          <small>🔒 Locked</small>
         </article>
       </section>
 
-      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Skills Navigation">
+      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Skills navigation">
         <button id="skillsNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
         <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button"><span>◇</span><small>Skills</small></button>
         <button id="skillsNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="skillsNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>Historie</small></button>
-        <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profil</small></button>
+        <button id="skillsNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
+        <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
       </nav>
     </section>
 
@@ -195,9 +197,9 @@
       <header class="view-header profile-header profile-header-no-back">
         <div>
           <p class="eyebrow">BODYPATH</p>
-          <h1 id="profileHeading">Profil</h1>
+          <h1 id="profileHeading">Profile</h1>
         </div>
-        <span class="profile-version-pill">v0.11.38</span>
+        <span class="profile-version-pill">v0.11.39</span>
       </header>
 
       <section class="profile-hero-card">
@@ -284,12 +286,12 @@
         </div>
       </section>
 
-      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Profil Navigation">
+      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Profile navigation">
         <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
         <button id="profileNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>Historie</small></button>
-        <button id="profileNavProfileBtn" class="home-nav-item active" type="button"><span>●</span><small>Profil</small></button>
+        <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
+        <button id="profileNavProfileBtn" class="home-nav-item active" type="button"><span>●</span><small>Profile</small></button>
       </nav>
     </section>
   </main>
@@ -307,7 +309,7 @@
       </div>
 
       <div class="tree-rank-card">
-        <span>Aktueller Rang</span>
+        <span>Current Rank</span>
         <strong id="rankStat">Starter</strong>
       </div>
 
@@ -559,6 +561,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.38"></script>
+  <script type="module" src="app.js?v=0.11.39"></script>
 </body>
 </html>
