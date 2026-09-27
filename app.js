@@ -648,7 +648,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.39",
+    appVersion: "0.11.40",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -4022,9 +4022,9 @@ function buildProgressOrb(label, current, target, type = "side") {
       <div class="orb-ring orb-ring-record" style="--progress:100%; --orb-color:#7fbaff;">
         <div class="orb-content orb-content-record">
           <strong>${formatTreeNumber(safeCurrent)}</strong>
+          <small>Best Set</small>
         </div>
       </div>
-      <span class="home-progress-caption">Best</span>
     `;
   }
   return `

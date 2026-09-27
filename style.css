@@ -10327,3 +10327,73 @@ body[data-hero-gender="female"] .home-v17 {
   .home-bottom-nav { padding-left: 6px !important; padding-right: 6px !important; }
   .home-nav-item small { font-size: 7px !important; }
 }
+
+
+/* ======================================================================
+   v0.11.40 — target ratios back, stronger best CTA, fixed one-line nav
+   ====================================================================== */
+.home-bottom-nav-compact {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 1fr !important;
+  align-items: end !important;
+  column-gap: 2px !important;
+  row-gap: 0 !important;
+}
+.home-nav-item {
+  min-width: 0 !important;
+}
+.home-record-trio {
+  gap: 12px !important;
+}
+.home-progress-orb .orb-content {
+  inset: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+.home-progress-orb-large .orb-content {
+  inset: 18px !important;
+}
+.home-progress-orb .orb-content > small {
+  display: none !important;
+}
+.home-progress-orb .orb-content.orb-content-record > small {
+  display: block !important;
+  margin-top: 2px !important;
+  color: rgba(210,220,255,.82) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+}
+.home-progress-orb strong small {
+  display: inline !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: rgba(215,225,255,.82) !important;
+  vertical-align: super !important;
+  margin-left: 2px !important;
+}
+.home-progress-orb-large strong {
+  font-size: 58px !important;
+}
+.home-progress-caption {
+  margin-top: 8px !important;
+}
+.home-tree-training-btn {
+  letter-spacing: -.01em;
+}
+.home-tree-training-btn > span:last-child {
+  font-weight: 900 !important;
+}
+@media (max-width: 390px) {
+  .home-bottom-nav-compact { column-gap: 0 !important; }
+  .home-progress-orb strong { font-size: 20px !important; }
+  .home-progress-orb strong small { font-size: 11px !important; }
+  .home-progress-orb-large strong { font-size: 48px !important; }
+  .home-progress-orb .orb-content.orb-content-record > small { font-size: 11px !important; }
+}
+
+.home-progress-orb .orb-content strong small { display: inline !important; }
