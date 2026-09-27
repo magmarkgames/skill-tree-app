@@ -9722,3 +9722,100 @@ html, body, .app-shell {
   .v114-node-progress { width: 61px; height: 13px; }
   .v114-node-progress-text { font-size: 7.5px; }
 }
+
+
+/* ==========================================================================
+   v0.11.35 — selectable male/female home hero artwork
+   ========================================================================== */
+.home-v17 {
+  --home-hero-image: url("home-hero-male-v01135.webp");
+}
+body[data-hero-gender="female"] .home-v17 {
+  --home-hero-image: url("home-hero-female-v01135.webp");
+}
+.home-v17::before {
+  background-image:
+    linear-gradient(90deg, rgba(10,12,24,.95) 0%, rgba(10,12,24,.89) 25%, rgba(10,12,24,.56) 48%, rgba(10,12,24,.16) 74%, rgba(10,12,24,.02) 100%),
+    linear-gradient(180deg, rgba(10,12,24,0) 64%, rgba(10,12,24,.55) 84%, #0A0C18 100%),
+    var(--home-hero-image) !important;
+  background-position: center, center, center 50% !important;
+  background-size: cover, cover, cover !important;
+}
+
+.profile-gender-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px;
+  padding: 15px;
+  border: 1px solid rgba(102,118,196,.52);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(108,123,255,.14), transparent 38%),
+    linear-gradient(180deg, rgba(27,34,64,.98), rgba(21,26,46,.98));
+  box-shadow: 0 16px 34px rgba(0,0,0,.22);
+}
+.profile-gender-copy { min-width: 0; }
+.profile-gender-copy small {
+  display: block;
+  margin-bottom: 4px;
+  color: #8f97bd;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .11em;
+}
+.profile-gender-copy strong {
+  display: block;
+  color: #F7F8FF;
+  font-size: 15px;
+  font-weight: 900;
+}
+.profile-gender-copy span {
+  display: block;
+  margin-top: 3px;
+  max-width: 250px;
+  color: #B2B8D7;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.profile-gender-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(102,118,196,.48);
+  border-radius: 14px;
+  background: rgba(10,12,24,.72);
+}
+.profile-gender-option {
+  min-width: 78px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #929abd;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.profile-gender-option.active {
+  background: linear-gradient(135deg, #6C7BFF 0%, #4DA3FF 100%);
+  color: #fff;
+  box-shadow: 0 7px 18px rgba(66,91,255,.24);
+}
+.profile-gender-option:focus-visible {
+  outline: 2px solid #8b97ff;
+  outline-offset: 2px;
+}
+@media (max-width: 430px) {
+  .profile-gender-card {
+    grid-template-columns: 1fr;
+  }
+  .profile-gender-toggle {
+    width: 100%;
+  }
+  .profile-gender-option {
+    min-width: 0;
+  }
+}

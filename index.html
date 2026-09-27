@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Power Push – v0.11.34</title>
-  <link rel="stylesheet" href="style.css?v=0.11.34" />
+  <title>Power Push – v0.11.35</title>
+  <link rel="stylesheet" href="style.css?v=0.11.35" />
 </head>
 <body>
   <main class="app-shell">
@@ -183,7 +183,7 @@
           <p class="eyebrow">POWER PUSH</p>
           <h1 id="profileHeading">Profil</h1>
         </div>
-        <span class="profile-version-pill">v0.11.34</span>
+        <span class="profile-version-pill">v0.11.35</span>
       </header>
 
       <section class="profile-hero-card">
@@ -199,6 +199,18 @@
           <small>LEVEL</small>
           <strong>1</strong>
           <span>Platzhalter</span>
+        </div>
+      </section>
+
+      <section class="profile-gender-card" aria-labelledby="profileGenderHeading">
+        <div class="profile-gender-copy">
+          <small>STARTSEITE</small>
+          <strong id="profileGenderHeading">Hintergrundperson</strong>
+          <span>Wähle, welche Person im Home-Header angezeigt wird.</span>
+        </div>
+        <div class="profile-gender-toggle" role="group" aria-label="Hintergrundperson auswählen">
+          <button id="profileGenderMaleBtn" class="profile-gender-option" type="button" data-gender="male" aria-pressed="true">Männlich</button>
+          <button id="profileGenderFemaleBtn" class="profile-gender-option" type="button" data-gender="female" aria-pressed="false">Weiblich</button>
         </div>
       </section>
 
@@ -541,6 +553,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.34"></script>
+  <script type="module" src="app.js?v=0.11.35"></script>
 </body>
 </html>

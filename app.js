@@ -51,6 +51,7 @@ const DEFAULT_PROGRESS = {
   // Nur für saubere Migration älterer Versionen behalten; v0.8 zeigt/benutzt keine Streak mehr.
   pushupStreak: 0,
   lastTrainingDate: null,
+  heroGender: "male",
   variantStats: {},
   challengeProgress: createEmptyChallengeProgress(),
   trainingHistory: []
@@ -442,6 +443,8 @@ const profilePushRankIcon = document.getElementById("profilePushRankIcon");
 const profilePushRankName = document.getElementById("profilePushRankName");
 const profilePushRankHint = document.getElementById("profilePushRankHint");
 const profileHistorySummary = document.getElementById("profileHistorySummary");
+const profileGenderMaleBtn = document.getElementById("profileGenderMaleBtn");
+const profileGenderFemaleBtn = document.getElementById("profileGenderFemaleBtn");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -627,6 +630,7 @@ function normalizeProgress(value) {
     ),
     pushupStreak: Math.max(0, Number(value?.pushupStreak) || 0),
     lastTrainingDate: value?.lastTrainingDate || null,
+    heroGender: value?.heroGender === "female" ? "female" : "male",
     variantStats,
     challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
     trainingHistory
@@ -641,7 +645,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.29",
+    appVersion: "0.11.35",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -761,6 +765,7 @@ function showView(name) {
 
 function render() {
   renderStaticIcons();
+  applyHeroGender();
   const todayTotal = getTodayTotal();
   const weekTotal = getCurrentWeekTotal();
   const rankName = getCurrentRankName();
@@ -2039,7 +2044,35 @@ function createConnector(from, to, nodeElements) {
   return line;
 }
 
+function applyHeroGender() {
+  const gender = progress?.heroGender === "female" ? "female" : "male";
+  document.body.dataset.heroGender = gender;
+
+  if (profileGenderMaleBtn) {
+    const active = gender === "male";
+    profileGenderMaleBtn.classList.toggle("active", active);
+    profileGenderMaleBtn.setAttribute("aria-pressed", String(active));
+  }
+  if (profileGenderFemaleBtn) {
+    const active = gender === "female";
+    profileGenderFemaleBtn.classList.toggle("active", active);
+    profileGenderFemaleBtn.setAttribute("aria-pressed", String(active));
+  }
+}
+
+function setHeroGender(gender) {
+  const nextGender = gender === "female" ? "female" : "male";
+  if (progress.heroGender === nextGender) {
+    applyHeroGender();
+    return;
+  }
+  progress.heroGender = nextGender;
+  saveProgress();
+  applyHeroGender();
+}
+
 function renderProfile() {
+  applyHeroGender();
   if (!profilePushRankName || !profilePushRankIcon) return;
   const rankName = getCurrentRankName();
   profilePushRankName.textContent = rankName;
@@ -4038,6 +4071,8 @@ document.getElementById("profileNavTreeBtn")?.addEventListener("click", () => sh
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("profileNavHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
+profileGenderMaleBtn?.addEventListener("click", () => setHeroGender("male"));
+profileGenderFemaleBtn?.addEventListener("click", () => setHeroGender("female"));
 document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);

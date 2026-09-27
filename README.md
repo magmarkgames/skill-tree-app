@@ -1,4 +1,4 @@
-# Power Push v0.11.34
+# Power Push v0.11.35
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -9,3 +9,9 @@
 - Gesamt-Ziele erhalten ein neutrales Summen-Symbol
 - Symbole sind als sehr kleine Inline-SVGs umgesetzt; keine zusätzlichen Bilddateien nötig
 - Klick auf einen Knoten zeigt weiterhin Detailinformationen
+
+
+## v0.11.35
+- Neuer Home-Header mit generiertem Indigo-Night-Motiv.
+- Profil-Toggle für männliche/weibliche Hintergrundperson.
+- Auswahl wird lokal gespeichert und in Backups übernommen.
