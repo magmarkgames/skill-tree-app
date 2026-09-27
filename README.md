@@ -1,4 +1,4 @@
-# Power Push v0.11.33
+# Power Push v0.11.34
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
