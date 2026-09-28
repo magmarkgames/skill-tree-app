@@ -3323,134 +3323,116 @@ function closeTreeStats() {
 // =====================================================================
 // v0.11.2 — Screen-sized rank chapters with three required paths
 // =====================================================================
-const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant", "Meister", "Elite", "Legende"];
+const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
 
 const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
     paths: [
-      { key: "start-wall-1", title: "1 Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 1, label: "Wall" }
-      ] },
-      { key: "start-pair", title: "Wall + Gesamt", accent: "#4f9cf8", nodes: [
-        { metric: "variantMax", variant: "wall", target: 3, label: "Wall" },
-        { metric: "total", target: 5, label: "Gesamt" }
-      ] },
-      { key: "start-incline", title: "1 Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 1, label: "Incline" }
-      ] }
+      { key: "s-first-rep", title: "First Rep", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 1, label: "First Rep" } ] },
+      { key: "s-break-3", title: "Break 3", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 3, label: "Break 3" } ] },
+      { key: "s-first-10", title: "First 10", accent: "#f3c761", nodes: [ { metric: "total", target: 10, label: "First 10" } ] },
+      { key: "s-wall", title: "Wall Control", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "Wall Control" } ] },
+      { key: "s-incline", title: "Incline Start", accent: "#f3a94f", nodes: [ { metric: "variantMax", variant: "incline", target: 1, label: "Incline Start" } ] }
     ],
     variants: []
   },
   {
     from: "Holz", to: "Stein",
     paths: [
-      { key: "wood-wall", title: "5 Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 5, label: "Wall" }
-      ] },
-      { key: "wood-pair-1", title: "Incline + Gesamt", accent: "#4f9cf8", nodes: [
-        { metric: "variantMax", variant: "incline", target: 2, label: "Incline" },
-        { metric: "total", target: 10, label: "Gesamt" }
-      ] },
-      { key: "wood-pair-2", title: "Incline + Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "incline", target: 3, label: "Incline" },
-        { metric: "variantMax", variant: "wall", target: 8, label: "Wall" }
-      ] },
-      { key: "wood-standard", title: "1 Standard", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 1, label: "Standard" }
-      ] }
+      { key: "w-break-5", title: "Break 5", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 5, label: "Break 5" } ] },
+      { key: "w-volume-25", title: "Volume 25", accent: "#f3c761", nodes: [ { metric: "total", target: 25, label: "Volume 25" } ] },
+      { key: "w-back-again", title: "Back Again", accent: "#61d98c", nodes: [ { metric: "trainingDays", target: 2, label: "Back Again" } ] },
+      { key: "w-incline-5", title: "Incline 5", accent: "#f3a94f", nodes: [ { metric: "variantMax", variant: "incline", target: 5, label: "Incline 5" } ] },
+      { key: "w-double-set", title: "Double Set", accent: "#63a9ff", nodes: [ { metric: "workoutSets", target: 2, label: "Double Set" } ] }
     ],
     variants: []
   },
   {
     from: "Stein", to: "Bronze",
     paths: [
-      { key: "stone-wall", title: "10 Wall", accent: "#7c8cff", nodes: [
-        { metric: "variantMax", variant: "wall", target: 10, label: "Wall" }
-      ] },
-      { key: "stone-pair-1", title: "Standard + Incline", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 2, label: "Standard" },
-        { metric: "variantMax", variant: "incline", target: 5, label: "Incline" }
-      ] },
-      { key: "stone-pair-2", title: "Standard + Gesamt", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 3, label: "Standard" },
-        { metric: "total", target: 50, label: "Gesamt" }
-      ] },
-      { key: "stone-wide", title: "1 Wide", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "wide", target: 1, label: "Wide" }
-      ] }
+      { key: "st-break-10", title: "Break 10", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 10, label: "Break 10" } ] },
+      { key: "st-century", title: "Century Start", accent: "#f3c761", nodes: [ { metric: "total", target: 100, label: "Century Start" } ] },
+      { key: "st-wide", title: "Wide Path", accent: "#8b6cff", nodes: [ { metric: "variantMax", variant: "wide", target: 1, label: "Wide Unlock" }, { metric: "variantMax", variant: "wide", target: 5, label: "Wide 5" } ] },
+      { key: "st-workout", title: "35 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 35, label: "35 Rep Session" } ] },
+      { key: "st-triple", title: "Triple Set", accent: "#61d98c", nodes: [ { metric: "workoutSets", target: 3, label: "Triple Set" } ] }
     ],
     variants: []
   },
   {
     from: "Bronze", to: "Silber",
     paths: [
-      { key: "bronze-incline-7", title: "7 Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 7, label: "Incline" }
-      ] },
-      { key: "bronze-pair-1", title: "Standard + Wide", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 5, label: "Standard" },
-        { metric: "variantMax", variant: "wide", target: 3, label: "Wide" }
-      ] },
-      { key: "bronze-incline-10", title: "10 Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 10, label: "Incline" }
-      ] },
-      { key: "bronze-pair-2", title: "Gesamt + Wide", accent: "#4f9cf8", nodes: [
-        { metric: "total", target: 75, label: "Gesamt" },
-        { metric: "variantMax", variant: "wide", target: 5, label: "Wide" }
-      ] },
-      { key: "bronze-military", title: "1 Military", accent: "#6c9cff", nodes: [
-        { metric: "variantMax", variant: "military", target: 1, label: "Military" }
-      ] }
+      { key: "b-break-15", title: "Break 15", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 15, label: "Break 15" } ] },
+      { key: "b-volume-250", title: "Volume 250", accent: "#f3c761", nodes: [ { metric: "total", target: 250, label: "Volume 250" } ] },
+      { key: "b-military", title: "Military Path", accent: "#6c9cff", nodes: [ { metric: "variantMax", variant: "military", target: 1, label: "Military Unlock" }, { metric: "variantMax", variant: "military", target: 5, label: "Military 5" } ] },
+      { key: "b-workout-50", title: "50 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 50, label: "50 Rep Session" } ] },
+      { key: "b-variety-3", title: "Variety III", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 3, label: "Variety III" } ] }
     ],
     variants: []
   },
   {
     from: "Silber", to: "Gold",
     paths: [
-      { key: "silver-wide-7", title: "7 Wide", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "wide", target: 7, label: "Wide" }
-      ] },
-      { key: "silver-triple-1", title: "Military + Standard + Gesamt", accent: "#6c9cff", nodes: [
-        { metric: "variantMax", variant: "military", target: 3, label: "Military" },
-        { metric: "standardMax", target: 7, label: "Standard" },
-        { metric: "total", target: 100, label: "Gesamt" }
-      ] },
-      { key: "silver-pair-1", title: "Incline + Military", accent: "#6c9cff", nodes: [
-        { metric: "variantMax", variant: "incline", target: 15, label: "Incline" },
-        { metric: "variantMax", variant: "military", target: 5, label: "Military" }
-      ] },
-      { key: "silver-pair-2", title: "Wide + Standard", accent: "#8b6cff", nodes: [
-        { metric: "variantMax", variant: "wide", target: 10, label: "Wide" },
-        { metric: "standardMax", target: 10, label: "Standard" }
-      ] },
-      { key: "silver-diamond", title: "1 Diamond", accent: "#f05c82", nodes: [
-        { metric: "variantMax", variant: "diamond", target: 1, label: "Diamond" }
-      ] }
+      { key: "si-break-25", title: "Break 25", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 25, label: "Break 25" } ] },
+      { key: "si-diamond", title: "Diamond Path", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 1, label: "Diamond Unlock" }, { metric: "variantMax", variant: "diamond", target: 5, label: "Diamond 5" } ] },
+      { key: "si-volume-500", title: "Volume 500", accent: "#f3c761", nodes: [ { metric: "total", target: 500, label: "Volume 500" } ] },
+      { key: "si-workout-75", title: "75 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 75, label: "75 Rep Session" } ] },
+      { key: "si-variety-4", title: "Variety IV", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 4, label: "Variety IV" } ] }
     ],
     variants: []
   },
   {
     from: "Gold", to: "Platin",
     paths: [
-      { key: "gold-incline-20", title: "20 Incline", accent: "#f3a94f", nodes: [
-        { metric: "variantMax", variant: "incline", target: 20, label: "Incline" }
-      ] },
-      { key: "gold-triple-1", title: "Diamond + Wide + Gesamt", accent: "#f05c82", nodes: [
-        { metric: "variantMax", variant: "diamond", target: 3, label: "Diamond" },
-        { metric: "variantMax", variant: "wide", target: 15, label: "Wide" },
-        { metric: "total", target: 200, label: "Gesamt" }
-      ] },
-      { key: "gold-military-7", title: "7 Military", accent: "#6c9cff", nodes: [
-        { metric: "variantMax", variant: "military", target: 7, label: "Military" }
-      ] },
-      { key: "gold-pair-2", title: "Standard + Diamond", accent: "#4f9cf8", nodes: [
-        { metric: "standardMax", target: 20, label: "Standard" },
-        { metric: "variantMax", variant: "diamond", target: 5, label: "Diamond" }
-      ] },
-      { key: "gold-decline", title: "1 Decline", accent: "#35bfe6", nodes: [
-        { metric: "variantMax", variant: "decline", target: 1, label: "Decline" }
-      ] }
+      { key: "g-break-35", title: "Break 35", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 35, label: "Break 35" } ] },
+      { key: "g-volume-1000", title: "Volume 1K", accent: "#f3c761", nodes: [ { metric: "total", target: 1000, label: "Volume 1K" } ] },
+      { key: "g-advanced", title: "Advanced Unlocks", accent: "#35bfe6", nodes: [ { metric: "variantMax", variant: "decline", target: 1, label: "Decline Unlock" }, { metric: "variantMax", variant: "pike", target: 1, label: "Pike Unlock" } ] },
+      { key: "g-workout-100", title: "Century Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 100, label: "Century Session" } ] },
+      { key: "g-allrounder", title: "All-Rounder", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 5, label: "All-Rounder" } ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Platin", to: "Diamant I",
+    paths: [
+      { key: "p-break-50", title: "Break 50", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 50, label: "Break 50" } ] },
+      { key: "p-volume-2500", title: "Volume 2.5K", accent: "#f3c761", nodes: [ { metric: "total", target: 2500, label: "Volume 2.5K" } ] },
+      { key: "p-explosive", title: "Explosive Path", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 1, label: "Explosive Unlock" }, { metric: "variantMax", variant: "explosive", target: 5, label: "Explosive 5" } ] },
+      { key: "p-archer", title: "Archer Path", accent: "#77d0ff", nodes: [ { metric: "variantTotal", variant: "archer", target: 10, label: "Archer 10" } ] },
+      { key: "p-variety-6", title: "Six Styles", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 6, label: "Six Styles" } ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Diamant I", to: "Diamant II",
+    paths: [
+      { key: "d1-break-60", title: "Break 60", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 60, label: "Break 60" } ] },
+      { key: "d1-volume-3500", title: "Volume 3.5K", accent: "#f3c761", nodes: [ { metric: "total", target: 3500, label: "Volume 3.5K" } ] },
+      { key: "d1-diamond-15", title: "Diamond 15", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 15, label: "Diamond 15" } ] },
+      { key: "d1-power-pair", title: "Power Pair", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 8, label: "Explosive 8" }, { metric: "variantTotal", variant: "archer", target: 15, label: "Archer 15" } ] },
+      { key: "d1-workout-150", title: "150 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 150, label: "150 Rep Session" } ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Diamant II", to: "Diamant III",
+    paths: [
+      { key: "d2-break-75", title: "Break 75", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 75, label: "Break 75" } ] },
+      { key: "d2-volume-5000", title: "Volume 5K", accent: "#f3c761", nodes: [ { metric: "total", target: 5000, label: "Volume 5K" } ] },
+      { key: "d2-diamond-25", title: "Diamond 25", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 25, label: "Diamond 25" } ] },
+      { key: "d2-explosive-10", title: "Explosive 10", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 10, label: "Explosive 10" } ] },
+      { key: "d2-workout-175", title: "175 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 175, label: "175 Rep Session" } ] }
+    ],
+    variants: []
+  },
+  {
+    from: "Diamant III", to: "Diamant IV",
+    paths: [
+      { key: "d3-break-100", title: "Break 100", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 100, label: "Break 100" } ] },
+      { key: "d3-volume-10000", title: "Volume 10K", accent: "#f3c761", nodes: [ { metric: "total", target: 10000, label: "Volume 10K" } ] },
+      { key: "d3-diamond-30", title: "Diamond 30", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 30, label: "Diamond 30" } ] },
+      { key: "d3-variety-7", title: "Seven Styles", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 7, label: "Seven Styles" } ] },
+      { key: "d3-workout-200", title: "200 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 200, label: "200 Rep Session" } ] }
     ],
     variants: []
   }
@@ -3464,11 +3446,11 @@ const V012_VARIANT_UNLOCK_RANK = {
   military: "Bronze",
   diamond: "Silber",
   decline: "Gold",
-  pike: "Silber",
-  explosive: "Silber",
-  archer: "Silber",
-  handstand: "Gold",
-  pseudoPlanche: "Platin"
+  pike: "Gold",
+  explosive: "Platin",
+  archer: "Platin",
+  handstand: "Diamant II",
+  pseudoPlanche: "Diamant III"
 };
 
 function getV012PathNodes(path) {
@@ -3500,6 +3482,9 @@ function getV012MetricValue(metric, variant = null) {
   switch (metric) {
     case "standardMax": return Math.max(0, Number(progress.pushupMax) || 0);
     case "workoutTotal": return Math.max(getBestWorkoutTotal(), Math.max(0, Number(progress.pushupMax) || 0));
+    case "workoutSets": return Math.max(0, getBestWorkoutSetCount());
+    case "workoutVariants": return Math.max(0, getBestWorkoutVariantCount());
+    case "trainingDays": return Math.max(0, getTrainingDayCount());
     case "total": return Math.max(0, Number(progress.pushupTotal) || 0);
     case "variantTotal": return getVariantStats(variant).total;
     case "variantMax": return getVariantStats(variant).max;
@@ -3536,10 +3521,10 @@ function getRankDisplayName(rank) {
     "Silber": "Silver",
     "Gold": "Gold",
     "Platin": "Platinum",
-    "Diamant": "Diamond",
-    "Meister": "Master",
-    "Elite": "Elite",
-    "Legende": "Legend"
+    "Diamant I": "Diamond I",
+    "Diamant II": "Diamond II",
+    "Diamant III": "Diamond III",
+    "Diamant IV": "Diamond IV"
   };
   return map[rank] || rank || "-";
 }
@@ -3771,7 +3756,7 @@ function renderV114VariantBranch(chapter, chapterIndex, chapterMode) {
 
 function renderV114RankAnchor(rank, options = {}) {
   const { locked = false, top = false, bottom = false } = options;
-  const label = rank === "Starter" ? "Start" : rank;
+  const label = rank === "Starter" ? "Start" : getRankDisplayName(rank);
   const unlockMap = {
     Bronze: "Daily I · Weekly I",
     Silber: "Daily II · Weekly II",
