@@ -10442,3 +10442,133 @@ body[data-hero-gender="female"] .home-v17 {
 }
 
 .home-progress-orb .orb-content strong small { display: inline !important; }
+
+
+/* ======================================================================
+   v0.11.42 — bigger rank separators + cleaner tree nodes
+   ====================================================================== */
+.v114-rank-anchor {
+  gap: 10px !important;
+  padding: 6px 0 8px !important;
+}
+.v114-rank-anchor::before {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 62px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(118,132,216,0), rgba(118,132,216,.42) 18%, rgba(167,179,244,.95) 50%, rgba(118,132,216,.42) 82%, rgba(118,132,216,0));
+  z-index: 0;
+}
+.v114-rank-icon {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 124px !important;
+  height: 124px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.v114-rank-icon .app-asset-icon,
+.v114-rank-icon .v112-start-symbol,
+.v114-rank-icon .v112-start-symbol .app-asset-icon,
+.v114-rank-icon > .rank-asset-stack {
+  width: 102px !important;
+  height: 102px !important;
+}
+.v114-rank-anchor.locked .v114-rank-icon::after {
+  right: 8px !important;
+  bottom: 10px !important;
+}
+.v114-rank-label {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(26px, 6vw, 38px) !important;
+}
+.v114-rank-unlock {
+  position: relative;
+  z-index: 1;
+}
+.v114-stage-section {
+  min-height: 500px !important;
+}
+.v114-tree-stage {
+  min-height: 500px !important;
+}
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  bottom: -4px !important;
+  width: min(220px, 54vw) !important;
+}
+
+.v114-skill-node {
+  width: min(94px, 25vw) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  gap: 4px !important;
+}
+.v114-skill-node::before,
+.v114-skill-node::after {
+  display: none !important;
+}
+.v114-node-hex,
+.v114-node-hex-inner,
+.v114-node-symbol {
+  width: 84px !important;
+  height: 84px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.v114-node-symbol .app-asset-icon,
+.v114-node-image {
+  width: 84px !important;
+  height: 84px !important;
+  filter: drop-shadow(0 9px 14px rgba(0,0,0,.22)) !important;
+}
+.v114-node-progress {
+  width: 72px !important;
+  height: 14px !important;
+  margin-top: -2px !important;
+}
+.v114-tree-stage .v114-main-grid {
+  top: 64px !important;
+  bottom: 144px !important;
+}
+
+@media (max-width: 560px) {
+  .v114-rank-anchor::before { top: 56px; }
+  .v114-rank-icon { width: 112px !important; height: 112px !important; }
+  .v114-rank-icon .app-asset-icon,
+  .v114-rank-icon .v112-start-symbol,
+  .v114-rank-icon .v112-start-symbol .app-asset-icon,
+  .v114-rank-icon > .rank-asset-stack { width: 92px !important; height: 92px !important; }
+  .v114-stage-section, .v114-tree-stage { min-height: 480px !important; }
+  .v114-tree-stage .v114-main-grid { top: 58px !important; bottom: 138px !important; }
+}
+
+@media (max-width: 420px) {
+  .v114-rank-anchor::before { left: 3%; right: 3%; top: 50px; }
+  .v114-rank-icon { width: 100px !important; height: 100px !important; }
+  .v114-rank-icon .app-asset-icon,
+  .v114-rank-icon .v112-start-symbol,
+  .v114-rank-icon .v112-start-symbol .app-asset-icon,
+  .v114-rank-icon > .rank-asset-stack { width: 84px !important; height: 84px !important; }
+  .v114-rank-label { font-size: clamp(24px, 7vw, 34px) !important; }
+  .v114-stage-section, .v114-tree-stage { min-height: 460px !important; }
+  .v114-tree-stage .v114-main-grid { top: 54px !important; bottom: 132px !important; }
+  .v114-skill-node { width: min(88px, 24vw) !important; }
+  .v114-node-hex,
+  .v114-node-hex-inner,
+  .v114-node-symbol,
+  .v114-node-symbol .app-asset-icon,
+  .v114-node-image { width: 80px !important; height: 80px !important; }
+  .v114-node-progress { width: 68px !important; }
+}
