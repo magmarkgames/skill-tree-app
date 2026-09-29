@@ -10988,3 +10988,164 @@ body[data-hero-gender="female"] .home-v17 {
     height: 72px !important;
   }
 }
+
+/* ======================================================================
+   v0.11.48 — layout straightening / overlap fix
+   make rank cards sit in their own space and keep sections cleaner
+   ====================================================================== */
+.skill-tree-v114 {
+  overflow: visible !important;
+}
+
+.v114-tree-flow {
+  gap: 28px !important;
+  padding-top: 10px !important;
+  padding-bottom: 40px !important;
+}
+
+.v114-tree-stage {
+  display: block !important;
+  padding-bottom: 0 !important;
+}
+
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: min(246px, 72vw) !important;
+  margin: 18px auto 0 !important;
+  z-index: 3 !important;
+}
+
+.v114-discovery-flow > .v114-rank-anchor.top {
+  width: min(246px, 72vw) !important;
+  margin: 0 auto 8px !important;
+}
+
+.v114-stage-section {
+  margin: 0 !important;
+  padding: 12px 0 6px !important;
+}
+
+.v114-stage-section::before {
+  left: 4% !important;
+  right: 4% !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  border-radius: 30px !important;
+}
+
+.v114-discovery-stage,
+.v114-discovery-stage .v114-tree-stage {
+  min-height: calc(var(--discovery-stage-height, 720px) + 72px) !important;
+}
+
+.v114-discovery-stage .v114-main-grid {
+  top: 94px !important;
+  bottom: 150px !important;
+  left: 8% !important;
+  right: 8% !important;
+  row-gap: 18px !important;
+}
+
+.v114-discovery-stage .v114-tree-lines {
+  inset: 94px 10% 150px 10% !important;
+}
+
+.v114-tree-lines {
+  z-index: 1 !important;
+}
+
+.v114-main-grid,
+.v114-skill-node,
+.v114-landmark,
+.v114-rank-anchor {
+  z-index: 2;
+}
+
+.v114-skill-node {
+  width: min(92px, 24vw) !important;
+}
+
+.v114-node-hex,
+.v114-node-hex-inner,
+.v114-node-symbol,
+.v114-node-symbol .app-asset-icon,
+.v114-node-image {
+  width: 82px !important;
+  height: 82px !important;
+}
+
+.v114-node-progress {
+  width: 70px !important;
+}
+
+.v114-landmark {
+  width: min(150px, 42vw) !important;
+  min-height: 136px !important;
+  padding: 10px 10px 12px !important;
+}
+
+.v114-landmark-icon,
+.v114-landmark-icon .app-asset-icon,
+.v114-landmark-image {
+  width: 70px !important;
+  height: 70px !important;
+}
+
+.v114-tree-stage .v114-rank-anchor.bottom .v114-rank-unlock,
+.v114-discovery-flow > .v114-rank-anchor.top .v114-rank-unlock {
+  margin-top: 2px !important;
+}
+
+@media (max-width: 420px) {
+  .v114-tree-flow {
+    gap: 24px !important;
+  }
+
+  .v114-discovery-stage,
+  .v114-discovery-stage .v114-tree-stage {
+    min-height: calc(var(--discovery-stage-height, 680px) + 60px) !important;
+  }
+
+  .v114-discovery-stage .v114-main-grid {
+    top: 88px !important;
+    bottom: 142px !important;
+    left: 5% !important;
+    right: 5% !important;
+    row-gap: 16px !important;
+  }
+
+  .v114-discovery-stage .v114-tree-lines {
+    inset: 88px 8% 142px 8% !important;
+  }
+
+  .v114-tree-stage > .v114-rank-anchor.bottom,
+  .v114-discovery-flow > .v114-rank-anchor.top {
+    width: min(228px, 74vw) !important;
+  }
+
+  .v114-skill-node {
+    width: min(88px, 23vw) !important;
+  }
+
+  .v114-node-hex,
+  .v114-node-hex-inner,
+  .v114-node-symbol,
+  .v114-node-symbol .app-asset-icon,
+  .v114-node-image {
+    width: 78px !important;
+    height: 78px !important;
+  }
+
+  .v114-node-progress {
+    width: 66px !important;
+  }
+
+  .v114-landmark {
+    width: min(142px, 40vw) !important;
+    min-height: 130px !important;
+  }
+}
