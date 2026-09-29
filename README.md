@@ -1,4 +1,4 @@
-# BodyPath v0.11.44
+# BodyPath v0.11.50
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -31,3 +31,14 @@
 - Experienced users with an existing Standard Push-Up automatically receive credit for the starter fundamentals.
 - Home shows only the current revealed goal and the next major reward, so it does not spoil hidden nodes.
 - Training milestone rail now follows the same variant-specific targets as the new tree.
+
+
+## v0.11.50 — Fixed modular tree
+
+- Rebuilt Starter → Wood → Stone → Bronze as a strict row-based module system.
+- Nodes are no longer freely positioned; Single, Split, Reward, and Rank rows live in normal document flow, so they cannot overlap.
+- Unlock order: Wall → Incline → Standard → Wide.
+- Future task rows stay hidden as `?`, while the next skill reward and next rank remain visible.
+- Variant totals remain variant-specific.
+- Added a small Diamond/Silver teaser after Bronze.
+- Updated cache-busting to v0.11.50.

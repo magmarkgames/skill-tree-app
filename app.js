@@ -1450,7 +1450,7 @@ function updateVariantAvailability() {
   workoutVariantButtons.forEach(button => apply(button, button.dataset.workoutVariant));
 
   if (!isVariantUnlocked(currentTrainingVariant)) {
-    currentTrainingVariant = "standard";
+    currentTrainingVariant = isVariantUnlocked("standard") ? "standard" : "wall";
   }
 }
 
@@ -3471,19 +3471,54 @@ function getV114RankRemaining(rank) {
   return chapter.paths.map(getV012PathState).filter(state => !state.done).length;
 }
 
+function getV1150UnlockRowState(chapter, rowIndex) {
+  const row = chapter?.rows?.[rowIndex];
+  if (!row || !["unlock", "landmark"].includes(row.type)) return null;
+  const variant = row.variant || chapter?.landmark?.variant;
+  if (!variant) return null;
+
+  const stats = getVariantStats(variant);
+  const historicalUnlock = stats.max > 0 || stats.total > 0;
+  const priorPathKeys = [];
+  (chapter.rows || []).slice(0, rowIndex).forEach(priorRow => {
+    if (priorRow.type === "single" && priorRow.path) priorPathKeys.push(priorRow.path);
+    if (priorRow.type === "pair") (priorRow.paths || []).forEach(key => priorPathKeys.push(key));
+  });
+  const requiredStates = priorPathKeys
+    .map(key => chapter.paths.find(path => path.key === key))
+    .filter(Boolean)
+    .map(getV012PathState);
+  const unlocked = historicalUnlock || requiredStates.every(state => state.done);
+  const remainingBefore = requiredStates.filter(state => !state.done).length;
+  return { variant, unlocked, historicalUnlock, remainingBefore };
+}
+
+function getV1150VariantUnlockState(variant) {
+  for (const chapter of V012_CHAPTERS) {
+    const rows = chapter.rows || [];
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
+      const rowVariant = row.variant || (row.type === "landmark" ? chapter.landmark?.variant : null);
+      if (["unlock", "landmark"].includes(row.type) && rowVariant === variant) {
+        return getV1150UnlockRowState(chapter, rowIndex);
+      }
+    }
+  }
+  return null;
+}
+
 function isV012VariantUnlocked(variant) {
   if (!VARIANT_META[variant]) return false;
-  if (["standard", "wall", "incline"].includes(variant)) return true;
+  if (variant === "wall") return true;
 
-  // Never take an already-used variant away from an existing tester after an update.
+  // Never take a skill away from existing testers after an update.
   const stats = getVariantStats(variant);
   if (stats.max > 0 || stats.total > 0) return true;
 
-  const landmarkChapter = getV114LandmarkChapterForVariant(variant);
-  if (landmarkChapter) return Boolean(getV114LandmarkState(landmarkChapter)?.unlocked);
+  const unlockState = getV1150VariantUnlockState(variant);
+  if (unlockState) return Boolean(unlockState.unlocked);
 
-  // Upper-rank variants deliberately stay locked while Wood/Stone/Bronze are
-  // being perfected. Their exact progression will be designed later.
+  // Upper-rank variants stay locked until their chapters are designed.
   return false;
 }
 
@@ -3943,6 +3978,174 @@ ${chapter.landmark.description || "Complete the path to unlock this skill in Tra
   });
 }
 
+
+function getV1150RowPathStates(chapter, row) {
+  if (!row) return [];
+  const keys = row.type === "single" ? [row.path] : (row.type === "pair" ? (row.paths || []) : []);
+  return keys.map(key => chapter.paths.find(path => path.key === key)).filter(Boolean).map(getV012PathState);
+}
+
+function isV1150TaskRowDone(chapter, row) {
+  const states = getV1150RowPathStates(chapter, row);
+  return states.length ? states.every(state => state.done) : true;
+}
+
+function getV1150FirstIncompleteTaskRow(chapter) {
+  const rows = chapter.rows || [];
+  for (let i = 0; i < rows.length; i += 1) {
+    if (["single", "pair"].includes(rows[i].type) && !isV1150TaskRowDone(chapter, rows[i])) return i;
+  }
+  return -1;
+}
+
+function renderV1150RankBadge(rank, compact = false, locked = false, remaining = 0) {
+  const label = rank === "Starter" ? "Start" : getRankDisplayName(rank);
+  return `
+    <div class="bp50-rank ${compact ? "compact" : "large"} ${locked ? "locked" : ""}">
+      <div class="bp50-rank-icon">${getV012RankIcon(rank)}</div>
+      <div class="bp50-rank-copy">
+        ${compact ? '<span class="bp50-eyebrow">NEXT RANK</span>' : ''}
+        <strong>${label}</strong>
+        ${compact && locked ? `<small>${remaining} node${remaining === 1 ? "" : "s"} to ${label}</small>` : (!compact ? '<small>RANK</small>' : '<small>READY</small>')}
+      </div>
+    </div>
+  `;
+}
+
+function renderV1150TaskNode(chapter, chapterIndex, pathState, options = {}) {
+  const { mystery = false, active = false, forceDone = false } = options;
+  const node = pathState?.nodes?.[0];
+  if (!node) return "";
+  if (mystery) {
+    return `
+      <button class="bp50-node mystery" type="button" data-tree-node="mystery" aria-label="Hidden goal">
+        <span class="bp50-node-core"><span class="bp50-question">?</span></span>
+      </button>
+    `;
+  }
+
+  const progressState = getV114NodeProgress(node);
+  const done = forceDone || pathState.done;
+  const accent = getV114NodeAccent(node, pathState.accent);
+  return `
+    <button class="bp50-node ${done ? "done" : ""} ${active && !done ? "active" : ""}" type="button"
+      data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="0"
+      style="--bp50-accent:${accent}; --bp50-progress:${progressState.percent}%"
+      aria-label="${node.label || pathState.title}: ${formatTreeNumber(progressState.current)} of ${formatTreeNumber(progressState.target)}">
+      <span class="bp50-node-core">
+        <span class="bp50-node-icon">${getV114NodeSymbol(node)}</span>
+        ${done ? '<span class="bp50-check">✓</span>' : ''}
+      </span>
+      <span class="bp50-progress"><span class="bp50-progress-fill"></span><b>${formatTreeNumber(progressState.current)}/${formatTreeNumber(progressState.target)}</b></span>
+    </button>
+  `;
+}
+
+function renderV1150UnlockCard(chapter, rowIndex, chapterMode) {
+  const row = chapter.rows[rowIndex];
+  const variant = row.variant || (row.type === "landmark" ? chapter.landmark?.variant : null);
+  if (!variant) return "";
+  const meta = VARIANT_META[variant] || { label: variant, color: "#8b6cff" };
+  const state = getV1150UnlockRowState(chapter, rowIndex) || { unlocked: false, remainingBefore: 0 };
+  const historical = getVariantStats(variant).max > 0 || getVariantStats(variant).total > 0;
+  const unlocked = chapterMode === "complete" || historical || state.unlocked;
+  const title = row.title || chapter.landmark?.title || meta.label;
+  const eyebrow = row.eyebrow || chapter.landmark?.eyebrow || "NEXT SKILL";
+  return `
+    <button class="bp50-unlock ${unlocked ? "unlocked" : "locked"}" type="button" data-tree-node="unlock" data-variant="${variant}" data-chapter-index="${V012_CHAPTERS.indexOf(chapter)}" data-row-index="${rowIndex}" style="--bp50-accent:${meta.color}">
+      <span class="bp50-eyebrow">${eyebrow}</span>
+      <span class="bp50-unlock-icon">${getVariantIconSvg(variant, "bp50-unlock-image")}</span>
+      <strong>${String(title).toUpperCase()}</strong>
+      <small>${unlocked ? "✓ UNLOCKED" : `🔒 ${state.remainingBefore} step${state.remainingBefore === 1 ? "" : "s"} left`}</small>
+    </button>
+  `;
+}
+
+function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, firstIncomplete) {
+  if (["unlock", "landmark"].includes(row.type)) {
+    return `<div class="bp50-row reward">${renderV1150UnlockCard(chapter, rowIndex, chapterMode)}</div>`;
+  }
+
+  const states = getV1150RowPathStates(chapter, row);
+  const isFutureChapter = chapterMode === "locked-preview";
+  const rowIsFuture = chapterMode === "current" && firstIncomplete >= 0 && rowIndex > firstIncomplete;
+  const forceDone = chapterMode === "complete";
+  const mystery = isFutureChapter || rowIsFuture;
+  const active = chapterMode === "current" && rowIndex === firstIncomplete;
+
+  if (row.type === "pair") {
+    return `
+      <div class="bp50-row pair">
+        <div class="bp50-branch-line" aria-hidden="true"></div>
+        <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
+        <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
+      </div>
+    `;
+  }
+
+  return `<div class="bp50-row single"><div class="bp50-cell center">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div></div>`;
+}
+
+function renderV1150Chapter(chapter, chapterIndex, chapterMode) {
+  const rows = chapter.rows || [];
+  const firstIncomplete = getV1150FirstIncompleteTaskRow(chapter);
+  const nextRemaining = getV114RankRemaining(chapter.to);
+  // rows are defined from current rank upward. Reverse only for visual DOM flow.
+  const visualRows = rows.map((row, originalIndex) => ({ row, originalIndex })).reverse();
+  return `
+    <section class="bp50-module ${chapterMode}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
+      <div class="bp50-next-rank">${renderV1150RankBadge(chapter.to, true, chapterMode !== "complete" && nextRemaining > 0, nextRemaining)}</div>
+      <div class="bp50-module-line" aria-hidden="true"></div>
+      <div class="bp50-rows">
+        ${visualRows.map(({row, originalIndex}) => renderV1150Row(chapter, chapterIndex, row, originalIndex, chapterMode, firstIncomplete)).join("")}
+      </div>
+      <div class="bp50-current-rank">${renderV1150RankBadge(chapter.from, false, false, 0)}</div>
+    </section>
+  `;
+}
+
+function renderV1150FutureTeaser() {
+  const meta = VARIANT_META.diamond || { label: "Diamond", color: "#e75ba8" };
+  return `
+    <section class="bp50-teaser" aria-label="Future progression preview">
+      <div class="bp50-teaser-rank">${renderV1150RankBadge("Silber", true, true, 0)}</div>
+      <div class="bp50-teaser-mystery"><span>?</span><span>?</span></div>
+      <div class="bp50-unlock locked teaser" style="--bp50-accent:${meta.color}">
+        <span class="bp50-eyebrow">NEXT SKILL</span>
+        <span class="bp50-unlock-icon">${getVariantIconSvg("diamond", "bp50-unlock-image")}</span>
+        <strong>DIAMOND PUSH-UP</strong>
+        <small>🔒 COMING AFTER BRONZE</small>
+      </div>
+    </section>
+  `;
+}
+
+function bindV1150TreeEvents() {
+  skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
+      const path = chapter?.paths.find(item => item.key === button.dataset.path);
+      if (!path) return;
+      const node = getV012PathState(path).nodes[0];
+      if (!node) return;
+      const current = getV012NodeValue(node);
+      const done = current >= node.target;
+      alert(`${node.label || path.title}\n${getV114NodeRequirementText(node)}\n\nProgress: ${formatTreeNumber(Math.min(current, node.target))}/${formatTreeNumber(node.target)}\n${done ? "✓ Completed" : `Still needed: ${formatTreeNumber(node.target - current)}`}`);
+    });
+  });
+
+  skillTree.querySelectorAll('[data-tree-node="unlock"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const variant = button.dataset.variant;
+      const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
+      const rowIndex = Number(button.dataset.rowIndex) || 0;
+      const state = getV1150UnlockRowState(chapter, rowIndex);
+      const meta = VARIANT_META[variant] || { label: variant };
+      alert(`${meta.label} Push-Up\n${state?.unlocked ? "✓ Skill unlocked" : `🔒 ${state?.remainingBefore || 0} step${state?.remainingBefore === 1 ? "" : "s"} remaining`}\n\nComplete the goals below this reward to unlock it in Training.`);
+    });
+  });
+}
+
 function renderTree() {
   if (!skillTree) return;
   const currentRank = getV012CurrentRankName();
@@ -3950,29 +4153,19 @@ function renderTree() {
   const treeComplete = currentIndex === -1 && currentRank === V012_CHAPTERS[V012_CHAPTERS.length - 1]?.to;
   const activeIndex = treeComplete ? V012_CHAPTERS.length : Math.max(0, currentIndex);
 
-  // Show the whole Wood → Stone → Bronze journey at once.
-  // Current chapter stays interactive, finished chapters stay complete,
-  // future chapters remain visible as locked previews so big goals like
-  // Stone / Bronze and Diamond are always on screen.
-  const visibleChapters = getV114VisibleChapters();
-  const chaptersDescending = [...visibleChapters].reverse();
-  const topChapter = chaptersDescending[0] || V012_CHAPTERS[0];
-  const topRank = topChapter?.to || "Holz";
-  const topRemaining = treeComplete ? 0 : getV114RankRemaining(topRank);
-
-  skillTree.className = "skill-tree-v114";
+  skillTree.className = "skill-tree-v1150";
   skillTree.innerHTML = `
-    <div class="v114-tree-flow v114-discovery-flow">
-      ${renderV114RankAnchor(topRank, { top: true, locked: !treeComplete && topRemaining > 0, remaining: topRemaining })}
-      ${chaptersDescending.map(chapter => {
-        const globalChapterIndex = V012_CHAPTERS.indexOf(chapter);
-        const chapterMode = getV114ChapterMode(globalChapterIndex, activeIndex);
-        return renderV114Stage(chapter, globalChapterIndex, chapterMode);
+    <div class="bp50-tree">
+      ${renderV1150FutureTeaser()}
+      ${[...V012_CHAPTERS].reverse().map(chapter => {
+        const chapterIndex = V012_CHAPTERS.indexOf(chapter);
+        const chapterMode = getV114ChapterMode(chapterIndex, activeIndex);
+        return renderV1150Chapter(chapter, chapterIndex, chapterMode);
       }).join("")}
     </div>
   `;
 
-  bindV114TreeNodeEvents();
+  bindV1150TreeEvents();
 }
 
 function syncTreeCanvasHeight() {
