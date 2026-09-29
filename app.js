@@ -4025,7 +4025,7 @@ function renderV1150TaskNode(chapter, chapterIndex, pathState, options = {}) {
   }
 
   const progressState = getV114NodeProgress(node);
-  const done = forceDone || pathState.done;
+  const done = forceDone || progressState.current >= progressState.target;
   const accent = getV114NodeAccent(node, pathState.accent);
   return `
     <button class="bp50-node ${done ? "done" : ""} ${active && !done ? "active" : ""}" type="button"
@@ -4076,7 +4076,10 @@ function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, first
   if (row.type === "pair") {
     return `
       <div class="bp50-row pair">
-        <div class="bp50-branch-line" aria-hidden="true"></div>
+        <span class="bp50-diag up-left" aria-hidden="true"></span>
+        <span class="bp50-diag up-right" aria-hidden="true"></span>
+        <span class="bp50-diag down-left" aria-hidden="true"></span>
+        <span class="bp50-diag down-right" aria-hidden="true"></span>
         <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
         <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
       </div>
@@ -4094,8 +4097,6 @@ function renderV1150Chapter(chapter, chapterIndex, chapterMode) {
   const visualRows = rows.map((row, originalIndex) => ({ row, originalIndex })).reverse();
   return `
     <section class="bp50-module ${chapterMode}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
-      <div class="bp50-next-rank">${renderV1150RankBadge(chapter.to, true, chapterMode !== "complete" && nextRemaining > 0, nextRemaining)}</div>
-      <div class="bp50-module-line" aria-hidden="true"></div>
       <div class="bp50-rows">
         ${visualRows.map(({row, originalIndex}) => renderV1150Row(chapter, chapterIndex, row, originalIndex, chapterMode, firstIncomplete)).join("")}
       </div>
@@ -4428,6 +4429,8 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   progress = { ...DEFAULT_PROGRESS, challengeProgress: createEmptyChallengeProgress(), trainingHistory: [] };
   saveProgress();
   render();
+  showView("home");
+  window.setTimeout(() => window.location.reload(), 40);
 });
 
 document.addEventListener("visibilitychange", () => {

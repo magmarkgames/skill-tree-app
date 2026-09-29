@@ -11828,3 +11828,100 @@ body[data-hero-gender="female"] .home-v17 {
     width: min(228px, 74vw);
   }
 }
+
+/* ======================================================================
+   v0.11.51 — tree connection cleanup + reset button visibility
+   ====================================================================== */
+
+/* Keep the reset button visible on Home all the time */
+.home-view .dev-reset-btn,
+.home-v17 .dev-reset-btn {
+  display: block !important;
+  margin: 12px auto 4px !important;
+  color: #8fa1bf !important;
+  font-size: 11px !important;
+  opacity: .92;
+}
+
+/* Remove duplicated top-rank spacing from the modular tree */
+.bp50-module {
+  padding-top: 24px !important;
+}
+
+.bp50-next-rank,
+.bp50-module-line {
+  display: none !important;
+}
+
+.bp50-current-rank {
+  margin-top: 22px !important;
+}
+
+/* Make rows slightly calmer */
+.bp50-row {
+  min-height: 146px !important;
+  padding: 20px 0 !important;
+}
+
+.bp50-row.reward {
+  min-height: 194px !important;
+  padding: 24px 0 !important;
+}
+
+/* Default rows keep the vertical trunk */
+.bp50-row::before {
+  background: rgba(137, 153, 210, .34) !important;
+}
+
+/* Pair rows should NOT imply optional left/right choices or a direct straight path.
+   So we remove the straight trunk + horizontal bar and use diagonal links instead. */
+.bp50-row.pair::before,
+.bp50-row.pair .bp50-branch-line {
+  display: none !important;
+}
+
+.bp50-row.pair {
+  overflow: visible;
+}
+
+.bp50-row.pair .bp50-diag {
+  position: absolute;
+  left: 50%;
+  width: 108px;
+  height: 1.5px;
+  background: rgba(137, 153, 210, .38);
+  transform-origin: left center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* from top center down to left/right nodes */
+.bp50-row.pair .bp50-diag.up-left {
+  top: 18px;
+  transform: translateX(0) rotate(142deg);
+}
+.bp50-row.pair .bp50-diag.up-right {
+  top: 18px;
+  transform: translateX(0) rotate(38deg);
+}
+
+/* from left/right nodes down to the next centered element */
+.bp50-row.pair .bp50-diag.down-left {
+  bottom: 18px;
+  transform: translateX(0) rotate(218deg);
+}
+.bp50-row.pair .bp50-diag.down-right {
+  bottom: 18px;
+  transform: translateX(0) rotate(322deg);
+}
+
+/* slightly smaller check badge so it doesn't dominate */
+.bp50-check {
+  transform: scale(.92);
+}
+
+@media (max-width: 420px) {
+  .bp50-row.pair .bp50-diag {
+    width: 94px;
+  }
+}
