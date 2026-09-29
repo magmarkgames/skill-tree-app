@@ -3885,7 +3885,7 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
     return "";
   }).join("");
 
-  const minHeight = Math.max(520, 250 + displayRowCount * 104);
+  const minHeight = Math.max(880, 520 + displayRowCount * 170);
   return `
     <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}" style="--discovery-stage-height:${minHeight}px;">
       <div class="v114-tree-stage">

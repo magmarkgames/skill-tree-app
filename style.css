@@ -11149,3 +11149,181 @@ body[data-hero-gender="female"] .home-v17 {
     min-height: 130px !important;
   }
 }
+
+/* ======================================================================
+   v0.11.49 — no-overlap spacing pass
+   prioritize clean separation over compactness
+   ====================================================================== */
+.skill-tree-v114 {
+  overflow: visible !important;
+}
+
+.v114-tree-flow {
+  gap: 72px !important;
+  padding-top: 18px !important;
+  padding-bottom: 72px !important;
+}
+
+.v114-stage-section {
+  padding: 24px 0 24px !important;
+}
+
+.v114-stage-section::before {
+  left: 4% !important;
+  right: 4% !important;
+  top: 0 !important;
+  bottom: 0 !important;
+}
+
+.v114-discovery-stage,
+.v114-discovery-stage .v114-tree-stage {
+  min-height: calc(var(--discovery-stage-height, 880px) + 180px) !important;
+}
+
+.v114-discovery-stage .v114-main-grid {
+  top: 150px !important;
+  bottom: 280px !important;
+  left: 7% !important;
+  right: 7% !important;
+  row-gap: 30px !important;
+  column-gap: 20px !important;
+}
+
+.v114-discovery-stage .v114-tree-lines {
+  inset: 150px 11% 280px 11% !important;
+}
+
+.v114-tree-stage > .v114-rank-anchor.bottom,
+.v114-discovery-flow > .v114-rank-anchor.top {
+  width: min(240px, 72vw) !important;
+}
+
+.v114-tree-stage > .v114-rank-anchor.bottom {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 48px !important;
+  margin: 0 !important;
+  z-index: 4 !important;
+}
+
+.v114-discovery-flow > .v114-rank-anchor.top {
+  margin: 0 auto 16px !important;
+}
+
+.v114-skill-node {
+  width: min(84px, 22vw) !important;
+  gap: 8px !important;
+}
+
+.v114-node-hex,
+.v114-node-hex-inner,
+.v114-node-symbol,
+.v114-node-symbol .app-asset-icon,
+.v114-node-image {
+  width: 74px !important;
+  height: 74px !important;
+}
+
+.v114-node-progress {
+  width: 62px !important;
+  height: 13px !important;
+}
+
+.v114-landmark {
+  width: min(138px, 39vw) !important;
+  min-height: 124px !important;
+  padding: 8px 8px 10px !important;
+  z-index: 4 !important;
+}
+
+.v114-landmark-icon,
+.v114-landmark-icon .app-asset-icon,
+.v114-landmark-image {
+  width: 62px !important;
+  height: 62px !important;
+}
+
+.v114-landmark-name {
+  font-size: 11px !important;
+}
+
+.v114-rank-icon {
+  width: 82px !important;
+  height: 82px !important;
+}
+
+.v114-rank-icon .app-asset-icon,
+.v114-rank-icon .v112-start-symbol,
+.v114-rank-icon .v112-start-symbol .app-asset-icon,
+.v114-rank-icon > .rank-asset-stack {
+  width: 58px !important;
+  height: 58px !important;
+}
+
+.v114-rank-label {
+  font-size: clamp(18px, 6vw, 30px) !important;
+}
+
+@media (max-width: 420px) {
+  .v114-tree-flow {
+    gap: 64px !important;
+    padding-bottom: 60px !important;
+  }
+
+  .v114-discovery-stage,
+  .v114-discovery-stage .v114-tree-stage {
+    min-height: calc(var(--discovery-stage-height, 820px) + 160px) !important;
+  }
+
+  .v114-discovery-stage .v114-main-grid {
+    top: 136px !important;
+    bottom: 252px !important;
+    left: 5% !important;
+    right: 5% !important;
+    row-gap: 24px !important;
+    column-gap: 14px !important;
+  }
+
+  .v114-discovery-stage .v114-tree-lines {
+    inset: 136px 9% 252px 9% !important;
+  }
+
+  .v114-tree-stage > .v114-rank-anchor.bottom {
+    bottom: 40px !important;
+  }
+
+  .v114-tree-stage > .v114-rank-anchor.bottom,
+  .v114-discovery-flow > .v114-rank-anchor.top {
+    width: min(224px, 74vw) !important;
+  }
+
+  .v114-skill-node {
+    width: min(80px, 21vw) !important;
+  }
+
+  .v114-node-hex,
+  .v114-node-hex-inner,
+  .v114-node-symbol,
+  .v114-node-symbol .app-asset-icon,
+  .v114-node-image {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  .v114-node-progress {
+    width: 58px !important;
+  }
+
+  .v114-landmark {
+    width: min(130px, 37vw) !important;
+    min-height: 118px !important;
+  }
+
+  .v114-landmark-icon,
+  .v114-landmark-icon .app-asset-icon,
+  .v114-landmark-image {
+    width: 58px !important;
+    height: 58px !important;
+  }
+}
