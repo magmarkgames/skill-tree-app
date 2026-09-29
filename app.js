@@ -654,7 +654,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.40",
+    appVersion: "0.11.44",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -1851,8 +1851,10 @@ function getLiveMilestoneCandidates() {
   const variant = currentTrainingVariant;
   const meta = VARIANT_META[variant] || VARIANT_META.standard;
   const candidates = [];
-  const completedSession = getCompletedSessionReps();
-  const currentSessionTotal = completedSession + ((trainingPhase === "active" || trainingPhase === "countdown") ? repCount : 0);
+  const treeNodes = V012_CHAPTERS.flatMap(chapter => chapter.paths.flatMap(getV012PathNodes));
+  const stats = getVariantStats(variant);
+  const sessionVariantTotal = getSessionVariantTotal(variant);
+  const sessionVariantMax = getSessionVariantMax(variant);
 
   const pushCandidate = ({ key, target, title, short, detail, tone, icon, cost, currentValue, priority }) => {
     candidates.push({
@@ -1865,69 +1867,33 @@ function getLiveMilestoneCandidates() {
     });
   };
 
-  const totalTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "total").map(node => node.target));
+  const maxTargets = uniqueSortedTargets(treeNodes
+    .filter(node => node.metric === "variantMax" && node.variant === variant)
+    .map(node => node.target));
+  maxTargets.forEach(target => {
+    if (target <= stats.max) return;
+    pushCandidate({
+      key: `${variant}-max-${target}`, target,
+      title: `${target} ${meta.label} in one set`, short: `${target}`, detail: "Best Set", tone: variant === "standard" ? "max" : "variant",
+      icon: getVariantIconSvg(variant), priority: 1,
+      cost: target,
+      currentValue: Math.max(stats.max, sessionVariantMax)
+    });
+  });
+
+  const totalTargets = uniqueSortedTargets(treeNodes
+    .filter(node => node.metric === "variantTotal" && node.variant === variant)
+    .map(node => node.target));
   totalTargets.forEach(target => {
-    if (target <= progress.pushupTotal) return;
+    if (target <= stats.total) return;
     pushCandidate({
-      key: `total-${target}`, target,
-      title: `${target} insgesamt`, short: `${target}`, detail: "Gesamt", tone: "total",
-      icon: getMetricIconSvg("total"), priority: 0,
-      cost: target - progress.pushupTotal,
-      currentValue: progress.pushupTotal + currentSessionTotal
+      key: `${variant}-total-${target}`, target,
+      title: `${target} ${meta.label} total`, short: `${target}`, detail: "Total", tone: variant === "standard" ? "total" : "variant-soft",
+      icon: getVariantIconSvg(variant), priority: 2,
+      cost: target - stats.total,
+      currentValue: stats.total + sessionVariantTotal
     });
   });
-
-  const weekBase = getCurrentWeekTotal();
-  const weekTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "week").map(node => node.target));
-  weekTargets.forEach(target => {
-    if (target <= weekBase) return;
-    pushCandidate({
-      key: `week-${target}`, target,
-      title: `${target} in 7 Tagen`, short: `${target}`, detail: "7 Tage", tone: "week",
-      icon: getMetricIconSvg("week"), priority: 2,
-      cost: target - weekBase,
-      currentValue: weekBase + currentSessionTotal
-    });
-  });
-
-  const stats = getVariantStats(variant);
-  const sessionVariantTotal = getSessionVariantTotal(variant);
-  const sessionVariantMax = getSessionVariantMax(variant);
-
-  if (variant === "standard") {
-    const maxTargets = uniqueSortedTargets(SKILL_NODES.filter(node => node.metric === "standardMax").map(node => node.target));
-    maxTargets.forEach(target => {
-      if (target <= progress.pushupMax) return;
-      pushCandidate({
-        key: `max-${target}`, target,
-        title: `${target} am Stück`, short: `${target}`, detail: "Rekord", tone: "max",
-        icon: getMetricIconSvg("max"), priority: 1,
-        cost: target,
-        currentValue: Math.max(progress.pushupMax, sessionVariantMax)
-      });
-    });
-  } else {
-    uniqueSortedTargets(VARIANT_TREE_MILESTONES.max).forEach(target => {
-      if (target <= stats.max) return;
-      pushCandidate({
-        key: `${variant}-max-${target}`, target,
-        title: `${target} ${meta.label} am Stück`, short: `${target}`, detail: `${meta.label} Rekord`, tone: "variant",
-        icon: getVariantIconSvg(variant), priority: 1,
-        cost: target,
-        currentValue: Math.max(stats.max, sessionVariantMax)
-      });
-    });
-    uniqueSortedTargets(VARIANT_TREE_MILESTONES.total).forEach(target => {
-      if (target <= stats.total) return;
-      pushCandidate({
-        key: `${variant}-total-${target}`, target,
-        title: `${target} ${meta.label} gesamt`, short: `${target}`, detail: `${meta.label} Gesamt`, tone: "variant-soft",
-        icon: getVariantIconSvg(variant), priority: 2,
-        cost: target - stats.total,
-        currentValue: stats.total + sessionVariantTotal
-      });
-    });
-  }
 
   return candidates;
 }
@@ -3328,113 +3294,52 @@ const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Pla
 const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
+    // Experienced users who can already perform a standard push-up have
+    // demonstrated the easier movement patterns and receive Wood immediately.
+    skipIf: { metric: "variantMax", variant: "standard", target: 1 },
     paths: [
-      { key: "s-first-rep", title: "First Rep", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 1, label: "First Rep" } ] },
-      { key: "s-break-3", title: "Break 3", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 3, label: "Break 3" } ] },
-      { key: "s-first-10", title: "First 10", accent: "#f3c761", nodes: [ { metric: "total", target: 10, label: "First 10" } ] },
-      { key: "s-wall", title: "Wall Control", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "Wall Control" } ] },
-      { key: "s-incline", title: "Incline Start", accent: "#f3a94f", nodes: [ { metric: "variantMax", variant: "incline", target: 1, label: "Incline Start" } ] }
-    ],
-    variants: []
+      { key: "start-wall-3", title: "Wall Control", accent: "#7c8cff", lane: 2, nodes: [ { metric: "variantMax", variant: "wall", target: 3, label: "3 Wall Push-Ups", lane: 2 } ] },
+      { key: "start-wall-10", title: "Wall Volume", accent: "#7c8cff", lane: 1, nodes: [ { metric: "variantTotal", variant: "wall", target: 10, label: "10 Wall Total", lane: 1 } ] },
+      { key: "start-incline-3", title: "Incline Control", accent: "#f3a94f", lane: 3, nodes: [ { metric: "variantMax", variant: "incline", target: 3, label: "3 Incline Push-Ups", lane: 3 } ] },
+      { key: "start-incline-10", title: "Incline Volume", accent: "#f3a94f", lane: 1, nodes: [ { metric: "variantTotal", variant: "incline", target: 10, label: "10 Incline Total", lane: 1 } ] },
+      { key: "start-standard-1", title: "First Push-Up", accent: "#4f9cf8", lane: 2, nodes: [ { metric: "variantMax", variant: "standard", target: 1, label: "First Standard Push-Up", lane: 2 } ] },
+      { key: "start-standard-10", title: "Standard Start", accent: "#4f9cf8", lane: 3, nodes: [ { metric: "variantTotal", variant: "standard", target: 10, label: "10 Standard Total", lane: 3 } ] }
+    ]
   },
   {
     from: "Holz", to: "Stein",
+    landmark: {
+      variant: "wide",
+      after: 3,
+      title: "Wide Push-Up",
+      eyebrow: "NEXT SKILL",
+      description: "Complete the hidden steps to unlock Wide Push-Ups in Training."
+    },
     paths: [
-      { key: "w-break-5", title: "Break 5", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 5, label: "Break 5" } ] },
-      { key: "w-volume-25", title: "Volume 25", accent: "#f3c761", nodes: [ { metric: "total", target: 25, label: "Volume 25" } ] },
-      { key: "w-back-again", title: "Back Again", accent: "#61d98c", nodes: [ { metric: "trainingDays", target: 2, label: "Back Again" } ] },
-      { key: "w-incline-5", title: "Incline 5", accent: "#f3a94f", nodes: [ { metric: "variantMax", variant: "incline", target: 5, label: "Incline 5" } ] },
-      { key: "w-double-set", title: "Double Set", accent: "#63a9ff", nodes: [ { metric: "workoutSets", target: 2, label: "Double Set" } ] }
-    ],
-    variants: []
+      { key: "wood-standard-3", title: "Standard 3", accent: "#4f9cf8", lane: 1, nodes: [ { metric: "variantMax", variant: "standard", target: 3, label: "3 Standard Push-Ups", lane: 1 } ] },
+      { key: "wood-standard-25", title: "Standard Volume", accent: "#f3c761", lane: 3, nodes: [ { metric: "variantTotal", variant: "standard", target: 25, label: "25 Standard Total", lane: 3 } ] },
+      { key: "wood-standard-5", title: "Standard 5", accent: "#4f9cf8", lane: 2, nodes: [ { metric: "variantMax", variant: "standard", target: 5, label: "5 Standard Push-Ups", lane: 2 } ] },
+      { key: "wood-wide-3", title: "Wide Start", accent: "#8b6cff", lane: 1, nodes: [ { metric: "variantMax", variant: "wide", target: 3, label: "3 Wide Push-Ups", lane: 1 } ] },
+      { key: "wood-wide-20", title: "Wide Volume", accent: "#8b6cff", lane: 3, nodes: [ { metric: "variantTotal", variant: "wide", target: 20, label: "20 Wide Total", lane: 3 } ] }
+    ]
   },
   {
     from: "Stein", to: "Bronze",
+    landmark: {
+      variant: "diamond",
+      after: 3,
+      title: "Diamond Push-Up",
+      eyebrow: "NEXT SKILL",
+      description: "Master Standard and Wide milestones to unlock Diamond Push-Ups."
+    },
     paths: [
-      { key: "st-break-10", title: "Break 10", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 10, label: "Break 10" } ] },
-      { key: "st-century", title: "Century Start", accent: "#f3c761", nodes: [ { metric: "total", target: 100, label: "Century Start" } ] },
-      { key: "st-wide", title: "Wide Path", accent: "#8b6cff", nodes: [ { metric: "variantMax", variant: "wide", target: 1, label: "Wide Unlock" }, { metric: "variantMax", variant: "wide", target: 5, label: "Wide 5" } ] },
-      { key: "st-workout", title: "35 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 35, label: "35 Rep Session" } ] },
-      { key: "st-triple", title: "Triple Set", accent: "#61d98c", nodes: [ { metric: "workoutSets", target: 3, label: "Triple Set" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Bronze", to: "Silber",
-    paths: [
-      { key: "b-break-15", title: "Break 15", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 15, label: "Break 15" } ] },
-      { key: "b-volume-250", title: "Volume 250", accent: "#f3c761", nodes: [ { metric: "total", target: 250, label: "Volume 250" } ] },
-      { key: "b-military", title: "Military Path", accent: "#6c9cff", nodes: [ { metric: "variantMax", variant: "military", target: 1, label: "Military Unlock" }, { metric: "variantMax", variant: "military", target: 5, label: "Military 5" } ] },
-      { key: "b-workout-50", title: "50 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 50, label: "50 Rep Session" } ] },
-      { key: "b-variety-3", title: "Variety III", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 3, label: "Variety III" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Silber", to: "Gold",
-    paths: [
-      { key: "si-break-25", title: "Break 25", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 25, label: "Break 25" } ] },
-      { key: "si-diamond", title: "Diamond Path", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 1, label: "Diamond Unlock" }, { metric: "variantMax", variant: "diamond", target: 5, label: "Diamond 5" } ] },
-      { key: "si-volume-500", title: "Volume 500", accent: "#f3c761", nodes: [ { metric: "total", target: 500, label: "Volume 500" } ] },
-      { key: "si-workout-75", title: "75 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 75, label: "75 Rep Session" } ] },
-      { key: "si-variety-4", title: "Variety IV", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 4, label: "Variety IV" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Gold", to: "Platin",
-    paths: [
-      { key: "g-break-35", title: "Break 35", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 35, label: "Break 35" } ] },
-      { key: "g-volume-1000", title: "Volume 1K", accent: "#f3c761", nodes: [ { metric: "total", target: 1000, label: "Volume 1K" } ] },
-      { key: "g-advanced", title: "Advanced Unlocks", accent: "#35bfe6", nodes: [ { metric: "variantMax", variant: "decline", target: 1, label: "Decline Unlock" }, { metric: "variantMax", variant: "pike", target: 1, label: "Pike Unlock" } ] },
-      { key: "g-workout-100", title: "Century Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 100, label: "Century Session" } ] },
-      { key: "g-allrounder", title: "All-Rounder", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 5, label: "All-Rounder" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Platin", to: "Diamant I",
-    paths: [
-      { key: "p-break-50", title: "Break 50", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 50, label: "Break 50" } ] },
-      { key: "p-volume-2500", title: "Volume 2.5K", accent: "#f3c761", nodes: [ { metric: "total", target: 2500, label: "Volume 2.5K" } ] },
-      { key: "p-explosive", title: "Explosive Path", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 1, label: "Explosive Unlock" }, { metric: "variantMax", variant: "explosive", target: 5, label: "Explosive 5" } ] },
-      { key: "p-archer", title: "Archer Path", accent: "#77d0ff", nodes: [ { metric: "variantTotal", variant: "archer", target: 10, label: "Archer 10" } ] },
-      { key: "p-variety-6", title: "Six Styles", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 6, label: "Six Styles" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Diamant I", to: "Diamant II",
-    paths: [
-      { key: "d1-break-60", title: "Break 60", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 60, label: "Break 60" } ] },
-      { key: "d1-volume-3500", title: "Volume 3.5K", accent: "#f3c761", nodes: [ { metric: "total", target: 3500, label: "Volume 3.5K" } ] },
-      { key: "d1-diamond-15", title: "Diamond 15", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 15, label: "Diamond 15" } ] },
-      { key: "d1-power-pair", title: "Power Pair", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 8, label: "Explosive 8" }, { metric: "variantTotal", variant: "archer", target: 15, label: "Archer 15" } ] },
-      { key: "d1-workout-150", title: "150 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 150, label: "150 Rep Session" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Diamant II", to: "Diamant III",
-    paths: [
-      { key: "d2-break-75", title: "Break 75", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 75, label: "Break 75" } ] },
-      { key: "d2-volume-5000", title: "Volume 5K", accent: "#f3c761", nodes: [ { metric: "total", target: 5000, label: "Volume 5K" } ] },
-      { key: "d2-diamond-25", title: "Diamond 25", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 25, label: "Diamond 25" } ] },
-      { key: "d2-explosive-10", title: "Explosive 10", accent: "#ff8c69", nodes: [ { metric: "variantMax", variant: "explosive", target: 10, label: "Explosive 10" } ] },
-      { key: "d2-workout-175", title: "175 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 175, label: "175 Rep Session" } ] }
-    ],
-    variants: []
-  },
-  {
-    from: "Diamant III", to: "Diamant IV",
-    paths: [
-      { key: "d3-break-100", title: "Break 100", accent: "#4f9cf8", nodes: [ { metric: "standardMax", target: 100, label: "Break 100" } ] },
-      { key: "d3-volume-10000", title: "Volume 10K", accent: "#f3c761", nodes: [ { metric: "total", target: 10000, label: "Volume 10K" } ] },
-      { key: "d3-diamond-30", title: "Diamond 30", accent: "#f05c82", nodes: [ { metric: "variantMax", variant: "diamond", target: 30, label: "Diamond 30" } ] },
-      { key: "d3-variety-7", title: "Seven Styles", accent: "#61d98c", nodes: [ { metric: "workoutVariants", target: 7, label: "Seven Styles" } ] },
-      { key: "d3-workout-200", title: "200 Rep Session", accent: "#63a9ff", nodes: [ { metric: "workoutTotal", target: 200, label: "200 Rep Session" } ] }
-    ],
-    variants: []
+      { key: "stone-wide-5", title: "Wide 5", accent: "#8b6cff", lane: 1, nodes: [ { metric: "variantMax", variant: "wide", target: 5, label: "5 Wide Push-Ups", lane: 1 } ] },
+      { key: "stone-wide-50", title: "Wide Volume", accent: "#8b6cff", lane: 3, nodes: [ { metric: "variantTotal", variant: "wide", target: 50, label: "50 Wide Total", lane: 3 } ] },
+      { key: "stone-standard-200", title: "Standard Mastery", accent: "#f3c761", lane: 2, nodes: [ { metric: "variantTotal", variant: "standard", target: 200, label: "200 Standard Total", lane: 2 } ] },
+      { key: "stone-diamond-3", title: "Diamond Start", accent: "#f05c82", lane: 1, nodes: [ { metric: "variantMax", variant: "diamond", target: 3, label: "3 Diamond Push-Ups", lane: 1 } ] },
+      { key: "stone-diamond-20", title: "Diamond Volume", accent: "#f05c82", lane: 3, nodes: [ { metric: "variantTotal", variant: "diamond", target: 20, label: "20 Diamond Total", lane: 3 } ] },
+      { key: "stone-diamond-5", title: "Diamond 5", accent: "#f05c82", lane: 2, nodes: [ { metric: "variantMax", variant: "diamond", target: 5, label: "5 Diamond Push-Ups", lane: 2 } ] }
+    ]
   }
 ];
 
@@ -3442,9 +3347,9 @@ const V012_VARIANT_UNLOCK_RANK = {
   standard: "Starter",
   wall: "Starter",
   incline: "Starter",
-  wide: "Stein",
-  military: "Bronze",
-  diamond: "Silber",
+  wide: "Holz",
+  diamond: "Stein",
+  military: "Silber",
   decline: "Gold",
   pike: "Gold",
   explosive: "Platin",
@@ -3461,7 +3366,8 @@ function getV012PathNodes(path) {
       variant: node.variant ?? path.variant ?? null,
       target: Number(node.target) || 0,
       label: node.label || path.title,
-      title: node.title || path.title
+      title: node.title || path.title,
+      lane: Number(node.lane ?? path.lane) || 2
     }));
   }
   return (path.milestones || []).map((target, index) => ({
@@ -3470,7 +3376,8 @@ function getV012PathNodes(path) {
     variant: path.variant ?? null,
     target: Number(target) || 0,
     label: path.key === "kraft" ? "am Stück" : path.key === "workout" ? "Workout" : path.key === "volumen" ? "gesamt" : path.title,
-    title: path.title
+    title: path.title,
+    lane: Number(path.lane) || 2
   }));
 }
 
@@ -3494,6 +3401,7 @@ function getV012MetricValue(metric, variant = null) {
 
 function isV012ChapterComplete(chapter) {
   if (!chapter) return false;
+  if (chapter.skipIf && getV012NodeValue(chapter.skipIf) >= (chapter.skipIf.target || 1)) return true;
   return chapter.paths.every(path => getV012PathState(path).done);
 }
 
@@ -3529,11 +3437,43 @@ function getRankDisplayName(rank) {
   return map[rank] || rank || "-";
 }
 
+function getV114LandmarkState(chapter) {
+  if (!chapter?.landmark) return null;
+  const landmark = chapter.landmark;
+  const beforeCount = Math.max(0, Math.min(chapter.paths.length, Number(landmark.after) || 0));
+  const beforeStates = chapter.paths.slice(0, beforeCount).map(getV012PathState);
+  const stats = getVariantStats(landmark.variant);
+  const historicalUnlock = stats.max > 0 || stats.total > 0;
+  const remainingBefore = beforeStates.filter(state => !state.done).length;
+  const unlocked = historicalUnlock || remainingBefore === 0;
+  return { ...landmark, unlocked, remainingBefore, historicalUnlock };
+}
+
+function getV114LandmarkChapterForVariant(variant) {
+  return V012_CHAPTERS.find(chapter => chapter.landmark?.variant === variant) || null;
+}
+
+function getV114RankRemaining(rank) {
+  const chapter = V012_CHAPTERS.find(item => item.to === rank);
+  if (!chapter) return 0;
+  if (isV012ChapterComplete(chapter)) return 0;
+  return chapter.paths.map(getV012PathState).filter(state => !state.done).length;
+}
+
 function isV012VariantUnlocked(variant) {
   if (!VARIANT_META[variant]) return false;
-  const requiredRank = V012_VARIANT_UNLOCK_RANK[variant] || "Starter";
-  const currentRank = getV012CurrentRankName();
-  return V012_RANKS.indexOf(currentRank) >= V012_RANKS.indexOf(requiredRank);
+  if (["standard", "wall", "incline"].includes(variant)) return true;
+
+  // Never take an already-used variant away from an existing tester after an update.
+  const stats = getVariantStats(variant);
+  if (stats.max > 0 || stats.total > 0) return true;
+
+  const landmarkChapter = getV114LandmarkChapterForVariant(variant);
+  if (landmarkChapter) return Boolean(getV114LandmarkState(landmarkChapter)?.unlocked);
+
+  // Upper-rank variants deliberately stay locked while Wood/Stone/Bronze are
+  // being perfected. Their exact progression will be designed later.
+  return false;
 }
 
 function getV012PathState(path) {
@@ -3755,186 +3695,200 @@ function renderV114VariantBranch(chapter, chapterIndex, chapterMode) {
 }
 
 function renderV114RankAnchor(rank, options = {}) {
-  const { locked = false, top = false, bottom = false } = options;
+  const { locked = false, top = false, bottom = false, remaining = null } = options;
   const label = rank === "Starter" ? "Start" : getRankDisplayName(rank);
-  const unlockMap = {
-    Bronze: "Daily I · Weekly I",
-    Silber: "Daily II · Weekly II",
-    Gold: "Daily III · Weekly III",
-    Platin: "Daily IV · Weekly IV"
-  };
-  const unlockLabel = unlockMap[rank] || "";
+  const rankRemaining = remaining === null ? getV114RankRemaining(rank) : remaining;
+  const goalLabel = rank === "Starter"
+    ? ""
+    : locked && rankRemaining > 0
+      ? `${rankRemaining} NODE${rankRemaining === 1 ? "" : "S"} TO ${label.toUpperCase()}`
+      : "RANK COMPLETE";
   const classes = ["v114-rank-anchor", top ? "top" : "", bottom ? "bottom" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
   return `
     <div class="${classes}">
       <span class="v114-rank-icon">${getV012RankIcon(rank)}</span>
       <span class="v114-rank-label">${label}</span>
-      <span class="v114-rank-unlock ${unlockLabel ? "" : "is-placeholder"}" ${unlockLabel ? "" : 'aria-hidden="true"'}>${unlockLabel ? `${unlockLabel} freigeschaltet` : "&nbsp;"}</span>
+      <span class="v114-rank-unlock ${goalLabel ? "" : "is-placeholder"}" ${goalLabel ? "" : 'aria-hidden="true"'}>${goalLabel || "&nbsp;"}</span>
     </div>
+  `;
+}
+
+function renderV114Landmark(landmarkState, gridRow) {
+  if (!landmarkState) return "";
+  const meta = VARIANT_META[landmarkState.variant] || { label: landmarkState.title, color: "#8B6CFF" };
+  const classes = ["v114-landmark", landmarkState.unlocked ? "unlocked" : "locked"].join(" ");
+  const status = landmarkState.unlocked
+    ? "UNLOCKED"
+    : `${landmarkState.remainingBefore} NODE${landmarkState.remainingBefore === 1 ? "" : "S"}`;
+  return `
+    <button class="${classes}" type="button" data-tree-node="landmark" data-variant="${landmarkState.variant}" style="--landmark-color:${meta.color}; --grid-column:2; --grid-row:${gridRow};" aria-label="${meta.label} Push-Up: ${status}">
+      <span class="v114-landmark-eyebrow">${landmarkState.eyebrow || "NEXT SKILL"}</span>
+      <span class="v114-landmark-icon">${getVariantIconSvg(landmarkState.variant, "v114-landmark-image")}</span>
+      <span class="v114-landmark-name">${meta.label.toUpperCase()}</span>
+      <span class="v114-landmark-status">${landmarkState.unlocked ? "✓ UNLOCKED" : `🔒 ${status}`}</span>
+    </button>
   `;
 }
 
 function renderV114Stage(chapter, chapterIndex, chapterMode) {
   const rowStates = chapter.paths.map(getV012PathState);
-  const rowCount = Math.max(1, rowStates.length);
-  const rowYs = rowStates.map((_, index) => {
-    if (rowCount === 1) return 50;
-    const topY = 14;
-    const bottomY = 82;
-    return +(bottomY - (index * ((bottomY - topY) / (rowCount - 1)))).toFixed(2);
-  });
   const firstIncompleteRowIndex = rowStates.findIndex(row => !row.done);
-  const sectionClasses = [
-    "v114-stage-section",
-    chapterMode,
-    `rows-${rowCount}`,
-    "no-variants"
-  ].join(" ");
-  const rankLocked = chapterMode === "locked-preview" || chapterMode === "mystery-preview";
-  const getRowXs = (count) => count <= 1 ? [50] : count === 2 ? [18, 82] : [18, 50, 82];
-  const lineSegments = [];
+  const landmarkState = getV114LandmarkState(chapter);
+  const landmarkAfter = landmarkState ? Math.max(0, Math.min(rowStates.length, Number(chapter.landmark.after) || 0)) : -1;
 
-  const connectPoints = (fromPoints, toPoints) => {
-    if (!fromPoints.length || !toPoints.length) return;
-    if (fromPoints.length === 1 && toPoints.length === 1) {
-      lineSegments.push(`<path class="row-link" d="M${fromPoints[0].x} ${fromPoints[0].y} L${toPoints[0].x} ${toPoints[0].y}" />`);
-      return;
-    }
-    if (fromPoints.length === 1) {
-      toPoints.forEach(point => {
-        lineSegments.push(`<path class="row-link" d="M${fromPoints[0].x} ${fromPoints[0].y} L${point.x} ${point.y}" />`);
-      });
-      return;
-    }
-    if (toPoints.length === 1) {
-      fromPoints.forEach(point => {
-        lineSegments.push(`<path class="row-link" d="M${point.x} ${point.y} L${toPoints[0].x} ${toPoints[0].y}" />`);
-      });
-      return;
-    }
-    const pairs = Math.min(fromPoints.length, toPoints.length);
-    for (let index = 0; index < pairs; index += 1) {
-      lineSegments.push(`<path class="row-link" d="M${fromPoints[index].x} ${fromPoints[index].y} L${toPoints[index].x} ${toPoints[index].y}" />`);
-    }
-  };
-
-  const rowPoints = rowStates.map((rowState, rowIndex) => {
-    const xs = getRowXs(rowState.nodes.length);
-    return xs.map(x => ({ x, y: rowYs[rowIndex] }));
+  const sequence = [];
+  rowStates.forEach((rowState, rowIndex) => {
+    sequence.push({ type: "path", rowState, rowIndex });
+    if (landmarkState && rowIndex + 1 === landmarkAfter) sequence.push({ type: "landmark", landmarkState });
   });
-
-  if (rowPoints.length) {
-    connectPoints([{ x: 50, y: 97 }], rowPoints[0]);
-    for (let rowIndex = 0; rowIndex < rowPoints.length - 1; rowIndex += 1) {
-      connectPoints(rowPoints[rowIndex], rowPoints[rowIndex + 1]);
-    }
-    connectPoints(rowPoints[rowPoints.length - 1], [{ x: 50, y: 3 }]);
+  if (landmarkState && landmarkAfter === 0) sequence.unshift({ type: "landmark", landmarkState });
+  if (landmarkState && landmarkAfter >= rowStates.length) {
+    if (!sequence.some(item => item.type === "landmark")) sequence.push({ type: "landmark", landmarkState });
   }
 
-  const gridMarkup = rowStates.map((rowState, rowIndex) => {
-    const nodeCount = rowState.nodes.length;
-    const columns = nodeCount === 1 ? [2] : nodeCount === 2 ? [1, 3] : [1, 2, 3];
-    const isCurrentSection = chapterMode === "current";
-    return rowState.nodes.map((node, nodeIndex) => {
-      const chapterLocked = chapterMode === "locked-preview";
-      const mystery = chapterMode === "mystery-preview";
-      const done = chapterMode === "complete" || (!chapterLocked && !mystery && node.done);
-      const active = isCurrentSection && rowIndex === firstIncompleteRowIndex && !done;
-      const prerequisiteLocked = isCurrentSection && rowIndex > firstIncompleteRowIndex && !done;
-      const forcedLocked = chapterLocked || prerequisiteLocked;
-      const classes = [
-        "v114-skill-node",
-        done ? "done" : "",
-        active ? "active" : "",
-        forcedLocked ? "preview-locked" : "",
-        mystery ? "mystery" : ""
-      ].filter(Boolean).join(" ");
-      const label = node.label || rowState.title || "Ziel";
-      const gridRow = rowCount - rowIndex;
-      const gridColumn = columns[nodeIndex] || 2;
-      const accent = getV114NodeAccent(node, rowState.accent);
+  const displayRowCount = Math.max(1, sequence.length);
+  const sectionClasses = ["v114-stage-section", chapterMode, `rows-${displayRowCount}`, "no-variants", "v114-discovery-stage"].join(" ");
+  const rankLocked = chapterMode !== "complete";
+  const laneToX = lane => lane === 1 ? 18 : lane === 3 ? 82 : 50;
+  const rowYs = sequence.map((_, index) => displayRowCount === 1 ? 50 : +(86 - (index * (72 / (displayRowCount - 1)))).toFixed(2));
+  const lineSegments = [];
+  const points = sequence.map((item, sequenceIndex) => {
+    if (item.type === "landmark") return { x: 50, y: rowYs[sequenceIndex] };
+    const node = item.rowState.nodes[0] || {};
+    return { x: laneToX(node.lane || item.rowState.lane || 2), y: rowYs[sequenceIndex] };
+  });
 
-      if (mystery) {
-        return `
-          <button class="${classes}" type="button" data-tree-node="mystery" aria-label="Geheimes Ziel" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow};">
-            <span class="v114-mystery-mark">?</span>
-          </button>
-        `;
-      }
+  if (points.length) {
+    lineSegments.push(`<path class="row-link" d="M50 97 L${points[0].x} ${points[0].y}" />`);
+    for (let index = 0; index < points.length - 1; index += 1) {
+      lineSegments.push(`<path class="row-link" d="M${points[index].x} ${points[index].y} L${points[index + 1].x} ${points[index + 1].y}" />`);
+    }
+    lineSegments.push(`<path class="row-link" d="M${points[points.length - 1].x} ${points[points.length - 1].y} L50 3" />`);
+  }
 
-      const progressState = getV114NodeProgress(node);
+  const gridMarkup = sequence.map((item, sequenceIndex) => {
+    const gridRow = displayRowCount - sequenceIndex;
+    if (item.type === "landmark") return renderV114Landmark(item.landmarkState, gridRow);
+
+    const rowState = item.rowState;
+    const rowIndex = item.rowIndex;
+    const node = rowState.nodes[0];
+    if (!node) return "";
+    const rawDone = rowState.done;
+    const isCompleteSection = chapterMode === "complete";
+    const revealedByProgress = firstIncompleteRowIndex === -1 || rowIndex <= firstIncompleteRowIndex;
+    const done = isCompleteSection || (revealedByProgress && rawDone);
+    const active = chapterMode === "current" && rowIndex === firstIncompleteRowIndex;
+    const mystery = chapterMode === "current" && firstIncompleteRowIndex >= 0 && rowIndex > firstIncompleteRowIndex;
+    const classes = ["v114-skill-node", done ? "done" : "", active ? "active" : "", mystery ? "mystery" : ""].filter(Boolean).join(" ");
+    const lane = Number(node.lane || rowState.lane) || 2;
+    const gridColumn = lane === 1 ? 1 : lane === 3 ? 3 : 2;
+    const accent = getV114NodeAccent(node, rowState.accent);
+
+    if (mystery) {
       return `
-        <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${rowState.key}" data-node-index="${nodeIndex}" data-target="${node.target}" data-preview-locked="${forcedLocked ? "true" : "false"}" aria-label="${label}: ${formatTreeNumber(progressState.current)} von ${formatTreeNumber(progressState.target)}" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow}; --node-progress:${progressState.percent}%;">
-          <span class="v114-node-hex" aria-hidden="true">
-            <span class="v114-node-hex-inner">
-              <span class="v114-node-symbol">${getV114NodeSymbol(node)}</span>
-              ${forcedLocked ? '<span class="v114-node-lock" aria-hidden="true">🔒</span>' : ''}
-              ${done ? '<span class="v114-node-check" aria-hidden="true">✓</span>' : ''}
-            </span>
-          </span>
-          <span class="v114-node-progress" aria-hidden="true">
-            <span class="v114-node-progress-fill"></span>
-            <span class="v114-node-progress-text">${formatTreeNumber(progressState.current)}/${formatTreeNumber(progressState.target)}</span>
-          </span>
+        <button class="${classes}" type="button" data-tree-node="mystery" aria-label="Hidden skill" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow};">
+          <span class="v114-node-hex v114-mystery-hex" aria-hidden="true"><span class="v114-mystery-mark">?</span></span>
         </button>
       `;
-    }).join("");
+    }
+
+    const progressState = getV114NodeProgress(node);
+    return `
+      <button class="${classes}" type="button" data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${rowState.key}" data-node-index="0" data-target="${node.target}" aria-label="${node.label || rowState.title}: ${formatTreeNumber(progressState.current)} of ${formatTreeNumber(progressState.target)}" style="--node-accent:${accent}; --grid-column:${gridColumn}; --grid-row:${gridRow}; --node-progress:${progressState.percent}%;">
+        <span class="v114-node-hex" aria-hidden="true">
+          <span class="v114-node-hex-inner">
+            <span class="v114-node-symbol">${getV114NodeSymbol(node)}</span>
+            ${done ? '<span class="v114-node-check" aria-hidden="true">✓</span>' : ''}
+          </span>
+        </span>
+        <span class="v114-node-progress" aria-hidden="true">
+          <span class="v114-node-progress-fill"></span>
+          <span class="v114-node-progress-text">${formatTreeNumber(progressState.current)}/${formatTreeNumber(progressState.target)}</span>
+        </span>
+      </button>
+    `;
   }).join("");
 
+  const minHeight = Math.max(520, 250 + displayRowCount * 104);
   return `
-    <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}">
+    <section class="${sectionClasses}" data-tree-current="${chapterMode === "current" ? "true" : "false"}" data-rank-from="${chapter.from}" style="--discovery-stage-height:${minHeight}px;">
       <div class="v114-tree-stage">
         <svg class="v114-tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           ${lineSegments.join("")}
         </svg>
-
-        <div class="v114-main-grid" style="--stage-rows:${rowCount};">
+        <div class="v114-main-grid" style="--stage-rows:${displayRowCount};">
           ${gridMarkup}
         </div>
-
-        ${renderV114RankAnchor(chapter.from, { bottom: true, locked: rankLocked })}
+        ${renderV114RankAnchor(chapter.from, { bottom: true, locked: false })}
       </div>
     </section>
   `;
 }
 
+function getV114NodeRequirementText(node) {
+  const meta = node.variant ? (VARIANT_META[node.variant] || { label: node.variant }) : null;
+  if (node.metric === "variantMax") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups in one set`;
+  if (node.metric === "variantTotal") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups total`;
+  if (node.metric === "workoutTotal") return `${formatTreeNumber(node.target)} Push-Ups in one workout`;
+  if (node.metric === "workoutSets") return `${formatTreeNumber(node.target)} sets in one workout`;
+  return `${formatTreeNumber(node.target)} ${node.label || "reps"}`;
+}
+
 function bindV114TreeNodeEvents() {
-
-
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
       const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
       const path = chapter?.paths.find(item => item.key === button.dataset.path);
-      const nodeIndex = Number(button.dataset.nodeIndex) || 0;
       if (!path) return;
-      const node = getV012PathState(path).nodes[nodeIndex];
+      const node = getV012PathState(path).nodes[Number(button.dataset.nodeIndex) || 0];
       if (!node) return;
       const current = getV012NodeValue(node);
-      const detail = node.metric === "total" ? "Push-ups insgesamt" : node.variant ? `${node.label} Push-ups` : `${node.label} am Stück`;
-      const status = current >= node.target ? "✓ Abgeschlossen" : button.dataset.previewLocked === "true" ? "🔒 Gesperrt" : "● Aktiv";
-      alert(`${node.label || path.title}\nZiel: ${formatTreeNumber(node.target)} ${detail}\nAktuell: ${formatTreeNumber(current)}\nStatus: ${status}${current < node.target ? `\nNoch ${formatTreeNumber(node.target - current)}` : ""}`);
+      const done = current >= node.target;
+      alert(`${node.label || path.title}
+${getV114NodeRequirementText(node)}
+
+Progress: ${formatTreeNumber(Math.min(current, node.target))}/${formatTreeNumber(node.target)}
+${done ? "✓ Completed" : `Still needed: ${formatTreeNumber(node.target - current)}`}`);
+    });
+  });
+
+  skillTree.querySelectorAll('[data-tree-node="landmark"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const variant = button.dataset.variant;
+      const chapter = getV114LandmarkChapterForVariant(variant);
+      const state = getV114LandmarkState(chapter);
+      const meta = VARIANT_META[variant] || { label: variant };
+      if (!state) return;
+      alert(`${meta.label} Push-Up
+${state.unlocked ? "✓ Skill unlocked" : `🔒 ${state.remainingBefore} hidden node${state.remainingBefore === 1 ? "" : "s"} remaining`}
+
+${chapter.landmark.description || "Complete the path to unlock this skill in Training."}`);
     });
   });
 }
 
 function renderTree() {
   if (!skillTree) return;
-  const visibleChapters = getV114VisibleChapters();
   const currentRank = getV012CurrentRankName();
   const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
-  const activeIndex = currentIndex === -1 ? V012_CHAPTERS.length - 1 : currentIndex;
+  const treeComplete = currentIndex === -1 && currentRank === V012_CHAPTERS[V012_CHAPTERS.length - 1]?.to;
+  const activeIndex = treeComplete ? V012_CHAPTERS.length : Math.max(0, currentIndex);
+  const visibleChapters = treeComplete
+    ? V012_CHAPTERS.slice()
+    : V012_CHAPTERS.slice(0, activeIndex + 1);
   const chaptersDescending = [...visibleChapters].reverse();
-  const topChapter = chaptersDescending[0] || V012_CHAPTERS[V012_CHAPTERS.length - 1];
-  const topChapterIndex = topChapter ? V012_CHAPTERS.findIndex(chapter => chapter.from === topChapter.from && chapter.to === topChapter.to) : -1;
-  const topLocked = topChapterIndex >= activeIndex;
+  const topChapter = chaptersDescending[0] || V012_CHAPTERS[0];
+  const topRank = topChapter?.to || "Holz";
+  const topRemaining = treeComplete ? 0 : getV114RankRemaining(topRank);
 
   skillTree.className = "skill-tree-v114";
   skillTree.innerHTML = `
-    <div class="v114-tree-flow">
-      ${topChapter ? renderV114RankAnchor(topChapter.to, { top: true, locked: topLocked }) : ''}
-      ${chaptersDescending.map((chapter) => {
-        const globalChapterIndex = V012_CHAPTERS.findIndex(item => item.from === chapter.from && item.to === chapter.to);
-        const chapterMode = getV114ChapterMode(globalChapterIndex, activeIndex);
+    <div class="v114-tree-flow v114-discovery-flow">
+      ${renderV114RankAnchor(topRank, { top: true, locked: !treeComplete && topRemaining > 0, remaining: topRemaining })}
+      ${chaptersDescending.map(chapter => {
+        const globalChapterIndex = V012_CHAPTERS.indexOf(chapter);
+        const chapterMode = treeComplete || globalChapterIndex < activeIndex ? "complete" : "current";
         return renderV114Stage(chapter, globalChapterIndex, chapterMode);
       }).join("")}
     </div>
@@ -3980,26 +3934,37 @@ function renderHomeRankPaths(chapter) {
   if (!chapter || !Array.isArray(chapter.paths) || !chapter.paths.length) {
     homeRankPaths.innerHTML = `
       <div class="home-rank-paths-done">
-        <strong>Alle Pfade abgeschlossen</strong>
-        <small>Der aktuell eingebaute Push-up Tree ist komplett geschafft.</small>
+        <strong>Bronze mastered</strong>
+        <small>The next ranks will be added after the opening progression is perfected.</small>
       </div>
     `;
     return;
   }
 
+  const states = chapter.paths.map(getV012PathState);
+  const currentIndex = states.findIndex(state => !state.done);
+  const currentState = currentIndex >= 0 ? states[currentIndex] : null;
+  const currentPath = currentIndex >= 0 ? chapter.paths[currentIndex] : null;
+  const landmark = getV114LandmarkState(chapter);
+  const rewardText = landmark && !landmark.unlocked
+    ? `${VARIANT_META[landmark.variant]?.label || landmark.title} · ${landmark.remainingBefore} node${landmark.remainingBefore === 1 ? "" : "s"}`
+    : `${getRankDisplayName(chapter.to)} Rank · ${getV114RankRemaining(chapter.to)} node${getV114RankRemaining(chapter.to) === 1 ? "" : "s"}`;
+
+  if (!currentState || !currentPath) {
+    homeRankPaths.innerHTML = `<div class="home-rank-paths-done"><strong>${getRankDisplayName(chapter.to)} unlocked</strong><small>Open the Skill Tree to continue.</small></div>`;
+    return;
+  }
+
+  const state = getHomePathProgressState(currentPath);
   homeRankPaths.innerHTML = `
-    ${chapter.paths.map((path) => {
-      const state = getHomePathProgressState(path);
-      return `
-        <div class="home-rank-path-row ${state.done ? "done" : ""}" style="--path-accent:${state.accent};">
-          <div class="home-rank-path-head">
-            <strong>${String(path.title).replace("Gesamt", "Total")}</strong>
-            <span>${formatTreeNumber(state.current)} / ${formatTreeNumber(state.target)}</span>
-          </div>
-          <div class="home-rank-path-track"><span style="width:${state.percent}%"></span></div>
-        </div>
-      `;
-    }).join("")}
+    <div class="home-rank-path-row" style="--path-accent:${state.accent};">
+      <div class="home-rank-path-head">
+        <strong>${currentPath.title}</strong>
+        <span>${formatTreeNumber(state.current)} / ${formatTreeNumber(state.target)}</span>
+      </div>
+      <div class="home-rank-path-track"><span style="width:${state.percent}%"></span></div>
+    </div>
+    <div class="home-next-reward-row"><span>NEXT REWARD</span><strong>${rewardText}</strong></div>
   `;
 }
 

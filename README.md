@@ -1,4 +1,4 @@
-# BodyPath v0.11.40
+# BodyPath v0.11.44
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -20,3 +20,14 @@
 - Neuer Home-Header mit generiertem Indigo-Night-Motiv.
 - Profil-Toggle für männliche/weibliche Hintergrundperson.
 - Auswahl wird lokal gespeichert und in Backups übernommen.
+
+
+## v0.11.44 — Discovery Tree prototype
+
+- Focuses the playable progression on Starter → Wood → Stone → Bronze.
+- Variant totals are now independent milestones (Standard, Wide, Diamond).
+- Wide and Diamond are real unlock rewards and stay hidden in Training until earned.
+- The next major skill and next rank remain visible, while intermediate nodes reveal one at a time as `?` nodes.
+- Experienced users with an existing Standard Push-Up automatically receive credit for the starter fundamentals.
+- Home shows only the current revealed goal and the next major reward, so it does not spoil hidden nodes.
+- Training milestone rail now follows the same variant-specific targets as the new tree.
