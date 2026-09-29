@@ -3874,12 +3874,9 @@ function renderTree() {
   const currentIndex = V012_CHAPTERS.findIndex(chapter => chapter.from === currentRank);
   const treeComplete = currentIndex === -1 && currentRank === V012_CHAPTERS[V012_CHAPTERS.length - 1]?.to;
   const activeIndex = treeComplete ? V012_CHAPTERS.length : Math.max(0, currentIndex);
-
-  // Show the whole Wood → Stone → Bronze journey at once.
-  // Current chapter stays interactive, finished chapters stay complete,
-  // future chapters remain visible as locked previews so big goals like
-  // Stone / Bronze and Diamond are always on screen.
-  const visibleChapters = getV114VisibleChapters();
+  const visibleChapters = treeComplete
+    ? V012_CHAPTERS.slice()
+    : V012_CHAPTERS.slice(0, activeIndex + 1);
   const chaptersDescending = [...visibleChapters].reverse();
   const topChapter = chaptersDescending[0] || V012_CHAPTERS[0];
   const topRank = topChapter?.to || "Holz";
@@ -3891,7 +3888,7 @@ function renderTree() {
       ${renderV114RankAnchor(topRank, { top: true, locked: !treeComplete && topRemaining > 0, remaining: topRemaining })}
       ${chaptersDescending.map(chapter => {
         const globalChapterIndex = V012_CHAPTERS.indexOf(chapter);
-        const chapterMode = getV114ChapterMode(globalChapterIndex, activeIndex);
+        const chapterMode = treeComplete || globalChapterIndex < activeIndex ? "complete" : "current";
         return renderV114Stage(chapter, globalChapterIndex, chapterMode);
       }).join("")}
     </div>
