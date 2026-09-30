@@ -11986,3 +11986,68 @@ body[data-hero-gender="female"] .home-v17 {
 .bp50-unlock {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 26px rgba(0,0,0,.10) !important;
 }
+
+/* ======================================================================
+   v0.11.53 — micro progression + mandatory 3-node rows
+   ====================================================================== */
+
+/* Three-node rows: center stays on the trunk, side nodes branch out and rejoin. */
+.bp50-row.triple {
+  overflow: visible;
+}
+
+.bp50-row.triple .bp50-diag {
+  position: absolute;
+  left: 50%;
+  width: 108px;
+  height: 2.5px;
+  background: rgba(168, 182, 245, .62);
+  box-shadow: 0 0 10px rgba(96, 126, 235, .16);
+  transform-origin: left center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bp50-row.triple .bp50-diag.up-left {
+  top: 18px;
+  transform: rotate(142deg);
+}
+.bp50-row.triple .bp50-diag.up-right {
+  top: 18px;
+  transform: rotate(38deg);
+}
+.bp50-row.triple .bp50-diag.down-left {
+  bottom: 18px;
+  transform: rotate(218deg);
+}
+.bp50-row.triple .bp50-diag.down-right {
+  bottom: 18px;
+  transform: rotate(322deg);
+}
+
+/* A little more breathing room when three nodes share one row. */
+.bp50-row.triple {
+  min-height: 150px !important;
+}
+
+@media (max-width: 420px) {
+  .bp50-row.triple .bp50-diag {
+    width: 94px;
+  }
+  .bp50-row.triple .bp50-node {
+    width: 82px;
+  }
+  .bp50-row.triple .bp50-node-core {
+    width: 74px;
+    height: 74px;
+  }
+  .bp50-row.triple .bp50-node-icon,
+  .bp50-row.triple .bp50-node-icon .app-asset-icon,
+  .bp50-row.triple .bp50-node-image {
+    width: 68px !important;
+    height: 68px !important;
+  }
+  .bp50-row.triple .bp50-progress {
+    width: 60px;
+  }
+}

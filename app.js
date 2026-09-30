@@ -654,7 +654,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.44",
+    appVersion: "0.11.53",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3294,63 +3294,79 @@ const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Pla
 const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
-    // Experienced users who can already perform a standard push-up have
-    // demonstrated the easier movement patterns and receive Wood immediately.
+    // Experienced users who already prove a Standard Push-Up skip the very
+    // first beginner chapter, so the app still feels rewarding on day one.
     skipIf: { metric: "variantMax", variant: "standard", target: 1 },
     paths: [
-      { key: "start-wall-1", title: "1 Wall Push-Up", accent: "#7c8cff", lane: 2, nodes: [ { metric: "variantMax", variant: "wall", target: 1, label: "1 Wall Push-Up", lane: 2 } ] },
-      { key: "start-wall-3", title: "3 Wall", accent: "#7c8cff", lane: 1, nodes: [ { metric: "variantMax", variant: "wall", target: 3, label: "3 Wall Push-Ups", lane: 1 } ] },
-      { key: "start-wall-total-5", title: "5 Wall Total", accent: "#f3c761", lane: 3, nodes: [ { metric: "variantTotal", variant: "wall", target: 5, label: "5 Wall Total", lane: 3 } ] }
+      { key: "start-wall-1", title: "1 Wall Push-Up", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 1, label: "1 Wall Push-Up" } ] },
+      { key: "start-wall-3", title: "3 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 3, label: "3 Wall Push-Ups" } ] },
+      { key: "start-wall-total-5", title: "5 Wall Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wall", target: 5, label: "5 Wall Push-Ups Total" } ] },
+      { key: "start-wall-sets-2", title: "2 Wall Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "wall", target: 2, label: "2 Wall Sets" } ] },
+      { key: "start-wall-5", title: "5 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "5 Wall Push-Ups" } ] }
     ],
     rows: [
       { type: "single", path: "start-wall-1" },
-      { type: "pair", paths: ["start-wall-3", "start-wall-total-5"] }
+      { type: "triple", paths: ["start-wall-3", "start-wall-total-5", "start-wall-sets-2"] },
+      { type: "single", path: "start-wall-5" }
     ]
   },
   {
     from: "Holz", to: "Stein",
     paths: [
-      { key: "wood-wall-5", title: "5 Wall", accent: "#7c8cff", lane: 2, nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "5 Wall Push-Ups", lane: 2 } ] },
-      { key: "wood-incline-3", title: "3 Incline", accent: "#f3a94f", lane: 1, nodes: [ { metric: "variantMax", variant: "incline", target: 3, label: "3 Incline Push-Ups", lane: 1 } ] },
-      { key: "wood-incline-total-15", title: "15 Incline Total", accent: "#f3c761", lane: 3, nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Total", lane: 3 } ] },
-      { key: "wood-incline-5", title: "5 Incline", accent: "#f3a94f", lane: 2, nodes: [ { metric: "variantMax", variant: "incline", target: 5, label: "5 Incline Push-Ups", lane: 2 } ] },
-      { key: "wood-standard-1", title: "1 Standard", accent: "#4f9cf8", lane: 2, nodes: [ { metric: "variantMax", variant: "standard", target: 1, label: "1 Standard Push-Up", lane: 2 } ] }
+      { key: "wood-wall-total-10", title: "10 Wall Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wall", target: 10, label: "10 Wall Push-Ups Total" } ] },
+      { key: "wood-incline-3", title: "3 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 3, label: "3 Incline Push-Ups" } ] },
+      { key: "wood-incline-total-5", title: "5 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 5, label: "5 Incline Push-Ups Total" } ] },
+      { key: "wood-wall-5", title: "5 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "5 Wall Push-Ups" } ] },
+      { key: "wood-incline-sets-2", title: "2 Incline Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "incline", target: 2, label: "2 Incline Sets" } ] },
+      { key: "wood-incline-total-15", title: "15 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Push-Ups Total" } ] },
+      { key: "wood-wall-8", title: "8 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 8, label: "8 Wall Push-Ups" } ] },
+      { key: "wood-incline-4", title: "4 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 4, label: "4 Incline Push-Ups" } ] },
+      { key: "wood-standard-1", title: "1 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 1, label: "1 Standard Push-Up" } ] }
     ],
     rows: [
-      { type: "single", path: "wood-wall-5" },
+      { type: "single", path: "wood-wall-total-10" },
       { type: "unlock", variant: "incline", title: "Incline Push-Up", eyebrow: "UNLOCK" },
-      { type: "pair", paths: ["wood-incline-3", "wood-incline-total-15"] },
-      { type: "single", path: "wood-incline-5" },
+      { type: "single", path: "wood-incline-3" },
+      { type: "pair", paths: ["wood-incline-total-5", "wood-wall-5"] },
+      { type: "single", path: "wood-incline-sets-2" },
+      { type: "triple", paths: ["wood-incline-total-15", "wood-wall-8", "wood-incline-4"] },
       { type: "unlock", variant: "standard", title: "Standard Push-Up", eyebrow: "UNLOCK" },
       { type: "single", path: "wood-standard-1" }
     ]
   },
   {
     from: "Stein", to: "Bronze",
-    landmark: {
-      variant: "wide",
-      after: 4,
-      title: "Wide Push-Up",
-      eyebrow: "NEXT SKILL",
-      description: "Complete the hidden steps to unlock Wide Push-Ups in Training."
-    },
     paths: [
-      { key: "stone-standard-3", title: "3 Standard", accent: "#4f9cf8", lane: 2, nodes: [ { metric: "variantMax", variant: "standard", target: 3, label: "3 Standard Push-Ups", lane: 2 } ] },
-      { key: "stone-standard-5", title: "5 Standard", accent: "#4f9cf8", lane: 1, nodes: [ { metric: "variantMax", variant: "standard", target: 5, label: "5 Standard Push-Ups", lane: 1 } ] },
-      { key: "stone-standard-total-25", title: "25 Standard Total", accent: "#f3c761", lane: 3, nodes: [ { metric: "variantTotal", variant: "standard", target: 25, label: "25 Standard Total", lane: 3 } ] },
-      { key: "stone-standard-8", title: "8 Standard", accent: "#4f9cf8", lane: 2, nodes: [ { metric: "variantMax", variant: "standard", target: 8, label: "8 Standard Push-Ups", lane: 2 } ] },
-      { key: "stone-wide-3", title: "3 Wide", accent: "#f05c82", lane: 2, nodes: [ { metric: "variantMax", variant: "wide", target: 3, label: "3 Wide Push-Ups", lane: 2 } ] },
-      { key: "stone-standard-10", title: "10 Standard", accent: "#4f9cf8", lane: 1, nodes: [ { metric: "variantMax", variant: "standard", target: 10, label: "10 Standard Push-Ups", lane: 1 } ] },
-      { key: "stone-wide-5", title: "5 Wide", accent: "#f05c82", lane: 3, nodes: [ { metric: "variantMax", variant: "wide", target: 5, label: "5 Wide Push-Ups", lane: 3 } ] }
+      { key: "stone-standard-2", title: "2 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 2, label: "2 Standard Push-Ups" } ] },
+      { key: "stone-incline-total-15", title: "15 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Push-Ups Total" } ] },
+      { key: "stone-incline-6", title: "6 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 6, label: "6 Incline Push-Ups" } ] },
+      { key: "stone-standard-3", title: "3 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 3, label: "3 Standard Push-Ups" } ] },
+      { key: "stone-mixed-2", title: "2 Variants", accent: "#62c99c", nodes: [ { metric: "workoutVariants", target: 2, label: "2 Variants in one Workout" } ] },
+      { key: "stone-standard-total-10", title: "10 Standard Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "standard", target: 10, label: "10 Standard Push-Ups Total" } ] },
+      { key: "stone-wide-1", title: "1 Wide", accent: "#E65BC8", nodes: [ { metric: "variantMax", variant: "wide", target: 1, label: "1 Wide Push-Up" } ] },
+      { key: "stone-wide-total-5", title: "5 Wide Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wide", target: 5, label: "5 Wide Push-Ups Total" } ] },
+      { key: "stone-wide-sets-2", title: "2 Wide Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "wide", target: 2, label: "2 Wide Sets" } ] },
+      { key: "stone-standard-5", title: "5 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 5, label: "5 Standard Push-Ups" } ] },
+      { key: "stone-wide-3", title: "3 Wide", accent: "#E65BC8", nodes: [ { metric: "variantMax", variant: "wide", target: 3, label: "3 Wide Push-Ups" } ] },
+      { key: "stone-standard-total-25", title: "25 Standard Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "standard", target: 25, label: "25 Standard Push-Ups Total" } ] }
     ],
     rows: [
-      { type: "single", path: "stone-standard-3" },
-      { type: "pair", paths: ["stone-standard-5", "stone-standard-total-25"] },
-      { type: "single", path: "stone-standard-8" },
-      { type: "landmark" },
-      { type: "single", path: "stone-wide-3" },
-      { type: "pair", paths: ["stone-standard-10", "stone-wide-5"] }
-    ]
+      { type: "single", path: "stone-standard-2" },
+      { type: "single", path: "stone-incline-total-15" },
+      { type: "triple", paths: ["stone-incline-6", "stone-standard-3", "stone-mixed-2"] },
+      { type: "single", path: "stone-standard-total-10" },
+      { type: "landmark", variant: "wide", title: "Wide Push-Up", eyebrow: "NEXT SKILL" },
+      { type: "single", path: "stone-wide-1" },
+      { type: "single", path: "stone-wide-total-5" },
+      { type: "single", path: "stone-wide-sets-2" },
+      { type: "triple", paths: ["stone-standard-5", "stone-wide-3", "stone-standard-total-25"] }
+    ],
+    landmark: {
+      variant: "wide",
+      title: "Wide Push-Up",
+      eyebrow: "NEXT SKILL",
+      description: "Complete the revealed goals below to unlock Wide Push-Ups in Training."
+    }
   }
 ];
 
@@ -3406,6 +3422,7 @@ function getV012MetricValue(metric, variant = null) {
     case "total": return Math.max(0, Number(progress.pushupTotal) || 0);
     case "variantTotal": return getVariantStats(variant).total;
     case "variantMax": return getVariantStats(variant).max;
+    case "variantSets": return getVariantDynamicStats(variant).sets;
     default: return 0;
   }
 }
@@ -3482,7 +3499,7 @@ function getV1150UnlockRowState(chapter, rowIndex) {
   const priorPathKeys = [];
   (chapter.rows || []).slice(0, rowIndex).forEach(priorRow => {
     if (priorRow.type === "single" && priorRow.path) priorPathKeys.push(priorRow.path);
-    if (priorRow.type === "pair") (priorRow.paths || []).forEach(key => priorPathKeys.push(key));
+    if (["pair", "triple"].includes(priorRow.type)) (priorRow.paths || []).forEach(key => priorPathKeys.push(key));
   });
   const requiredStates = priorPathKeys
     .map(key => chapter.paths.find(path => path.key === key))
@@ -3940,8 +3957,10 @@ function getV114NodeRequirementText(node) {
   const meta = node.variant ? (VARIANT_META[node.variant] || { label: node.variant }) : null;
   if (node.metric === "variantMax") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups in one set`;
   if (node.metric === "variantTotal") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups total`;
+  if (node.metric === "variantSets") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} sets total`;
   if (node.metric === "workoutTotal") return `${formatTreeNumber(node.target)} Push-Ups in one workout`;
   if (node.metric === "workoutSets") return `${formatTreeNumber(node.target)} sets in one workout`;
+  if (node.metric === "workoutVariants") return `${formatTreeNumber(node.target)} different variants in one workout`;
   return `${formatTreeNumber(node.target)} ${node.label || "reps"}`;
 }
 
@@ -3981,7 +4000,7 @@ ${chapter.landmark.description || "Complete the path to unlock this skill in Tra
 
 function getV1150RowPathStates(chapter, row) {
   if (!row) return [];
-  const keys = row.type === "single" ? [row.path] : (row.type === "pair" ? (row.paths || []) : []);
+  const keys = row.type === "single" ? [row.path] : (["pair", "triple"].includes(row.type) ? (row.paths || []) : []);
   return keys.map(key => chapter.paths.find(path => path.key === key)).filter(Boolean).map(getV012PathState);
 }
 
@@ -3993,7 +4012,7 @@ function isV1150TaskRowDone(chapter, row) {
 function getV1150FirstIncompleteTaskRow(chapter) {
   const rows = chapter.rows || [];
   for (let i = 0; i < rows.length; i += 1) {
-    if (["single", "pair"].includes(rows[i].type) && !isV1150TaskRowDone(chapter, rows[i])) return i;
+    if (["single", "pair", "triple"].includes(rows[i].type) && !isV1150TaskRowDone(chapter, rows[i])) return i;
   }
   return -1;
 }
@@ -4025,7 +4044,7 @@ function renderV1150TaskNode(chapter, chapterIndex, pathState, options = {}) {
   }
 
   const progressState = getV114NodeProgress(node);
-  const done = forceDone || progressState.current >= progressState.target;
+  const done = progressState.current >= progressState.target;
   const accent = getV114NodeAccent(node, pathState.accent);
   return `
     <button class="bp50-node ${done ? "done" : ""} ${active && !done ? "active" : ""}" type="button"
@@ -4082,6 +4101,20 @@ function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, first
         <span class="bp50-diag down-right" aria-hidden="true"></span>
         <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
         <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
+      </div>
+    `;
+  }
+
+  if (row.type === "triple") {
+    return `
+      <div class="bp50-row triple">
+        <span class="bp50-diag up-left" aria-hidden="true"></span>
+        <span class="bp50-diag up-right" aria-hidden="true"></span>
+        <span class="bp50-diag down-left" aria-hidden="true"></span>
+        <span class="bp50-diag down-right" aria-hidden="true"></span>
+        <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
+        <div class="bp50-cell center">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
+        <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[2], { mystery, active, forceDone })}</div>
       </div>
     `;
   }

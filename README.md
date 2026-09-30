@@ -1,4 +1,4 @@
-# BodyPath v0.11.50
+# BodyPath v0.11.53
 
 ## Neu
 - Skill-Tree-Knoten als reduzierte Hexagons mit Variantensymbol
@@ -42,3 +42,14 @@
 - Variant totals remain variant-specific.
 - Added a small Diamond/Silver teaser after Bronze.
 - Updated cache-busting to v0.11.50.
+
+
+## v0.11.53 — Micro progression + 3-node rows
+
+- More, smaller milestones from Start through Bronze.
+- Progress types are deliberately mixed so the next reveal is less predictable.
+- Added mandatory 3-node rows to keep the tree compact without losing milestones.
+- Wall phases out after Wood/Stone, Incline after Stone/Bronze; Standard remains a recurring baseline.
+- Added variant-specific set milestones and mixed-workout milestones.
+- Three-node rows use the same visible branching language as two-node rows.
+- Checkmarks now reflect the real node value only.
