@@ -12051,3 +12051,56 @@ body[data-hero-gender="female"] .home-v17 {
     width: 60px;
   }
 }
+
+/* ======================================================================
+   v0.11.54 — home screen orb layout cleanup
+   ====================================================================== */
+.home-progress-orb .orb-content.orb-content-side {
+  position: absolute !important;
+}
+
+.home-progress-orb .orb-content.orb-content-side strong,
+.home-progress-orb .orb-content.orb-content-record strong {
+  line-height: 1 !important;
+}
+
+.home-progress-orb .orb-content.orb-content-side strong small {
+  display: none !important;
+}
+
+.home-progress-orb .orb-corner-target {
+  position: absolute;
+  right: 12px;
+  bottom: 11px;
+  color: rgba(215,225,255,.82);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.01em;
+}
+
+.home-progress-orb-large .orb-corner-target {
+  right: 16px;
+  bottom: 15px;
+}
+
+.home-progress-caption.home-progress-caption-record {
+  margin-top: 10px !important;
+}
+
+.home-rank-paths .home-next-reward-row {
+  display: none !important;
+}
+
+@media (max-width: 390px) {
+  .home-progress-orb .orb-corner-target {
+    right: 10px;
+    bottom: 10px;
+    font-size: 12px;
+  }
+
+  .home-progress-orb-large .orb-corner-target {
+    right: 13px;
+    bottom: 13px;
+  }
+}

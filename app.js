@@ -4250,11 +4250,6 @@ function renderHomeRankPaths(chapter) {
   const currentIndex = states.findIndex(state => !state.done);
   const currentState = currentIndex >= 0 ? states[currentIndex] : null;
   const currentPath = currentIndex >= 0 ? chapter.paths[currentIndex] : null;
-  const landmark = getV114LandmarkState(chapter);
-  const rewardText = landmark && !landmark.unlocked
-    ? `${VARIANT_META[landmark.variant]?.label || landmark.title} · ${landmark.remainingBefore} node${landmark.remainingBefore === 1 ? "" : "s"}`
-    : `${getRankDisplayName(chapter.to)} Rank · ${getV114RankRemaining(chapter.to)} node${getV114RankRemaining(chapter.to) === 1 ? "" : "s"}`;
-
   if (!currentState || !currentPath) {
     homeRankPaths.innerHTML = `<div class="home-rank-paths-done"><strong>${getRankDisplayName(chapter.to)} unlocked</strong><small>Open the Skill Tree to continue.</small></div>`;
     return;
@@ -4269,7 +4264,6 @@ function renderHomeRankPaths(chapter) {
       </div>
       <div class="home-rank-path-track"><span style="width:${state.percent}%"></span></div>
     </div>
-    <div class="home-next-reward-row"><span>NEXT REWARD</span><strong>${rewardText}</strong></div>
   `;
 }
 
@@ -4283,15 +4277,16 @@ function buildProgressOrb(label, current, target, type = "side") {
       <div class="orb-ring orb-ring-record" style="--progress:100%; --orb-color:#7fbaff;">
         <div class="orb-content orb-content-record">
           <strong>${formatTreeNumber(safeCurrent)}</strong>
-          <small>Best Set</small>
         </div>
       </div>
+      <span class="home-progress-caption home-progress-caption-record">Best Set</span>
     `;
   }
   return `
     <div class="orb-ring" style="--progress:${percent}%; --orb-color:${type === "daily" ? "#61d98c" : "#63a9ff"};">
       <div class="orb-content orb-content-side">
-        <strong>${formatTreeNumber(safeCurrent)}<small>/${formatTreeNumber(safeTarget)}</small></strong>
+        <strong>${formatTreeNumber(safeCurrent)}</strong>
+        <span class="orb-corner-target">/${formatTreeNumber(safeTarget)}</span>
       </div>
     </div>
     <span class="home-progress-caption">${type === "daily" ? "Today" : "This Week"}</span>
