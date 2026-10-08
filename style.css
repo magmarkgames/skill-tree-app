@@ -12104,3 +12104,135 @@ body[data-hero-gender="female"] .home-v17 {
     bottom: 13px;
   }
 }
+
+/* ======================================================================
+   v0.11.55 — entry setup flow + cleaner node-to-node tree connections
+   ====================================================================== */
+.entry-setup-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(3, 6, 16, .78);
+  backdrop-filter: blur(10px);
+}
+
+.entry-setup-sheet.hidden {
+  display: none !important;
+}
+
+.entry-setup-card {
+  width: min(460px, 100%);
+  padding: 26px 22px 22px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(15, 23, 55, .98), rgba(8, 13, 31, .98));
+  border: 1px solid rgba(108, 143, 255, .26);
+  box-shadow: 0 24px 54px rgba(0,0,0,.42);
+  color: #f4f7ff;
+}
+
+.entry-setup-eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  color: #8fb3ff;
+}
+
+.entry-setup-card h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.entry-setup-card p {
+  margin: 0;
+  color: #b2bedf;
+  line-height: 1.45;
+}
+
+.entry-setup-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.entry-setup-actions .primary-btn,
+.entry-setup-actions .secondary-btn {
+  width: 100%;
+  min-height: 52px;
+}
+
+.entry-setup-note {
+  display: block;
+  margin-top: 12px;
+  color: #7f90b7;
+  text-align: center;
+}
+
+/* Replace the old diagonal spans with SVG-based lines that actually connect
+   the branch nodes via a shared junction. */
+.bp50-row.pair,
+.bp50-row.triple {
+  overflow: visible;
+}
+
+.bp50-row.pair::before,
+.bp50-row.triple::before,
+.bp50-row.pair .bp50-diag,
+.bp50-row.triple .bp50-diag,
+.bp50-row.pair .bp50-branch-line {
+  display: none !important;
+}
+
+.bp50-row-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.bp50-row-lines line {
+  stroke: rgba(176, 191, 255, .76);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 7px rgba(96, 126, 235, .18));
+}
+
+.bp50-row.pair {
+  min-height: 160px !important;
+}
+
+.bp50-row.triple {
+  min-height: 168px !important;
+}
+
+.bp50-row.pair .bp50-cell,
+.bp50-row.triple .bp50-cell {
+  align-self: center;
+}
+
+@media (max-width: 420px) {
+  .entry-setup-card h2 {
+    font-size: 24px;
+  }
+
+  .bp50-row.pair {
+    min-height: 152px !important;
+  }
+
+  .bp50-row.triple {
+    min-height: 160px !important;
+  }
+
+  .bp50-row-lines line {
+    stroke-width: 2.5;
+  }
+}

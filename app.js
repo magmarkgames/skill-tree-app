@@ -54,7 +54,10 @@ const DEFAULT_PROGRESS = {
   heroGender: "male",
   variantStats: {},
   challengeProgress: createEmptyChallengeProgress(),
-  trainingHistory: []
+  trainingHistory: [],
+  entrySetupDone: false,
+  entryPath: null,
+  entryAssessmentPending: false
 };
 
 const VARIANT_META = {
@@ -408,6 +411,7 @@ let pauseStartedAt = null;
 let pauseInterval = null;
 let pauseSeconds = 0;
 let lastPauseVibrationMark = 0;
+let entryAssessmentActive = false;
 
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
@@ -642,7 +646,10 @@ function normalizeProgress(value) {
     heroGender: value?.heroGender === "female" ? "female" : "male",
     variantStats,
     challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
-    trainingHistory
+    trainingHistory,
+    entrySetupDone: !!value?.entrySetupDone,
+    entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
+    entryAssessmentPending: !!value?.entryAssessmentPending
   };
 }
 
@@ -654,7 +661,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.53",
+    appVersion: "0.11.55",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -3176,6 +3183,7 @@ function formatTime(seconds) {
 // ---------- Training speichern ----------
 function saveTrainingResult(options = {}) {
   const showSuccess = options.showSuccess !== false;
+  const assessmentWasActive = entryAssessmentActive;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
 
@@ -3227,6 +3235,14 @@ function saveTrainingResult(options = {}) {
   progress.pushupBestDay = Math.max(progress.pushupBestDay, todayTotal);
   progress.pushupBestWeek = Math.max(progress.pushupBestWeek, weekTotal);
   progress.trainingHistory = progress.trainingHistory.slice(0, 200);
+
+  if (assessmentWasActive) {
+    progress.entrySetupDone = true;
+    progress.entryPath = "assessment";
+    progress.entryAssessmentPending = false;
+    entryAssessmentActive = false;
+  }
+
   saveProgress();
   render();
 
@@ -3239,6 +3255,7 @@ function saveTrainingResult(options = {}) {
   sets.forEach((set, index) => addSuccessLine(`Set ${index + 1}: ${set.reps} ${VARIANT_META[set.variant]?.label || "Standard"}`));
   addSuccessLine(`Heute: ${todayTotal} Push-ups`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
+  if (assessmentWasActive) addSuccessLine(`⚡ Assessment complete · your starting rank was adjusted`, true);
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (rankUp) addSuccessLine(`⭐ Neuer Rang: ${newRank}`, true);
   else addSuccessLine(`Rang: ${newRank}`);
@@ -3284,7 +3301,84 @@ function closeTreeStats() {
   document.body.style.overflow = trainingModal.classList.contains("hidden") && variantModal.classList.contains("hidden") ? "" : "hidden";
 }
 
+function createEntrySetupSheet() {
+  if (document.getElementById("entrySetupSheet")) return;
+  const sheet = document.createElement("div");
+  sheet.id = "entrySetupSheet";
+  sheet.className = "entry-setup-sheet hidden";
+  sheet.innerHTML = `
+    <div class="entry-setup-card">
+      <span class="entry-setup-eyebrow">START SETUP</span>
+      <h2>Can you already do Standard Push-Ups?</h2>
+      <p>This decides where your Push-Up Tree starts, so experienced users do not need to begin with Wall Push-Ups.</p>
+      <div class="entry-setup-actions">
+        <button id="entrySetupNoBtn" class="secondary-btn" type="button">No — start from the beginning</button>
+        <button id="entrySetupYesBtn" class="primary-btn" type="button">Yes — do an assessment test</button>
+      </div>
+      <small class="entry-setup-note">You can always keep training normally afterwards.</small>
+    </div>
+  `;
+  document.body.appendChild(sheet);
 
+  document.getElementById("entrySetupNoBtn")?.addEventListener("click", () => {
+    progress.entrySetupDone = true;
+    progress.entryPath = "beginner";
+    progress.entryAssessmentPending = false;
+    saveProgress();
+    closeEntrySetupSheet();
+    render();
+    showAppToast("Starter path selected");
+  });
+
+  document.getElementById("entrySetupYesBtn")?.addEventListener("click", () => {
+    progress.entrySetupDone = true;
+    progress.entryPath = "assessment";
+    progress.entryAssessmentPending = true;
+    saveProgress();
+    closeEntrySetupSheet();
+    startEntryAssessment();
+  });
+}
+
+function openEntrySetupSheet() {
+  createEntrySetupSheet();
+  const sheet = document.getElementById("entrySetupSheet");
+  if (!sheet) return;
+  sheet.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeEntrySetupSheet() {
+  const sheet = document.getElementById("entrySetupSheet");
+  if (!sheet) return;
+  sheet.classList.add("hidden");
+  document.body.style.overflow = trainingModal.classList.contains("hidden") && variantModal.classList.contains("hidden") ? "" : "hidden";
+}
+
+function shouldAskEntrySetup() {
+  const hasHistory = Array.isArray(progress.trainingHistory) && progress.trainingHistory.length > 0;
+  return !progress.entrySetupDone && !hasHistory && (Number(progress.pushupTotal) || 0) === 0;
+}
+
+function startEntryAssessment() {
+  entryAssessmentActive = true;
+  progress.entryAssessmentPending = true;
+  saveProgress();
+  openTraining();
+  setSelectedTrainingVariant("standard");
+  showStep("quick");
+  showPrepUI();
+  renderStaticIcons();
+  trainingTitle.textContent = "Assessment Test";
+  prepCameraHint.textContent = "Do one strong set of Standard Push-Ups. The result places you higher in the tree automatically.";
+  showAppToast("Assessment started: Standard Push-Ups");
+}
+
+function maybePromptEntrySetup() {
+  if (shouldAskEntrySetup()) {
+    window.setTimeout(openEntrySetupSheet, 120);
+  }
+}
 
 // =====================================================================
 // v0.11.2 — Screen-sized rank chapters with three required paths
@@ -3312,6 +3406,9 @@ const V012_CHAPTERS = [
   },
   {
     from: "Holz", to: "Stein",
+    // Users who already prove a Standard Push-Up should not have to grind
+    // through Wall / basic Incline tasks first.
+    skipIf: { metric: "variantMax", variant: "standard", target: 1 },
     paths: [
       { key: "wood-wall-total-10", title: "10 Wall Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wall", target: 10, label: "10 Wall Push-Ups Total" } ] },
       { key: "wood-incline-3", title: "3 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 3, label: "3 Incline Push-Ups" } ] },
@@ -3336,6 +3433,8 @@ const V012_CHAPTERS = [
   },
   {
     from: "Stein", to: "Bronze",
+    // A stronger standard base can fast-forward this early bridge chapter.
+    skipIf: { metric: "variantMax", variant: "standard", target: 5 },
     paths: [
       { key: "stone-standard-2", title: "2 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 2, label: "2 Standard Push-Ups" } ] },
       { key: "stone-incline-total-15", title: "15 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Push-Ups Total" } ] },
@@ -4080,6 +4179,36 @@ function renderV1150UnlockCard(chapter, rowIndex, chapterMode) {
   `;
 }
 
+function renderV1150RowLines(type) {
+  if (type === "pair") {
+    return `
+      <svg class="bp50-row-lines pair" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="50" y1="0" x2="50" y2="18"></line>
+        <line x1="50" y1="18" x2="23" y2="42"></line>
+        <line x1="50" y1="18" x2="77" y2="42"></line>
+        <line x1="23" y1="58" x2="50" y2="82"></line>
+        <line x1="77" y1="58" x2="50" y2="82"></line>
+        <line x1="50" y1="82" x2="50" y2="100"></line>
+      </svg>
+    `;
+  }
+  if (type === "triple") {
+    return `
+      <svg class="bp50-row-lines triple" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="50" y1="0" x2="50" y2="16"></line>
+        <line x1="50" y1="16" x2="18" y2="40"></line>
+        <line x1="50" y1="16" x2="50" y2="40"></line>
+        <line x1="50" y1="16" x2="82" y2="40"></line>
+        <line x1="18" y1="60" x2="50" y2="84"></line>
+        <line x1="50" y1="60" x2="50" y2="84"></line>
+        <line x1="82" y1="60" x2="50" y2="84"></line>
+        <line x1="50" y1="84" x2="50" y2="100"></line>
+      </svg>
+    `;
+  }
+  return "";
+}
+
 function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, firstIncomplete) {
   if (["unlock", "landmark"].includes(row.type)) {
     return `<div class="bp50-row reward">${renderV1150UnlockCard(chapter, rowIndex, chapterMode)}</div>`;
@@ -4095,10 +4224,7 @@ function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, first
   if (row.type === "pair") {
     return `
       <div class="bp50-row pair">
-        <span class="bp50-diag up-left" aria-hidden="true"></span>
-        <span class="bp50-diag up-right" aria-hidden="true"></span>
-        <span class="bp50-diag down-left" aria-hidden="true"></span>
-        <span class="bp50-diag down-right" aria-hidden="true"></span>
+        ${renderV1150RowLines("pair")}
         <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
         <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
       </div>
@@ -4108,10 +4234,7 @@ function renderV1150Row(chapter, chapterIndex, row, rowIndex, chapterMode, first
   if (row.type === "triple") {
     return `
       <div class="bp50-row triple">
-        <span class="bp50-diag up-left" aria-hidden="true"></span>
-        <span class="bp50-diag up-right" aria-hidden="true"></span>
-        <span class="bp50-diag down-left" aria-hidden="true"></span>
-        <span class="bp50-diag down-right" aria-hidden="true"></span>
+        ${renderV1150RowLines("triple")}
         <div class="bp50-cell left">${renderV1150TaskNode(chapter, chapterIndex, states[0], { mystery, active, forceDone })}</div>
         <div class="bp50-cell center">${renderV1150TaskNode(chapter, chapterIndex, states[1], { mystery, active, forceDone })}</div>
         <div class="bp50-cell right">${renderV1150TaskNode(chapter, chapterIndex, states[2], { mystery, active, forceDone })}</div>
@@ -4470,3 +4593,4 @@ document.addEventListener("visibilitychange", () => {
 
 render();
 showView("home");
+maybePromptEntrySetup();
