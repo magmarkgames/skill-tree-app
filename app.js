@@ -62,7 +62,7 @@ const DEFAULT_PROGRESS = {
   accountXp: 0,
   selectedAvatar: "starter",
   selectedAccent: "blue",
-  selectedBackground: "midnight"
+  selectedBackground: "ara"
 };
 
 const VARIANT_META = {
@@ -110,10 +110,10 @@ const ACCOUNT_ACCENTS = [
 ];
 
 const ACCOUNT_BACKGROUNDS = [
-  { id: "midnight", label: "Midnight Peak", level: 1, type: "image", value: "home-hero-male-v01135.webp" },
-  { id: "moonlight", label: "Moonlight Peak", level: 4, type: "image", value: "home-hero-female-v01135.webp" },
-  { id: "aurora", label: "Aurora", level: 7, type: "gradient", value: "linear-gradient(135deg,#081225 0%,#173d57 45%,#2a6c67 72%,#0a0c18 100%)" },
-  { id: "ember", label: "Ember", level: 12, type: "gradient", value: "linear-gradient(135deg,#140b16 0%,#53202a 48%,#a85132 76%,#0a0c18 100%)" }
+  { id: "ara", label: "Jungle Ara", level: 1, type: "image", value: "bg-ara-banner.webp" },
+  { id: "turtle", label: "Sea Turtle", level: 2, type: "image", value: "bg-turtle-banner.webp" },
+  { id: "fox", label: "Autumn Fox", level: 3, type: "image", value: "bg-fox-banner.webp" },
+  { id: "owl", label: "Moon Owl", level: 4, type: "image", value: "bg-owl-banner.webp" }
 ];
 
 
@@ -710,7 +710,7 @@ function normalizeProgress(value) {
     accountXp: Math.max(0, Math.floor(Number(value?.accountXp) || 0)),
     selectedAvatar: ACCOUNT_AVATARS.some(item => item.id === value?.selectedAvatar) ? value.selectedAvatar : "starter",
     selectedAccent: ACCOUNT_ACCENTS.some(item => item.id === value?.selectedAccent) ? value.selectedAccent : "blue",
-    selectedBackground: ACCOUNT_BACKGROUNDS.some(item => item.id === value?.selectedBackground) ? value.selectedBackground : "midnight"
+    selectedBackground: ACCOUNT_BACKGROUNDS.some(item => item.id === value?.selectedBackground) ? value.selectedBackground : "ara"
   };
 }
 
@@ -868,7 +868,6 @@ function renderAccountHome(rankName) {
   const info = getAccountLevelInfo();
   if (homeAccountName) homeAccountName.textContent = progress.accountName || "Athlete";
   if (homeAccountLevelPill) homeAccountLevelPill.textContent = `LVL ${info.level}`;
-  if (homeAccountRank) homeAccountRank.textContent = `${getRankDisplayName(rankName)} · Push-Ups`;
   if (homeAccountXpBar) homeAccountXpBar.style.width = `${info.percent}%`;
   if (homeAccountXpText) homeAccountXpText.textContent = `${formatTreeNumber(info.inLevel)} / ${formatTreeNumber(info.need)} XP`;
 }
