@@ -12697,3 +12697,149 @@ body[data-hero-gender="female"] .home-v17 {
     font-size: 9px !important;
   }
 }
+
+/* ======================================================================
+   v0.11.58 — full-width responsive banner + all cosmetics selectable
+   ====================================================================== */
+.home-v17 {
+  padding-top: 14px !important;
+}
+
+.home-v17::before {
+  height: 0 !important;
+  background: none !important;
+}
+
+.home-account-hero {
+  min-height: auto !important;
+  margin: 0 0 14px !important;
+  padding: 0 16px !important;
+  display: block !important;
+}
+
+.home-account-card {
+  width: 100% !important;
+  max-width: none !important;
+  height: clamp(110px, 16vh, 160px) !important;
+  min-height: 110px !important;
+  padding: 14px 16px !important;
+  display: grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  align-items: end !important;
+  gap: 12px !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(160, 190, 255, .16) !important;
+  background-image:
+    linear-gradient(90deg, rgba(7,10,24,.86) 0%, rgba(7,10,24,.58) 44%, rgba(7,10,24,.16) 100%),
+    var(--account-hero-image),
+    var(--account-hero-gradient) !important;
+  background-size: cover, cover, cover !important;
+  background-position: center, center, center !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  overflow: hidden;
+}
+
+.home-account-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 28%, rgba(0,0,0,.10));
+  pointer-events: none;
+}
+
+.home-account-avatar,
+.home-account-main {
+  position: relative;
+  z-index: 1;
+}
+
+.home-account-avatar {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 18px !important;
+  font-size: 22px !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.24), 0 0 24px color-mix(in srgb, var(--user-accent) 22%, transparent) !important;
+}
+
+.home-account-main {
+  align-self: end;
+}
+
+.home-account-name-row {
+  gap: 8px !important;
+  margin-bottom: 10px;
+}
+
+.home-account-name-row strong {
+  color: #fff;
+  font-size: clamp(22px, 5.8vw, 28px) !important;
+  text-shadow: 0 3px 14px rgba(0,0,0,.40);
+}
+
+#homeAccountLevelPill {
+  background: color-mix(in srgb, var(--user-accent) 22%, rgba(10,15,35,.92)) !important;
+  border-color: color-mix(in srgb, var(--user-accent) 46%, transparent) !important;
+  font-size: 10px !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,.18);
+}
+
+#homeAccountRank {
+  display: none !important;
+}
+
+.home-account-xp-row {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+
+.home-account-xp-track {
+  height: 10px !important;
+  background: rgba(209,221,255,.17) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06) !important;
+}
+
+#homeAccountXpText {
+  font-size: 10px !important;
+  color: rgba(240,244,255,.86) !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,.32);
+}
+
+.background-preview {
+  height: auto !important;
+  aspect-ratio: 3 / 1;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+.customize-choice:not(.locked) {
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .home-account-hero {
+    padding: 0 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .home-account-card {
+    height: clamp(104px, 15.5vh, 138px) !important;
+    min-height: 104px !important;
+    padding: 12px 13px !important;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    border-radius: 22px !important;
+  }
+
+  .home-account-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 16px !important;
+    font-size: 20px !important;
+  }
+
+  #homeAccountXpText {
+    font-size: 9px !important;
+  }
+}

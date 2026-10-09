@@ -97,23 +97,23 @@ const VARIANT_XP_PER_REP = {
 
 const ACCOUNT_AVATARS = [
   { id: "starter", label: "Starter", icon: "BP", level: 1 },
-  { id: "bolt", label: "Bolt", icon: "⚡", level: 2 },
-  { id: "peak", label: "Peak", icon: "▲", level: 5 },
-  { id: "crown", label: "Champion", icon: "♛", level: 10 }
+  { id: "bolt", label: "Bolt", icon: "⚡", level: 1 },
+  { id: "peak", label: "Peak", icon: "▲", level: 1 },
+  { id: "crown", label: "Champion", icon: "♛", level: 1 }
 ];
 
 const ACCOUNT_ACCENTS = [
   { id: "blue", label: "BodyPath Blue", color: "#4DA3FF", level: 1 },
-  { id: "violet", label: "Violet", color: "#9B6CFF", level: 3 },
-  { id: "emerald", label: "Emerald", color: "#43C889", level: 6 },
-  { id: "crimson", label: "Crimson", color: "#FF5D6C", level: 9 }
+  { id: "violet", label: "Violet", color: "#9B6CFF", level: 1 },
+  { id: "emerald", label: "Emerald", color: "#43C889", level: 1 },
+  { id: "crimson", label: "Crimson", color: "#FF5D6C", level: 1 }
 ];
 
 const ACCOUNT_BACKGROUNDS = [
   { id: "ara", label: "Jungle Ara", level: 1, type: "image", value: "bg-ara-banner.webp" },
-  { id: "turtle", label: "Sea Turtle", level: 2, type: "image", value: "bg-turtle-banner.webp" },
-  { id: "fox", label: "Autumn Fox", level: 3, type: "image", value: "bg-fox-banner.webp" },
-  { id: "owl", label: "Moon Owl", level: 4, type: "image", value: "bg-owl-banner.webp" }
+  { id: "turtle", label: "Sea Turtle", level: 1, type: "image", value: "bg-turtle-banner.webp" },
+  { id: "fox", label: "Autumn Fox", level: 1, type: "image", value: "bg-fox-banner.webp" },
+  { id: "owl", label: "Moon Owl", level: 1, type: "image", value: "bg-owl-banner.webp" }
 ];
 
 
@@ -722,7 +722,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.56",
+    appVersion: "0.11.58",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -824,7 +824,7 @@ function getXpForWorkoutSets(sets) {
   }, 0);
 }
 
-function getNewlyUnlockedCosmetics(oldLevel, newLevel) {
+function getNewlyAvailableCosmetics(oldLevel, newLevel) {
   const all = [
     ...ACCOUNT_AVATARS.map(item => ({ ...item, kind: "Profile picture" })),
     ...ACCOUNT_ACCENTS.map(item => ({ ...item, kind: "App color" })),
@@ -846,9 +846,9 @@ function getSelectedAvatar() {
 
 function applyAccountCustomization() {
   const level = getAccountLevelInfo().level;
-  const accent = ACCOUNT_ACCENTS.find(item => item.id === progress.selectedAccent && item.level <= level) || ACCOUNT_ACCENTS[0];
-  const background = ACCOUNT_BACKGROUNDS.find(item => item.id === progress.selectedBackground && item.level <= level) || ACCOUNT_BACKGROUNDS[0];
-  const avatar = ACCOUNT_AVATARS.find(item => item.id === progress.selectedAvatar && item.level <= level) || ACCOUNT_AVATARS[0];
+  const accent = ACCOUNT_ACCENTS.find(item => item.id === progress.selectedAccent) || ACCOUNT_ACCENTS[0];
+  const background = ACCOUNT_BACKGROUNDS.find(item => item.id === progress.selectedBackground) || ACCOUNT_BACKGROUNDS[0];
+  const avatar = ACCOUNT_AVATARS.find(item => item.id === progress.selectedAvatar) || ACCOUNT_AVATARS[0];
 
   document.documentElement.style.setProperty("--user-accent", accent.color);
   document.body.dataset.accountBackground = background.id;
@@ -878,14 +878,14 @@ function renderCustomizationChoices() {
     profileAvatarChoices.innerHTML = ACCOUNT_AVATARS.map(item => {
       const unlocked = level >= item.level;
       const selected = progress.selectedAvatar === item.id;
-      return `<button class="customize-choice avatar-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-avatar-choice="${item.id}" ${unlocked ? "" : "disabled"}><span>${item.icon}</span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+      return `<button class="customize-choice avatar-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-avatar-choice="${item.id}" ${unlocked ? "" : "disabled"}><span>${item.icon}</span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Available") : `Level ${item.level}`}</small></button>`;
     }).join("");
   }
   if (profileAccentChoices) {
     profileAccentChoices.innerHTML = ACCOUNT_ACCENTS.map(item => {
       const unlocked = level >= item.level;
       const selected = progress.selectedAccent === item.id;
-      return `<button class="customize-choice color-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-accent-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="color-swatch" style="--choice-color:${item.color}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+      return `<button class="customize-choice color-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-accent-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="color-swatch" style="--choice-color:${item.color}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Available") : `Level ${item.level}`}</small></button>`;
     }).join("");
   }
   if (profileBackgroundChoices) {
@@ -893,7 +893,7 @@ function renderCustomizationChoices() {
       const unlocked = level >= item.level;
       const selected = progress.selectedBackground === item.id;
       const bgStyle = item.type === "image" ? `background-image:url('${item.value}')` : `background:${item.value}`;
-      return `<button class="customize-choice background-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-background-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="background-preview" style="${bgStyle}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+      return `<button class="customize-choice background-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-background-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="background-preview" style="${bgStyle}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Available") : `Level ${item.level}`}</small></button>`;
     }).join("");
   }
 
@@ -1195,19 +1195,19 @@ function getTimedChallengeState(metric, currentValue) {
     changed = true;
 
     const completedNow = new Set(bucket.completed);
-    const nextUnlocked = unlocked.find(item => !completedNow.has(item.id)) || null;
-    if (nextUnlocked) {
+    const nextAvailable = unlocked.find(item => !completedNow.has(item.id)) || null;
+    if (nextAvailable) {
       // Challenge II is already unlocked: continue immediately, but only reps
       // performed after Challenge I was completed count towards II.
-      bucket.activeId = nextUnlocked.id;
+      bucket.activeId = nextAvailable.id;
       bucket.periodKey = periodKey;
       bucket.baseline = current;
       saveProgress();
       return {
         status: "active",
-        tier: nextUnlocked,
+        tier: nextAvailable,
         current: 0,
-        target: nextUnlocked.target,
+        target: nextAvailable.target,
         percent: 0,
         advancedFrom: tier
       };
@@ -1552,8 +1552,8 @@ function nodeValue(node) {
 function isNodeDone(node) {
   if (!node) return false;
   if ((node.type === "challenge" || node.type === "skill") && node.parents?.length) {
-    const chapterUnlocked = node.parents.every(parentId => isNodeDone(getNode(parentId)));
-    if (!chapterUnlocked) return false;
+    const chapterAvailable = node.parents.every(parentId => isNodeDone(getNode(parentId)));
+    if (!chapterAvailable) return false;
   }
   if (node.type === "rank") {
     const parents = node.parents || [];
@@ -1578,8 +1578,8 @@ function isNodeAvailable(node) {
   return node.parents.every(parentId => isNodeDone(getNode(parentId)));
 }
 
-function isVariantUnlocked(variant) {
-  return isV012VariantUnlocked(variant);
+function isVariantAvailable(variant) {
+  return isV012VariantAvailable(variant);
 }
 
 function getDiscoveryGroupKey(node) {
@@ -1606,7 +1606,7 @@ function getNodeDiscoveryState(node) {
 
   if (index < 0) return "done";
 
-  const blockedByVariant = node.variant && !isVariantUnlocked(node.variant);
+  const blockedByVariant = node.variant && !isVariantAvailable(node.variant);
   const firstReachable = index === 0 && isNodeAvailable(node) && !blockedByVariant;
   if (firstReachable) return "current";
 
@@ -1627,7 +1627,7 @@ function shouldRenderTreeNode(node) {
 
 function updateVariantAvailability() {
   const apply = (element, variant) => {
-    const unlocked = isVariantUnlocked(variant);
+    const unlocked = isVariantAvailable(variant);
     element.classList.toggle("unlock-hidden", !unlocked);
     element.disabled = !unlocked;
     element.setAttribute("aria-hidden", unlocked ? "false" : "true");
@@ -1636,8 +1636,8 @@ function updateVariantAvailability() {
   variantCards.forEach(card => apply(card, card.dataset.variant));
   workoutVariantButtons.forEach(button => apply(button, button.dataset.workoutVariant));
 
-  if (!isVariantUnlocked(currentTrainingVariant)) {
-    currentTrainingVariant = isVariantUnlocked("standard") ? "standard" : "wall";
+  if (!isVariantAvailable(currentTrainingVariant)) {
+    currentTrainingVariant = isVariantAvailable("standard") ? "standard" : "wall";
   }
 }
 
@@ -2414,7 +2414,7 @@ function updateQuickVariantPill() {
 }
 
 function setSelectedTrainingVariant(variant) {
-  if (!isVariantUnlocked(variant)) return;
+  if (!isVariantAvailable(variant)) return;
   currentTrainingVariant = VARIANT_META[variant] ? variant : "standard";
   variantCards.forEach(card => card.classList.toggle("selected", card.dataset.variant === currentTrainingVariant));
   workoutVariantButtons.forEach(button => button.classList.toggle("selected", button.dataset.workoutVariant === currentTrainingVariant));
@@ -2544,7 +2544,7 @@ function resetTrainingSession() {
 }
 
 function selectWorkoutVariant(variant) {
-  if (!isVariantUnlocked(variant)) return;
+  if (!isVariantAvailable(variant)) return;
   setSelectedTrainingVariant(variant);
   if (trainingPhase === "prep") {
     showActiveUI();
@@ -3442,7 +3442,7 @@ function saveTrainingResult(options = {}) {
   const newStandardRecord = progress.pushupMax > oldMax;
   const newAccountInfo = getAccountLevelInfo();
   const levelUps = Math.max(0, newAccountInfo.level - oldAccountLevel);
-  const cosmeticUnlocks = getNewlyUnlockedCosmetics(oldAccountLevel, newAccountInfo.level);
+  const cosmeticUnlocks = getNewlyAvailableCosmetics(oldAccountLevel, newAccountInfo.level);
 
   successDetails.innerHTML = "";
   addSuccessLine(`${sets.length} ${sets.length === 1 ? "Set" : "Sets"} · ${totalReps} Push-ups gespeichert`);
@@ -3820,7 +3820,7 @@ function getV1150VariantUnlockState(variant) {
   return null;
 }
 
-function isV012VariantUnlocked(variant) {
+function isV012VariantAvailable(variant) {
   if (!VARIANT_META[variant]) return false;
   if (variant === "wall") return true;
 
