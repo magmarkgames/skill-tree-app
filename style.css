@@ -12236,3 +12236,312 @@ body[data-hero-gender="female"] .home-v17 {
     stroke-width: 2.5;
   }
 }
+
+/* ======================================================================
+   v0.11.56 — account level, XP and cosmetic customization alpha
+   ====================================================================== */
+:root {
+  --user-accent: #4DA3FF;
+  --account-hero-image: url("home-hero-male-v01135.webp");
+  --account-hero-gradient: none;
+}
+
+/* Home now starts with the player's profile instead of static branding copy. */
+.home-brandbar,
+.home-hero-copy {
+  display: none !important;
+}
+
+.home-account-hero {
+  min-height: clamp(210px, 29vh, 278px) !important;
+  margin: 0 0 -54px !important;
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 18px 16px 0 !important;
+  box-sizing: border-box;
+}
+
+.home-v17::before {
+  background-image:
+    linear-gradient(90deg, rgba(7,10,24,.94) 0%, rgba(7,10,24,.76) 44%, rgba(7,10,24,.28) 78%, rgba(7,10,24,.08) 100%),
+    linear-gradient(180deg, rgba(10,12,24,0) 60%, rgba(10,12,24,.62) 84%, #0A0C18 100%),
+    var(--account-hero-image),
+    var(--account-hero-gradient) !important;
+  background-size: cover, cover, cover, cover !important;
+  background-position: center, center, center 46%, center !important;
+}
+
+.home-account-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 13px;
+  width: min(390px, 86%);
+  padding: 13px 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 22px;
+  background: rgba(6,10,27,.56);
+  box-shadow: 0 16px 34px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(10px);
+}
+
+.home-account-avatar,
+.profile-avatar-live {
+  display: grid !important;
+  place-items: center;
+  background: radial-gradient(circle at 32% 25%, color-mix(in srgb, var(--user-accent) 60%, white 12%), rgba(10,18,47,.96) 66%) !important;
+  border: 1px solid color-mix(in srgb, var(--user-accent) 62%, white 8%) !important;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--user-accent) 22%, transparent) !important;
+  color: white !important;
+  font-weight: 950 !important;
+  letter-spacing: -.04em;
+}
+
+.home-account-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 25px;
+}
+
+.home-account-main {
+  min-width: 0;
+  align-self: center;
+}
+
+.home-account-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.home-account-name-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 23px;
+  line-height: 1;
+}
+
+#homeAccountLevelPill {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--user-accent) 22%, rgba(15,22,50,.84));
+  border: 1px solid color-mix(in srgb, var(--user-accent) 42%, transparent);
+  color: #eaf3ff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+#homeAccountRank {
+  display: block;
+  margin-top: 5px;
+  color: rgba(214,224,255,.74);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.home-account-xp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.home-account-xp-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(131,149,211,.18);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+}
+
+.home-account-xp-track span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--user-accent) 70%, white 5%), var(--user-accent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--user-accent) 32%, transparent);
+  transition: width .35s ease;
+}
+
+#homeAccountXpText {
+  color: rgba(213,223,255,.70);
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Cosmetic profile controls */
+.profile-account-card {
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+}
+
+.profile-name-input {
+  width: 100%;
+  max-width: 210px;
+  margin: 2px 0 4px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(148,166,228,.22);
+  outline: none;
+  background: transparent;
+  color: #f6f8ff;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.profile-name-input:focus {
+  border-bottom-color: var(--user-accent);
+}
+
+.profile-customize-section {
+  display: grid;
+  gap: 18px;
+}
+
+.customize-group {
+  padding: 14px;
+  border: 1px solid rgba(127,146,214,.14);
+  border-radius: 20px;
+  background: rgba(12,17,38,.56);
+}
+
+.customize-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.customize-group-head strong {
+  color: #f2f5ff;
+  font-size: 14px;
+}
+
+.customize-group-head small {
+  color: #8191bb;
+  font-size: 9px;
+  text-align: right;
+}
+
+.customize-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.customize-choice {
+  min-width: 0;
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid rgba(128,146,210,.18);
+  border-radius: 16px;
+  background: rgba(7,11,27,.76);
+  color: #f4f6ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.customize-choice.selected {
+  border-color: color-mix(in srgb, var(--user-accent) 72%, white 6%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--user-accent) 10%, transparent);
+}
+
+.customize-choice.locked {
+  opacity: .44;
+  filter: grayscale(.35);
+}
+
+.customize-choice strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.customize-choice small {
+  color: #8597c2;
+  font-size: 8px;
+}
+
+.avatar-choice > span:first-child {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--user-accent) 55%, white 8%), #0b1230 72%);
+  border: 1px solid color-mix(in srgb, var(--user-accent) 45%, transparent);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.color-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--choice-color);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--choice-color) 35%, transparent);
+}
+
+.background-preview {
+  width: 100%;
+  height: 48px;
+  border-radius: 11px;
+  background-position: center !important;
+  background-size: cover !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+/* The selected account accent colors key interactive surfaces in the alpha. */
+.home-tree-training-btn,
+.home-nav-training {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--user-accent) 76%, #6f79ff 24%), var(--user-accent)) !important;
+}
+
+.home-rank-path-track > span,
+.home-nav-item.active::after {
+  background: var(--user-accent) !important;
+}
+
+.home-nav-item.active,
+.profile-rank-action,
+.tree-stats-btn-icon {
+  color: color-mix(in srgb, var(--user-accent) 80%, white 20%) !important;
+}
+
+@media (max-width: 420px) {
+  .home-account-hero {
+    min-height: clamp(198px, 27vh, 250px) !important;
+    padding: 14px 12px 0 !important;
+  }
+  .home-account-card {
+    width: min(370px, 92%);
+    grid-template-columns: 58px minmax(0,1fr);
+    padding: 11px 12px;
+  }
+  .home-account-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+  }
+  .home-account-name-row strong { font-size: 20px; }
+  .customize-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

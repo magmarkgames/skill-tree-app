@@ -53,3 +53,11 @@
 - Added variant-specific set milestones and mixed-workout milestones.
 - Three-node rows use the same visible branching language as two-node rows.
 - Checkmarks now reflect the real node value only.
+
+## v0.11.56
+- Account level + XP system (Push-Up alpha)
+- Every rep awards XP with variant difficulty multipliers (Wall < Standard < Pike etc.)
+- Level-up rewards unlock profile pictures, accent colors and Home backgrounds
+- Home hero now shows account name, level, rank and XP progress
+- Profile customization UI for avatar, app accent and background
+- Workout completion shows earned XP, level-ups and cosmetic unlocks

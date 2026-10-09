@@ -57,7 +57,12 @@ const DEFAULT_PROGRESS = {
   trainingHistory: [],
   entrySetupDone: false,
   entryPath: null,
-  entryAssessmentPending: false
+  entryAssessmentPending: false,
+  accountName: "Athlete",
+  accountXp: 0,
+  selectedAvatar: "starter",
+  selectedAccent: "blue",
+  selectedBackground: "midnight"
 };
 
 const VARIANT_META = {
@@ -74,6 +79,43 @@ const VARIANT_META = {
   handstand: { label: "Handstand", shortLabel: "Handstand", color: "#28B8A7" },
   pseudoPlanche: { label: "Pseudo Planche", shortLabel: "Planche", color: "#D05CE3" }
 };
+
+const VARIANT_XP_PER_REP = {
+  wall: 1,
+  incline: 1.5,
+  standard: 2,
+  wide: 2.25,
+  military: 2.4,
+  decline: 2.4,
+  diamond: 2.5,
+  pike: 3,
+  explosive: 3,
+  archer: 3.5,
+  handstand: 4,
+  pseudoPlanche: 4.5
+};
+
+const ACCOUNT_AVATARS = [
+  { id: "starter", label: "Starter", icon: "BP", level: 1 },
+  { id: "bolt", label: "Bolt", icon: "⚡", level: 2 },
+  { id: "peak", label: "Peak", icon: "▲", level: 5 },
+  { id: "crown", label: "Champion", icon: "♛", level: 10 }
+];
+
+const ACCOUNT_ACCENTS = [
+  { id: "blue", label: "BodyPath Blue", color: "#4DA3FF", level: 1 },
+  { id: "violet", label: "Violet", color: "#9B6CFF", level: 3 },
+  { id: "emerald", label: "Emerald", color: "#43C889", level: 6 },
+  { id: "crimson", label: "Crimson", color: "#FF5D6C", level: 9 }
+];
+
+const ACCOUNT_BACKGROUNDS = [
+  { id: "midnight", label: "Midnight Peak", level: 1, type: "image", value: "home-hero-male-v01135.webp" },
+  { id: "moonlight", label: "Moonlight Peak", level: 4, type: "image", value: "home-hero-female-v01135.webp" },
+  { id: "aurora", label: "Aurora", level: 7, type: "gradient", value: "linear-gradient(135deg,#081225 0%,#173d57 45%,#2a6c67 72%,#0a0c18 100%)" },
+  { id: "ember", label: "Ember", level: 12, type: "gradient", value: "linear-gradient(135deg,#140b16 0%,#53202a 48%,#a85132 76%,#0a0c18 100%)" }
+];
+
 
 // Varianten mit einem echten Freischalt-Knoten erscheinen im Training erst,
 // sobald dieser Knoten im Skill Tree erreichbar ist. Varianten ohne Eintrag
@@ -458,6 +500,20 @@ const profileGenderMaleBtn = document.getElementById("profileGenderMaleBtn");
 const profileGenderFemaleBtn = document.getElementById("profileGenderFemaleBtn");
 const homeNextRankName = document.getElementById("homeNextRankName");
 const skillsPushupRank = document.getElementById("skillsPushupRank");
+const homeAccountAvatar = document.getElementById("homeAccountAvatar");
+const homeAccountName = document.getElementById("homeAccountName");
+const homeAccountLevelPill = document.getElementById("homeAccountLevelPill");
+const homeAccountRank = document.getElementById("homeAccountRank");
+const homeAccountXpBar = document.getElementById("homeAccountXpBar");
+const homeAccountXpText = document.getElementById("homeAccountXpText");
+const profileAvatarLive = document.getElementById("profileAvatarLive");
+const profileNameInput = document.getElementById("profileNameInput");
+const profileAccountXpText = document.getElementById("profileAccountXpText");
+const profileAccountLevel = document.getElementById("profileAccountLevel");
+const profileNextRewardText = document.getElementById("profileNextRewardText");
+const profileAvatarChoices = document.getElementById("profileAvatarChoices");
+const profileAccentChoices = document.getElementById("profileAccentChoices");
+const profileBackgroundChoices = document.getElementById("profileBackgroundChoices");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -649,7 +705,12 @@ function normalizeProgress(value) {
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
-    entryAssessmentPending: !!value?.entryAssessmentPending
+    entryAssessmentPending: !!value?.entryAssessmentPending,
+    accountName: typeof value?.accountName === "string" && value.accountName.trim() ? value.accountName.trim().slice(0, 18) : "Athlete",
+    accountXp: Math.max(0, Math.floor(Number(value?.accountXp) || 0)),
+    selectedAvatar: ACCOUNT_AVATARS.some(item => item.id === value?.selectedAvatar) ? value.selectedAvatar : "starter",
+    selectedAccent: ACCOUNT_ACCENTS.some(item => item.id === value?.selectedAccent) ? value.selectedAccent : "blue",
+    selectedBackground: ACCOUNT_BACKGROUNDS.some(item => item.id === value?.selectedBackground) ? value.selectedBackground : "midnight"
   };
 }
 
@@ -661,7 +722,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.55",
+    appVersion: "0.11.56",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -733,6 +794,124 @@ async function importProgressBackup(file) {
   }
 }
 
+function getAccountLevelInfo(xp = progress.accountXp) {
+  const totalXp = Math.max(0, Math.floor(Number(xp) || 0));
+  let level = 1;
+  let spent = 0;
+  let need = 100;
+  while (totalXp >= spent + need) {
+    spent += need;
+    level += 1;
+    need = 100 + (level - 1) * 50;
+    if (level > 500) break;
+  }
+  const inLevel = totalXp - spent;
+  return {
+    level,
+    totalXp,
+    inLevel,
+    need,
+    percent: Math.max(0, Math.min(100, (inLevel / need) * 100))
+  };
+}
+
+function getXpForWorkoutSets(sets) {
+  return sets.reduce((sum, set) => {
+    const variant = VARIANT_META[set?.variant] ? set.variant : "standard";
+    const reps = Math.max(0, Math.floor(Number(set?.reps) || 0));
+    const perRep = VARIANT_XP_PER_REP[variant] || 2;
+    return sum + Math.max(0, Math.round(reps * perRep));
+  }, 0);
+}
+
+function getNewlyUnlockedCosmetics(oldLevel, newLevel) {
+  const all = [
+    ...ACCOUNT_AVATARS.map(item => ({ ...item, kind: "Profile picture" })),
+    ...ACCOUNT_ACCENTS.map(item => ({ ...item, kind: "App color" })),
+    ...ACCOUNT_BACKGROUNDS.map(item => ({ ...item, kind: "Background" }))
+  ];
+  return all.filter(item => item.level > oldLevel && item.level <= newLevel);
+}
+
+function getNextCosmeticReward(level) {
+  const all = [...ACCOUNT_AVATARS, ...ACCOUNT_ACCENTS, ...ACCOUNT_BACKGROUNDS]
+    .filter(item => item.level > level)
+    .sort((a,b) => a.level - b.level);
+  return all[0] || null;
+}
+
+function getSelectedAvatar() {
+  return ACCOUNT_AVATARS.find(item => item.id === progress.selectedAvatar) || ACCOUNT_AVATARS[0];
+}
+
+function applyAccountCustomization() {
+  const level = getAccountLevelInfo().level;
+  const accent = ACCOUNT_ACCENTS.find(item => item.id === progress.selectedAccent && item.level <= level) || ACCOUNT_ACCENTS[0];
+  const background = ACCOUNT_BACKGROUNDS.find(item => item.id === progress.selectedBackground && item.level <= level) || ACCOUNT_BACKGROUNDS[0];
+  const avatar = ACCOUNT_AVATARS.find(item => item.id === progress.selectedAvatar && item.level <= level) || ACCOUNT_AVATARS[0];
+
+  document.documentElement.style.setProperty("--user-accent", accent.color);
+  document.body.dataset.accountBackground = background.id;
+  if (background.type === "image") {
+    document.documentElement.style.setProperty("--account-hero-image", `url("${background.value}")`);
+    document.documentElement.style.setProperty("--account-hero-gradient", "none");
+  } else {
+    document.documentElement.style.setProperty("--account-hero-image", "none");
+    document.documentElement.style.setProperty("--account-hero-gradient", background.value);
+  }
+
+  if (homeAccountAvatar) homeAccountAvatar.textContent = avatar.icon;
+  if (profileAvatarLive) profileAvatarLive.textContent = avatar.icon;
+}
+
+function renderAccountHome(rankName) {
+  const info = getAccountLevelInfo();
+  if (homeAccountName) homeAccountName.textContent = progress.accountName || "Athlete";
+  if (homeAccountLevelPill) homeAccountLevelPill.textContent = `LVL ${info.level}`;
+  if (homeAccountRank) homeAccountRank.textContent = `${getRankDisplayName(rankName)} · Push-Ups`;
+  if (homeAccountXpBar) homeAccountXpBar.style.width = `${info.percent}%`;
+  if (homeAccountXpText) homeAccountXpText.textContent = `${formatTreeNumber(info.inLevel)} / ${formatTreeNumber(info.need)} XP`;
+}
+
+function renderCustomizationChoices() {
+  const level = getAccountLevelInfo().level;
+  if (profileAvatarChoices) {
+    profileAvatarChoices.innerHTML = ACCOUNT_AVATARS.map(item => {
+      const unlocked = level >= item.level;
+      const selected = progress.selectedAvatar === item.id;
+      return `<button class="customize-choice avatar-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-avatar-choice="${item.id}" ${unlocked ? "" : "disabled"}><span>${item.icon}</span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+    }).join("");
+  }
+  if (profileAccentChoices) {
+    profileAccentChoices.innerHTML = ACCOUNT_ACCENTS.map(item => {
+      const unlocked = level >= item.level;
+      const selected = progress.selectedAccent === item.id;
+      return `<button class="customize-choice color-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-accent-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="color-swatch" style="--choice-color:${item.color}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+    }).join("");
+  }
+  if (profileBackgroundChoices) {
+    profileBackgroundChoices.innerHTML = ACCOUNT_BACKGROUNDS.map(item => {
+      const unlocked = level >= item.level;
+      const selected = progress.selectedBackground === item.id;
+      const bgStyle = item.type === "image" ? `background-image:url('${item.value}')` : `background:${item.value}`;
+      return `<button class="customize-choice background-choice ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" type="button" data-background-choice="${item.id}" ${unlocked ? "" : "disabled"}><span class="background-preview" style="${bgStyle}"></span><strong>${item.label}</strong><small>${unlocked ? (selected ? "Selected" : "Unlocked") : `Level ${item.level}`}</small></button>`;
+    }).join("");
+  }
+
+  document.querySelectorAll("[data-avatar-choice]").forEach(btn => btn.addEventListener("click", () => {
+    progress.selectedAvatar = btn.dataset.avatarChoice;
+    saveProgress(); applyAccountCustomization(); renderProfile(); renderAccountHome(getV012CurrentRankName());
+  }));
+  document.querySelectorAll("[data-accent-choice]").forEach(btn => btn.addEventListener("click", () => {
+    progress.selectedAccent = btn.dataset.accentChoice;
+    saveProgress(); applyAccountCustomization(); renderProfile(); render();
+  }));
+  document.querySelectorAll("[data-background-choice]").forEach(btn => btn.addEventListener("click", () => {
+    progress.selectedBackground = btn.dataset.backgroundChoice;
+    saveProgress(); applyAccountCustomization(); renderProfile(); render();
+  }));
+}
+
 // ---------- Views / Dashboard ----------
 function setBottomNavActive(name) {
   const groups = {
@@ -791,6 +970,7 @@ function renderSkills() {
 function render() {
   renderStaticIcons();
   applyHeroGender();
+  applyAccountCustomization();
   const todayTotal = getTodayTotal();
   const weekTotal = getCurrentWeekTotal();
   const rankName = getCurrentRankName();
@@ -806,6 +986,7 @@ function render() {
   homeWeekStat.textContent = weekTotal;
   if (homeTotalStat) homeTotalStat.textContent = progress.pushupTotal;
   renderHomeDashboard(todayTotal, weekTotal, rankName);
+  renderAccountHome(getV012CurrentRankName());
 
   historyTodayStat.textContent = todayTotal;
   historyWeekStat.textContent = weekTotal;
@@ -2065,6 +2246,14 @@ function setHeroGender(gender) {
 
 function renderProfile() {
   applyHeroGender();
+  applyAccountCustomization();
+  const accountInfo = getAccountLevelInfo();
+  if (profileNameInput) profileNameInput.value = progress.accountName || "Athlete";
+  if (profileAccountLevel) profileAccountLevel.textContent = accountInfo.level;
+  if (profileAccountXpText) profileAccountXpText.textContent = `Level ${accountInfo.level} · ${formatTreeNumber(accountInfo.inLevel)} / ${formatTreeNumber(accountInfo.need)} XP`;
+  const nextReward = getNextCosmeticReward(accountInfo.level);
+  if (profileNextRewardText) profileNextRewardText.textContent = nextReward ? `Lvl ${nextReward.level}: ${nextReward.label}` : "All alpha rewards unlocked";
+  renderCustomizationChoices();
   if (!profilePushRankName || !profilePushRankIcon) return;
   const rankName = getCurrentRankName();
   profilePushRankName.textContent = getRankDisplayName(rankName);
@@ -3186,6 +3375,7 @@ function saveTrainingResult(options = {}) {
   const assessmentWasActive = entryAssessmentActive;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
+  const oldAccountLevel = getAccountLevelInfo().level;
 
   if (manualMode) {
     const reps = Math.floor(Number(repInput.value));
@@ -3198,6 +3388,7 @@ function saveTrainingResult(options = {}) {
 
   const sets = workoutSets.filter(set => Number.isFinite(Number(set.reps)) && Number(set.reps) >= 1);
   const totalReps = sets.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+  const earnedXp = getXpForWorkoutSets(sets);
   if (!sets.length) {
     alert("Es gibt noch kein abgeschlossenes Set zum Speichern.");
     return;
@@ -3235,6 +3426,7 @@ function saveTrainingResult(options = {}) {
   progress.pushupBestDay = Math.max(progress.pushupBestDay, todayTotal);
   progress.pushupBestWeek = Math.max(progress.pushupBestWeek, weekTotal);
   progress.trainingHistory = progress.trainingHistory.slice(0, 200);
+  progress.accountXp = Math.max(0, Math.floor(Number(progress.accountXp) || 0)) + earnedXp;
 
   if (assessmentWasActive) {
     progress.entrySetupDone = true;
@@ -3249,14 +3441,20 @@ function saveTrainingResult(options = {}) {
   const newRank = getCurrentRankName();
   const rankUp = newRank !== oldRank;
   const newStandardRecord = progress.pushupMax > oldMax;
+  const newAccountInfo = getAccountLevelInfo();
+  const levelUps = Math.max(0, newAccountInfo.level - oldAccountLevel);
+  const cosmeticUnlocks = getNewlyUnlockedCosmetics(oldAccountLevel, newAccountInfo.level);
 
   successDetails.innerHTML = "";
   addSuccessLine(`${sets.length} ${sets.length === 1 ? "Set" : "Sets"} · ${totalReps} Push-ups gespeichert`);
+  addSuccessLine(`+${earnedXp} XP · Level ${newAccountInfo.level}`, true);
   sets.forEach((set, index) => addSuccessLine(`Set ${index + 1}: ${set.reps} ${VARIANT_META[set.variant]?.label || "Standard"}`));
   addSuccessLine(`Heute: ${todayTotal} Push-ups`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
   if (assessmentWasActive) addSuccessLine(`⚡ Assessment complete · your starting rank was adjusted`, true);
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
+  if (levelUps > 0) addSuccessLine(`⬆ Level Up! ${oldAccountLevel} → ${newAccountInfo.level}`, true);
+  cosmeticUnlocks.forEach(item => addSuccessLine(`🎁 ${item.kind} unlocked: ${item.label}`, true));
   if (rankUp) addSuccessLine(`⭐ Neuer Rang: ${newRank}`, true);
   else addSuccessLine(`Rang: ${newRank}`);
   if (showSuccess) showStep("success");
@@ -4491,6 +4689,14 @@ document.getElementById("profileNavHistoryBtn")?.addEventListener("click", () =>
 document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
 profileGenderMaleBtn?.addEventListener("click", () => setHeroGender("male"));
 profileGenderFemaleBtn?.addEventListener("click", () => setHeroGender("female"));
+profileNameInput?.addEventListener("change", () => {
+  const nextName = profileNameInput.value.trim().slice(0, 18) || "Athlete";
+  progress.accountName = nextName;
+  profileNameInput.value = nextName;
+  saveProgress();
+  renderAccountHome(getV012CurrentRankName());
+  showAppToast("Name updated");
+});
 document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);

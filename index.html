@@ -7,31 +7,27 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.44</title>
-  <link rel="stylesheet" href="style.css?v=0.11.53" />
+  <title>BodyPath – v0.11.56</title>
+  <link rel="stylesheet" href="style.css?v=0.11.56" />
 </head>
 <body>
   <main class="app-shell">
     <!-- HOME -->
     <section id="homeView" class="view home-view home-v17">
-      <header class="home-brandbar">
-        <div class="home-brand">
-          <span class="home-logo" aria-hidden="true">
-            <img src="app-logo-bodypath-v01137.webp" alt="" />
-          </span>
-          <div>
-            <p class="home-brand-title bodypath-wordmark"><span class="brand-body">Body</span><span class="brand-path">Path</span></p>
-            <p class="home-brand-subtitle">Discipline builds freedom.</p>
+      <section class="home-hero-v17 home-account-hero" aria-label="Your BodyPath profile">
+        <div class="home-account-card">
+          <div id="homeAccountAvatar" class="home-account-avatar" aria-hidden="true">BP</div>
+          <div class="home-account-main">
+            <div class="home-account-name-row">
+              <strong id="homeAccountName">Athlete</strong>
+              <span id="homeAccountLevelPill">LVL 1</span>
+            </div>
+            <span id="homeAccountRank">Starter · Push-Ups</span>
+            <div class="home-account-xp-row">
+              <div class="home-account-xp-track"><span id="homeAccountXpBar"></span></div>
+              <small id="homeAccountXpText">0 / 100 XP</small>
+            </div>
           </div>
-        </div>
-        
-      </header>
-
-      <section class="home-hero-v17" aria-label="BodyPath Motivation">
-        <div class="home-hero-copy">
-          <p id="homeHeroGreeting" class="home-hero-eyebrow">Good evening</p>
-          <h1 id="homeHeroHeadline">Keep going.</h1>
-          <p id="homeHeroSubline">Discipline Today. Stronger Tomorrow.</p>
         </div>
       </section>
 
@@ -152,7 +148,7 @@
           <h1 id="skillsHeading">Skills</h1>
           <small>Wähle deine Disziplin</small>
         </div>
-        <span class="profile-version-pill">v0.11.44</span>
+        <span class="profile-version-pill">v0.11.56</span>
       </header>
 
       <section class="skills-intro-card">
@@ -199,34 +195,45 @@
           <p class="eyebrow">BODYPATH</p>
           <h1 id="profileHeading">Profile</h1>
         </div>
-        <span class="profile-version-pill">v0.11.44</span>
+        <span class="profile-version-pill">v0.11.56</span>
       </header>
 
-      <section class="profile-hero-card">
-        <div class="profile-avatar" aria-label="Platzhalter Profilbild">
-          <span>●</span>
-        </div>
+      <section class="profile-hero-card profile-account-card">
+        <div id="profileAvatarLive" class="profile-avatar profile-avatar-live" aria-label="Selected profile picture">BP</div>
         <div class="profile-identity">
-          <span class="profile-placeholder-label">PLATZHALTER</span>
-          <h2>Dein Name</h2>
-          <p>BodyPath Athlet</p>
+          <span class="profile-placeholder-label">BODYPATH ACCOUNT</span>
+          <input id="profileNameInput" class="profile-name-input" type="text" maxlength="18" value="Athlete" aria-label="Account name" />
+          <p id="profileAccountXpText">Level 1 · 0 / 100 XP</p>
         </div>
         <div class="profile-level-box">
           <small>LEVEL</small>
-          <strong>1</strong>
-          <span>Platzhalter</span>
+          <strong id="profileAccountLevel">1</strong>
+          <span id="profileNextRewardText">Next reward</span>
         </div>
       </section>
 
-      <section class="profile-gender-card" aria-labelledby="profileGenderHeading">
-        <div class="profile-gender-copy">
-          <small>STARTSEITE</small>
-          <strong id="profileGenderHeading">Hintergrundperson</strong>
-          <span>Wähle, welche Person im Home-Header angezeigt wird.</span>
+      <section class="profile-section profile-customize-section" aria-labelledby="customizeHeading">
+        <div class="profile-section-head">
+          <div>
+            <p class="eyebrow">CUSTOMIZE</p>
+            <h2 id="customizeHeading">Your Look</h2>
+          </div>
+          <span class="profile-section-count">Level rewards</span>
         </div>
-        <div class="profile-gender-toggle" role="group" aria-label="Hintergrundperson auswählen">
-          <button id="profileGenderMaleBtn" class="profile-gender-option" type="button" data-gender="male" aria-pressed="true">Männlich</button>
-          <button id="profileGenderFemaleBtn" class="profile-gender-option" type="button" data-gender="female" aria-pressed="false">Weiblich</button>
+
+        <div class="customize-group">
+          <div class="customize-group-head"><strong>Profile Picture</strong><small>Unlock more by leveling up</small></div>
+          <div id="profileAvatarChoices" class="customize-choice-grid customize-avatars"></div>
+        </div>
+
+        <div class="customize-group">
+          <div class="customize-group-head"><strong>App Color</strong><small>Changes key accents across BodyPath</small></div>
+          <div id="profileAccentChoices" class="customize-choice-grid customize-colors"></div>
+        </div>
+
+        <div class="customize-group">
+          <div class="customize-group-head"><strong>Home Background</strong><small>Cosmetic only</small></div>
+          <div id="profileBackgroundChoices" class="customize-choice-grid customize-backgrounds"></div>
         </div>
       </section>
 
