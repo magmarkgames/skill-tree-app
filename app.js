@@ -54,6 +54,7 @@ const DEFAULT_PROGRESS = {
   heroGender: "male",
   variantStats: {},
   challengeProgress: createEmptyChallengeProgress(),
+  challengeCompletions: {},
   trainingHistory: [],
   entrySetupDone: false,
   entryPath: null,
@@ -454,6 +455,7 @@ let pauseInterval = null;
 let pauseSeconds = 0;
 let lastPauseVibrationMark = 0;
 let entryAssessmentActive = false;
+let activeChallengeId = null;
 
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
@@ -514,6 +516,7 @@ const profileNextRewardText = document.getElementById("profileNextRewardText");
 const profileAvatarChoices = document.getElementById("profileAvatarChoices");
 const profileAccentChoices = document.getElementById("profileAccentChoices");
 const profileBackgroundChoices = document.getElementById("profileBackgroundChoices");
+const profileQuestMilestones = document.getElementById("profileQuestMilestones");
 
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
@@ -702,6 +705,7 @@ function normalizeProgress(value) {
     heroGender: value?.heroGender === "female" ? "female" : "male",
     variantStats,
     challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
+    challengeCompletions: value?.challengeCompletions && typeof value.challengeCompletions === "object" ? value.challengeCompletions : {},
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
@@ -722,7 +726,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.58",
+    appVersion: "0.11.59",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -2243,6 +2247,28 @@ function setHeroGender(gender) {
   applyHeroGender();
 }
 
+function getQuestMilestoneValue(quest) {
+  if (quest.metric === "workouts") return Array.isArray(progress.trainingHistory) ? progress.trainingHistory.length : 0;
+  return getV012MetricValue(quest.metric, quest.variant || null);
+}
+
+function renderQuestMilestones() {
+  if (!profileQuestMilestones) return;
+  profileQuestMilestones.innerHTML = QUEST_MILESTONES.map(quest => {
+    const current = Math.max(0, getQuestMilestoneValue(quest));
+    const done = current >= quest.target;
+    const display = `${formatTreeNumber(Math.min(current, quest.target))}/${formatTreeNumber(quest.target)}`;
+    return `
+      <article class="profile-quest-badge ${done ? "done" : "locked"}">
+        <span class="profile-quest-medal">${done ? "✓" : quest.icon}</span>
+        <strong>${quest.title}</strong>
+        <small>${quest.description}</small>
+        <b>${display}</b>
+      </article>
+    `;
+  }).join("");
+}
+
 function renderProfile() {
   applyHeroGender();
   applyAccountCustomization();
@@ -2253,6 +2279,7 @@ function renderProfile() {
   const nextReward = getNextCosmeticReward(accountInfo.level);
   if (profileNextRewardText) profileNextRewardText.textContent = nextReward ? `Lvl ${nextReward.level}: ${nextReward.label}` : "All alpha rewards unlocked";
   renderCustomizationChoices();
+  renderQuestMilestones();
   if (!profilePushRankName || !profilePushRankIcon) return;
   const rankName = getCurrentRankName();
   profilePushRankName.textContent = getRankDisplayName(rankName);
@@ -2394,6 +2421,7 @@ function openTraining() {
 
 function closeTraining() {
   workoutActive = false;
+  activeChallengeId = null;
   countdownActive = false;
   autoCountdownPending = false;
   trainingPhase = "prep";
@@ -3372,6 +3400,8 @@ function formatTime(seconds) {
 function saveTrainingResult(options = {}) {
   const showSuccess = options.showSuccess !== false;
   const assessmentWasActive = entryAssessmentActive;
+  const challengeWasActive = activeChallengeId;
+  let challengeResult = null;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
   const oldAccountLevel = getAccountLevelInfo().level;
@@ -3427,6 +3457,20 @@ function saveTrainingResult(options = {}) {
   progress.trainingHistory = progress.trainingHistory.slice(0, 200);
   progress.accountXp = Math.max(0, Math.floor(Number(progress.accountXp) || 0)) + earnedXp;
 
+  if (challengeWasActive) {
+    const challenge = PUSHUP_CHALLENGES[challengeWasActive];
+    challengeResult = evaluateChallenge(challenge, sets, sessionDurationSeconds);
+    if (challengeResult.passed) {
+      progress.challengeCompletions = progress.challengeCompletions || {};
+      const previousStars = Math.max(0, Number(progress.challengeCompletions[challengeWasActive]?.stars) || 0);
+      progress.challengeCompletions[challengeWasActive] = {
+        stars: Math.max(previousStars, challengeResult.stars),
+        completedAt: new Date().toISOString()
+      };
+    }
+    activeChallengeId = null;
+  }
+
   if (assessmentWasActive) {
     progress.entrySetupDone = true;
     progress.entryPath = "assessment";
@@ -3450,6 +3494,11 @@ function saveTrainingResult(options = {}) {
   sets.forEach((set, index) => addSuccessLine(`Set ${index + 1}: ${set.reps} ${VARIANT_META[set.variant]?.label || "Standard"}`));
   addSuccessLine(`Heute: ${todayTotal} Push-ups`);
   addSuccessLine(`Gesamt: ${progress.pushupTotal} Push-ups`);
+  if (challengeWasActive) {
+    const challenge = PUSHUP_CHALLENGES[challengeWasActive];
+    if (challengeResult?.passed) addSuccessLine(`⭐ Challenge ${challenge?.number || ""} complete · ${"★".repeat(challengeResult.stars)}${"☆".repeat(3 - challengeResult.stars)}`, true);
+    else addSuccessLine(`Challenge ${challenge?.number || ""} not completed yet · try again`);
+  }
   if (assessmentWasActive) addSuccessLine(`⚡ Assessment complete · your starting rank was adjusted`, true);
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (levelUps > 0) addSuccessLine(`⬆ Level Up! ${oldAccountLevel} → ${newAccountInfo.level}`, true);
@@ -3582,87 +3631,183 @@ function maybePromptEntrySetup() {
 // =====================================================================
 const V012_RANKS = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
 
+const CHALLENGE_CATEGORY_META = {
+  POWER: { icon: "◆", color: "#ff6b7a" },
+  ENDURANCE: { icon: "∞", color: "#f3c761" },
+  SPEED: { icon: "⚡", color: "#57d6ff" },
+  CONTROL: { icon: "◎", color: "#9b78ff" },
+  COMBO: { icon: "✦", color: "#57d69a" },
+  TRIAL: { icon: "★", color: "#ffb84d" }
+};
+
+const QUEST_MILESTONES = [
+  { id: "q-total-25", title: "First 25", icon: "25", metric: "total", target: 25, description: "25 Push-Ups total" },
+  { id: "q-standard-10", title: "Solid Ten", icon: "10", metric: "standardMax", target: 10, description: "10 Standard Push-Ups in one set" },
+  { id: "q-total-100", title: "Century", icon: "100", metric: "total", target: 100, description: "100 Push-Ups total" },
+  { id: "q-standard-100", title: "Standard Veteran", icon: "S", metric: "variantTotal", variant: "standard", target: 100, description: "100 Standard Push-Ups total" },
+  { id: "q-wide-25", title: "Wide Explorer", icon: "W", metric: "variantTotal", variant: "wide", target: 25, description: "25 Wide Push-Ups total" },
+  { id: "q-workouts-10", title: "Routine", icon: "10×", metric: "workouts", target: 10, description: "10 saved workouts" }
+];
+
+const PUSHUP_CHALLENGES = {
+  c01: { number: 1, title: "Foundation", category: "CONTROL", startVariant: "wall", requirements: [
+    { type: "variantTotal", variant: "wall", reps: 6, maxSets: 2, text: "6 Wall Push-Ups in max. 2 sets" }
+  ], star2: { maxDuration: 150 }, star3: { maxDuration: 100 } },
+  c02: { number: 2, title: "Wall Sprint", category: "SPEED", startVariant: "wall", requirements: [
+    { type: "set", variant: "wall", reps: 5, maxSeconds: 30, text: "5 Wall Push-Ups in 30 seconds" }
+  ], star2: { maxDuration: 60 }, star3: { maxDuration: 40 } },
+  c03: { number: 3, title: "Incline Intro", category: "POWER", startVariant: "incline", requirements: [
+    { type: "set", variant: "incline", reps: 3, text: "3 Incline Push-Ups in one set" }
+  ], star2: { maxDuration: 90 }, star3: { maxDuration: 60 } },
+  c04: { number: 4, title: "Starter Combo", category: "COMBO", startVariant: "wall", requirements: [
+    { type: "variantTotal", variant: "wall", reps: 5, maxSets: 2, text: "5 Wall Push-Ups" },
+    { type: "variantTotal", variant: "incline", reps: 5, maxSets: 2, text: "5 Incline Push-Ups" },
+    { type: "workoutVariants", count: 2, text: "Use both variants in the same workout" }
+  ], star2: { maxDuration: 240 }, star3: { maxDuration: 180 } },
+  c05: { number: 5, title: "Wood Trial", category: "TRIAL", startVariant: "incline", requirements: [
+    { type: "set", variant: "incline", reps: 5, maxSeconds: 40, text: "5 Incline Push-Ups in 40 seconds" },
+    { type: "workoutTotal", reps: 12, text: "12 Push-Ups total in the challenge" }
+  ], star2: { maxDuration: 210 }, star3: { maxDuration: 150 } },
+
+  c06: { number: 6, title: "Incline Builder", category: "ENDURANCE", startVariant: "incline", requirements: [
+    { type: "variantTotal", variant: "incline", reps: 12, maxSets: 3, text: "12 Incline Push-Ups in max. 3 sets" }
+  ], star2: { maxDuration: 210 }, star3: { maxDuration: 150 } },
+  c07: { number: 7, title: "Standard Spark", category: "POWER", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 1, text: "1 Standard Push-Up" }
+  ], star2: { maxDuration: 60 }, star3: { maxDuration: 30 } },
+  c08: { number: 8, title: "Incline Sprint", category: "SPEED", startVariant: "incline", requirements: [
+    { type: "set", variant: "incline", reps: 5, maxSeconds: 30, text: "5 Incline Push-Ups in 30 seconds" }
+  ], star2: { maxDuration: 70 }, star3: { maxDuration: 45 } },
+  c09: { number: 9, title: "Control Mix", category: "COMBO", startVariant: "incline", requirements: [
+    { type: "variantTotal", variant: "incline", reps: 8, maxSets: 2, text: "8 Incline Push-Ups in max. 2 sets" },
+    { type: "variantTotal", variant: "standard", reps: 2, maxSets: 2, text: "2 Standard Push-Ups" },
+    { type: "workoutVariants", count: 2, text: "Use Incline + Standard in one workout" }
+  ], star2: { maxDuration: 240 }, star3: { maxDuration: 180 } },
+  c10: { number: 10, title: "Standard Speed", category: "SPEED", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 3, maxSeconds: 30, text: "3 Standard Push-Ups in 30 seconds" }
+  ], star2: { maxDuration: 70 }, star3: { maxDuration: 45 } },
+  c11: { number: 11, title: "Set Rhythm", category: "CONTROL", startVariant: "standard", requirements: [
+    { type: "workoutSets", minSets: 3, text: "Complete 3 sets" },
+    { type: "workoutTotal", reps: 15, text: "15 Push-Ups total" }
+  ], star2: { maxDuration: 300 }, star3: { maxDuration: 220 } },
+  c12: { number: 12, title: "Stone Trial", category: "TRIAL", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 5, maxSeconds: 30, text: "5 Standard Push-Ups in 30 seconds" },
+    { type: "variantTotal", variant: "incline", reps: 15, maxSets: 3, text: "15 Incline Push-Ups in max. 3 sets" }
+  ], star2: { maxDuration: 300 }, star3: { maxDuration: 220 } },
+
+  c13: { number: 13, title: "Standard Builder", category: "ENDURANCE", startVariant: "standard", requirements: [
+    { type: "variantTotal", variant: "standard", reps: 8, maxSets: 3, text: "8 Standard Push-Ups in max. 3 sets" }
+  ], star2: { maxDuration: 220 }, star3: { maxDuration: 160 } },
+  c14: { number: 14, title: "Power Check", category: "POWER", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 5, text: "5 Standard Push-Ups in one set" }
+  ], star2: { maxDuration: 80 }, star3: { maxDuration: 55 } },
+  c15: { number: 15, title: "Quick Five", category: "SPEED", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 5, maxSeconds: 25, text: "5 Standard Push-Ups in 25 seconds" }
+  ], star2: { maxDuration: 60 }, star3: { maxDuration: 40 } },
+  c16: { number: 16, title: "Standard Endurance", category: "ENDURANCE", startVariant: "standard", requirements: [
+    { type: "variantTotal", variant: "standard", reps: 15, maxSets: 3, text: "15 Standard Push-Ups in max. 3 sets" }
+  ], star2: { maxDuration: 250 }, star3: { maxDuration: 180 } },
+  c17: { number: 17, title: "Wide Trial", category: "TRIAL", startVariant: "wide", requirements: [
+    { type: "set", variant: "wide", reps: 1, text: "1 Wide Push-Up" },
+    { type: "variantTotal", variant: "standard", reps: 5, maxSets: 2, text: "5 Standard Push-Ups in max. 2 sets" },
+    { type: "workoutVariants", count: 2, text: "Use Standard + Wide in one workout" }
+  ], star2: { maxDuration: 220 }, star3: { maxDuration: 160 } },
+  c18: { number: 18, title: "Wide Control", category: "CONTROL", startVariant: "wide", requirements: [
+    { type: "variantTotal", variant: "wide", reps: 3, maxSets: 2, text: "3 Wide Push-Ups in max. 2 sets" }
+  ], star2: { maxDuration: 150 }, star3: { maxDuration: 100 } },
+  c19: { number: 19, title: "Mixed Flow", category: "COMBO", startVariant: "standard", requirements: [
+    { type: "variantTotal", variant: "standard", reps: 5, text: "5 Standard Push-Ups" },
+    { type: "variantTotal", variant: "wide", reps: 3, text: "3 Wide Push-Ups" },
+    { type: "workoutSets", maxSets: 3, text: "Use max. 3 sets total" }
+  ], star2: { maxDuration: 240 }, star3: { maxDuration: 175 } },
+  c20: { number: 20, title: "Wide Sprint", category: "SPEED", startVariant: "wide", requirements: [
+    { type: "set", variant: "wide", reps: 3, maxSeconds: 30, text: "3 Wide Push-Ups in 30 seconds" }
+  ], star2: { maxDuration: 70 }, star3: { maxDuration: 45 } },
+  c21: { number: 21, title: "Volume Test", category: "ENDURANCE", startVariant: "standard", requirements: [
+    { type: "variantTotal", variant: "standard", reps: 20, maxSets: 3, text: "20 Standard Push-Ups in max. 3 sets" }
+  ], star2: { maxDuration: 300 }, star3: { maxDuration: 220 } },
+  c22: { number: 22, title: "Variety", category: "COMBO", startVariant: "standard", requirements: [
+    { type: "workoutVariants", count: 2, text: "Use 2 Push-Up variants" },
+    { type: "workoutTotal", reps: 15, text: "15 Push-Ups total" }
+  ], star2: { maxDuration: 260 }, star3: { maxDuration: 190 } },
+  c23: { number: 23, title: "Bronze Final", category: "TRIAL", startVariant: "standard", requirements: [
+    { type: "set", variant: "standard", reps: 5, text: "5 Standard Push-Ups in one set" },
+    { type: "variantTotal", variant: "wide", reps: 5, maxSets: 2, text: "5 Wide Push-Ups in max. 2 sets" }
+  ], star2: { maxDuration: 240 }, star3: { maxDuration: 170 } }
+};
+
+function challengePath(key, challengeId) {
+  const challenge = PUSHUP_CHALLENGES[challengeId];
+  const meta = CHALLENGE_CATEGORY_META[challenge?.category] || CHALLENGE_CATEGORY_META.CONTROL;
+  return {
+    key,
+    title: challenge?.title || "Challenge",
+    challengeId,
+    accent: meta.color,
+    nodes: [{ metric: "challenge", challengeId, target: 1, label: challenge?.title || "Challenge" }]
+  };
+}
+
 const V012_CHAPTERS = [
   {
     from: "Starter", to: "Holz",
-    // Experienced users who already prove a Standard Push-Up skip the very
-    // first beginner chapter, so the app still feels rewarding on day one.
     skipIf: { metric: "variantMax", variant: "standard", target: 1 },
     paths: [
-      { key: "start-wall-1", title: "1 Wall Push-Up", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 1, label: "1 Wall Push-Up" } ] },
-      { key: "start-wall-3", title: "3 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 3, label: "3 Wall Push-Ups" } ] },
-      { key: "start-wall-total-5", title: "5 Wall Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wall", target: 5, label: "5 Wall Push-Ups Total" } ] },
-      { key: "start-wall-sets-2", title: "2 Wall Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "wall", target: 2, label: "2 Wall Sets" } ] },
-      { key: "start-wall-5", title: "5 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "5 Wall Push-Ups" } ] }
+      challengePath("starter-c01", "c01"),
+      challengePath("starter-c02", "c02"),
+      challengePath("starter-c03", "c03"),
+      challengePath("starter-c04", "c04"),
+      challengePath("starter-c05", "c05")
     ],
     rows: [
-      { type: "single", path: "start-wall-1" },
-      { type: "triple", paths: ["start-wall-3", "start-wall-total-5", "start-wall-sets-2"] },
-      { type: "single", path: "start-wall-5" }
+      { type: "single", path: "starter-c01" },
+      { type: "triple", paths: ["starter-c02", "starter-c03", "starter-c04"] },
+      { type: "single", path: "starter-c05" }
     ]
   },
   {
     from: "Holz", to: "Stein",
-    // Users who already prove a Standard Push-Up should not have to grind
-    // through Wall / basic Incline tasks first.
-    skipIf: { metric: "variantMax", variant: "standard", target: 1 },
+    skipIf: { metric: "variantMax", variant: "standard", target: 5 },
     paths: [
-      { key: "wood-wall-total-10", title: "10 Wall Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wall", target: 10, label: "10 Wall Push-Ups Total" } ] },
-      { key: "wood-incline-3", title: "3 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 3, label: "3 Incline Push-Ups" } ] },
-      { key: "wood-incline-total-5", title: "5 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 5, label: "5 Incline Push-Ups Total" } ] },
-      { key: "wood-wall-5", title: "5 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 5, label: "5 Wall Push-Ups" } ] },
-      { key: "wood-incline-sets-2", title: "2 Incline Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "incline", target: 2, label: "2 Incline Sets" } ] },
-      { key: "wood-incline-total-15", title: "15 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Push-Ups Total" } ] },
-      { key: "wood-wall-8", title: "8 Wall", accent: "#7c8cff", nodes: [ { metric: "variantMax", variant: "wall", target: 8, label: "8 Wall Push-Ups" } ] },
-      { key: "wood-incline-4", title: "4 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 4, label: "4 Incline Push-Ups" } ] },
-      { key: "wood-standard-1", title: "1 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 1, label: "1 Standard Push-Up" } ] }
+      challengePath("wood-c06", "c06"),
+      challengePath("wood-c07", "c07"),
+      challengePath("wood-c08", "c08"),
+      challengePath("wood-c09", "c09"),
+      challengePath("wood-c10", "c10"),
+      challengePath("wood-c11", "c11"),
+      challengePath("wood-c12", "c12")
     ],
     rows: [
-      { type: "single", path: "wood-wall-total-10" },
-      { type: "unlock", variant: "incline", title: "Incline Push-Up", eyebrow: "UNLOCK" },
-      { type: "single", path: "wood-incline-3" },
-      { type: "pair", paths: ["wood-incline-total-5", "wood-wall-5"] },
-      { type: "single", path: "wood-incline-sets-2" },
-      { type: "triple", paths: ["wood-incline-total-15", "wood-wall-8", "wood-incline-4"] },
-      { type: "unlock", variant: "standard", title: "Standard Push-Up", eyebrow: "UNLOCK" },
-      { type: "single", path: "wood-standard-1" }
+      { type: "single", path: "wood-c06" },
+      { type: "pair", paths: ["wood-c07", "wood-c08"] },
+      { type: "triple", paths: ["wood-c09", "wood-c10", "wood-c11"] },
+      { type: "single", path: "wood-c12" }
     ]
   },
   {
     from: "Stein", to: "Bronze",
-    // A stronger standard base can fast-forward this early bridge chapter.
-    skipIf: { metric: "variantMax", variant: "standard", target: 5 },
+    skipIf: { metric: "variantMax", variant: "standard", target: 10 },
     paths: [
-      { key: "stone-standard-2", title: "2 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 2, label: "2 Standard Push-Ups" } ] },
-      { key: "stone-incline-total-15", title: "15 Incline Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "incline", target: 15, label: "15 Incline Push-Ups Total" } ] },
-      { key: "stone-incline-6", title: "6 Incline", accent: "#9B6CFF", nodes: [ { metric: "variantMax", variant: "incline", target: 6, label: "6 Incline Push-Ups" } ] },
-      { key: "stone-standard-3", title: "3 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 3, label: "3 Standard Push-Ups" } ] },
-      { key: "stone-mixed-2", title: "2 Variants", accent: "#62c99c", nodes: [ { metric: "workoutVariants", target: 2, label: "2 Variants in one Workout" } ] },
-      { key: "stone-standard-total-10", title: "10 Standard Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "standard", target: 10, label: "10 Standard Push-Ups Total" } ] },
-      { key: "stone-wide-1", title: "1 Wide", accent: "#E65BC8", nodes: [ { metric: "variantMax", variant: "wide", target: 1, label: "1 Wide Push-Up" } ] },
-      { key: "stone-wide-total-5", title: "5 Wide Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "wide", target: 5, label: "5 Wide Push-Ups Total" } ] },
-      { key: "stone-wide-sets-2", title: "2 Wide Sets", accent: "#62c99c", nodes: [ { metric: "variantSets", variant: "wide", target: 2, label: "2 Wide Sets" } ] },
-      { key: "stone-standard-5", title: "5 Standard", accent: "#4f9cf8", nodes: [ { metric: "variantMax", variant: "standard", target: 5, label: "5 Standard Push-Ups" } ] },
-      { key: "stone-wide-3", title: "3 Wide", accent: "#E65BC8", nodes: [ { metric: "variantMax", variant: "wide", target: 3, label: "3 Wide Push-Ups" } ] },
-      { key: "stone-standard-total-25", title: "25 Standard Total", accent: "#f3c761", nodes: [ { metric: "variantTotal", variant: "standard", target: 25, label: "25 Standard Push-Ups Total" } ] }
+      challengePath("stone-c13", "c13"),
+      challengePath("stone-c14", "c14"),
+      challengePath("stone-c15", "c15"),
+      challengePath("stone-c16", "c16"),
+      challengePath("stone-c17", "c17"),
+      challengePath("stone-c18", "c18"),
+      challengePath("stone-c19", "c19"),
+      challengePath("stone-c20", "c20"),
+      challengePath("stone-c21", "c21"),
+      challengePath("stone-c22", "c22"),
+      challengePath("stone-c23", "c23")
     ],
     rows: [
-      { type: "single", path: "stone-standard-2" },
-      { type: "single", path: "stone-incline-total-15" },
-      { type: "triple", paths: ["stone-incline-6", "stone-standard-3", "stone-mixed-2"] },
-      { type: "single", path: "stone-standard-total-10" },
-      { type: "landmark", variant: "wide", title: "Wide Push-Up", eyebrow: "NEXT SKILL" },
-      { type: "single", path: "stone-wide-1" },
-      { type: "single", path: "stone-wide-total-5" },
-      { type: "single", path: "stone-wide-sets-2" },
-      { type: "triple", paths: ["stone-standard-5", "stone-wide-3", "stone-standard-total-25"] }
-    ],
-    landmark: {
-      variant: "wide",
-      title: "Wide Push-Up",
-      eyebrow: "NEXT SKILL",
-      description: "Complete the revealed goals below to unlock Wide Push-Ups in Training."
-    }
+      { type: "single", path: "stone-c13" },
+      { type: "triple", paths: ["stone-c14", "stone-c15", "stone-c16"] },
+      { type: "single", path: "stone-c17" },
+      { type: "pair", paths: ["stone-c18", "stone-c19"] },
+      { type: "triple", paths: ["stone-c20", "stone-c21", "stone-c22"] },
+      { type: "single", path: "stone-c23" }
+    ]
   }
 ];
 
@@ -3687,6 +3832,7 @@ function getV012PathNodes(path) {
       key: `${path.key}-${index}`,
       metric: node.metric ?? path.metric,
       variant: node.variant ?? path.variant ?? null,
+      challengeId: node.challengeId ?? path.challengeId ?? null,
       target: Number(node.target) || 0,
       label: node.label || path.title,
       title: node.title || path.title,
@@ -3705,6 +3851,9 @@ function getV012PathNodes(path) {
 }
 
 function getV012NodeValue(node) {
+  if (node?.metric === "challenge") {
+    return progress.challengeCompletions?.[node.challengeId]?.stars > 0 ? 1 : 0;
+  }
   return getV012MetricValue(node.metric, node.variant ?? null);
 }
 
@@ -3725,7 +3874,8 @@ function getV012MetricValue(metric, variant = null) {
 
 function isV012ChapterComplete(chapter) {
   if (!chapter) return false;
-  if (chapter.skipIf && getV012NodeValue(chapter.skipIf) >= (chapter.skipIf.target || 1)) return true;
+  // Fast-forward is reserved for the initial assessment, not for ordinary free training.
+  if (progress.entryPath === "assessment" && chapter.skipIf && getV012NodeValue(chapter.skipIf) >= (chapter.skipIf.target || 1)) return true;
   return chapter.paths.every(path => getV012PathState(path).done);
 }
 
@@ -3821,18 +3971,8 @@ function getV1150VariantUnlockState(variant) {
 }
 
 function isV012VariantAvailable(variant) {
-  if (!VARIANT_META[variant]) return false;
-  if (variant === "wall") return true;
-
-  // Never take a skill away from existing testers after an update.
-  const stats = getVariantStats(variant);
-  if (stats.max > 0 || stats.total > 0) return true;
-
-  const unlockState = getV1150VariantUnlockState(variant);
-  if (unlockState) return Boolean(unlockState.unlocked);
-
-  // Upper-rank variants stay locked until their chapters are designed.
-  return false;
+  // v0.11.59 alpha test: all Push-Up variants are intentionally available.
+  return Boolean(VARIANT_META[variant]);
 }
 
 function getV012PathState(path) {
@@ -3874,6 +4014,10 @@ function getV012RankIcon(rank, className = "") {
 }
 
 function getV114NodeAccent(node, fallback = "#4f9cf8") {
+  if (node.metric === "challenge") {
+    const challenge = PUSHUP_CHALLENGES[node.challengeId];
+    return CHALLENGE_CATEGORY_META[challenge?.category]?.color || fallback;
+  }
   if (node.variant && VARIANT_META[node.variant]?.color) return VARIANT_META[node.variant].color;
   if (node.metric === "total") return "#F3C761";
   if (node.metric === "standardMax") return VARIANT_META.standard.color;
@@ -3881,6 +4025,11 @@ function getV114NodeAccent(node, fallback = "#4f9cf8") {
 }
 
 function getV114NodeSymbol(node) {
+  if (node.metric === "challenge") {
+    const challenge = PUSHUP_CHALLENGES[node.challengeId];
+    const meta = CHALLENGE_CATEGORY_META[challenge?.category] || CHALLENGE_CATEGORY_META.CONTROL;
+    return `<span class="bp59-challenge-symbol"><b>${challenge?.number || "?"}</b><small>${meta.icon}</small></span>`;
+  }
   if (node.metric === "total") return getMetricIconSvg("total", "v114-node-image");
   if (node.metric === "standardMax" && !node.variant) return getVariantIconSvg("standard", "v114-node-image");
   if (node.variant) return getVariantIconSvg(node.variant, "v114-node-image");
@@ -4250,6 +4399,10 @@ function renderV114Stage(chapter, chapterIndex, chapterMode) {
 }
 
 function getV114NodeRequirementText(node) {
+  if (node.metric === "challenge") {
+    const challenge = PUSHUP_CHALLENGES[node.challengeId];
+    return challenge ? challenge.requirements.map(req => req.text).join(" + ") : "Complete challenge";
+  }
   const meta = node.variant ? (VARIANT_META[node.variant] || { label: node.variant }) : null;
   if (node.metric === "variantMax") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups in one set`;
   if (node.metric === "variantTotal") return `${formatTreeNumber(node.target)} ${meta?.label || "Push-Up"} Push-Ups total`;
@@ -4342,6 +4495,24 @@ function renderV1150TaskNode(chapter, chapterIndex, pathState, options = {}) {
   const progressState = getV114NodeProgress(node);
   const done = progressState.current >= progressState.target;
   const accent = getV114NodeAccent(node, pathState.accent);
+  if (node.metric === "challenge") {
+    const challenge = PUSHUP_CHALLENGES[node.challengeId];
+    const stars = Math.max(0, Math.min(3, Number(progress.challengeCompletions?.[node.challengeId]?.stars) || 0));
+    const category = challenge?.category || "CHALLENGE";
+    return `
+      <button class="bp50-node bp59-challenge-node ${done ? "done" : ""} ${active && !done ? "active" : ""}" type="button"
+        data-tree-node="main" data-challenge-id="${node.challengeId}" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="0"
+        style="--bp50-accent:${accent}; --bp50-progress:${done ? 100 : 0}%"
+        aria-label="Challenge ${challenge?.number || ""}: ${challenge?.title || pathState.title}">
+        <span class="bp50-node-core">
+          <span class="bp50-node-icon">${getV114NodeSymbol(node)}</span>
+          ${done ? '<span class="bp50-check">✓</span>' : ''}
+        </span>
+        <span class="bp59-challenge-category">${category}</span>
+        <span class="bp59-challenge-stars">${[1,2,3].map(i => i <= stars ? "★" : "☆").join("")}</span>
+      </button>
+    `;
+  }
   return `
     <button class="bp50-node ${done ? "done" : ""} ${active && !done ? "active" : ""}" type="button"
       data-tree-node="main" data-chapter-index="${chapterIndex}" data-path="${pathState.key}" data-node-index="0"
@@ -4474,9 +4645,135 @@ function renderV1150FutureTeaser() {
   `;
 }
 
+function getChallengeCompletion(challengeId) {
+  return progress.challengeCompletions?.[challengeId] || null;
+}
+
+function evaluateChallengeRequirement(req, sets) {
+  const safeSets = Array.isArray(sets) ? sets : [];
+  if (req.type === "set") {
+    return safeSets.some(set => {
+      if (set.variant !== req.variant) return false;
+      if ((Number(set.reps) || 0) < (Number(req.reps) || 0)) return false;
+      const duration = Math.max(0, Number(set.durationSeconds) || 0);
+      if (req.maxSeconds && duration > 0 && duration > req.maxSeconds) return false;
+      return true;
+    });
+  }
+  if (req.type === "variantTotal") {
+    const matching = safeSets.filter(set => set.variant === req.variant);
+    const total = matching.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+    if (total < (Number(req.reps) || 0)) return false;
+    if (req.maxSets && matching.length > req.maxSets) return false;
+    return true;
+  }
+  if (req.type === "workoutVariants") {
+    const variants = new Set(safeSets.filter(set => Number(set.reps) > 0).map(set => set.variant));
+    return variants.size >= (Number(req.count) || 0);
+  }
+  if (req.type === "workoutTotal") {
+    const total = safeSets.reduce((sum, set) => sum + Math.max(0, Number(set.reps) || 0), 0);
+    return total >= (Number(req.reps) || 0);
+  }
+  if (req.type === "workoutSets") {
+    const count = safeSets.filter(set => Number(set.reps) > 0).length;
+    if (req.minSets && count < req.minSets) return false;
+    if (req.maxSets && count > req.maxSets) return false;
+    return true;
+  }
+  return false;
+}
+
+function evaluateChallenge(challenge, sets, durationSeconds = 0) {
+  if (!challenge) return { passed: false, stars: 0 };
+  const passed = (challenge.requirements || []).every(req => evaluateChallengeRequirement(req, sets));
+  if (!passed) return { passed: false, stars: 0 };
+  const duration = Math.max(0, Number(durationSeconds) || 0);
+  let stars = 1;
+  if (!challenge.star2?.maxDuration || duration === 0 || duration <= challenge.star2.maxDuration) stars = 2;
+  if (!challenge.star3?.maxDuration || duration === 0 || duration <= challenge.star3.maxDuration) stars = 3;
+  return { passed: true, stars };
+}
+
+function createChallengeSheet() {
+  if (document.getElementById("challengeSheet")) return;
+  const sheet = document.createElement("div");
+  sheet.id = "challengeSheet";
+  sheet.className = "challenge-sheet hidden";
+  sheet.innerHTML = `
+    <div class="challenge-sheet-card">
+      <button id="challengeSheetClose" class="challenge-sheet-close" type="button" aria-label="Close">×</button>
+      <span id="challengeSheetCategory" class="challenge-sheet-category">CHALLENGE</span>
+      <div class="challenge-sheet-title-row">
+        <span id="challengeSheetNumber" class="challenge-sheet-number">1</span>
+        <div><small>CHALLENGE</small><h2 id="challengeSheetTitle">Challenge</h2></div>
+      </div>
+      <div id="challengeSheetStars" class="challenge-sheet-stars">☆☆☆</div>
+      <div id="challengeSheetRequirements" class="challenge-sheet-requirements"></div>
+      <div class="challenge-sheet-star-hint"><span>★ Complete the core challenge</span><span>★★ / ★★★ Faster completion</span></div>
+      <button id="challengeSheetStart" class="challenge-sheet-start" type="button">Start Challenge</button>
+    </div>
+  `;
+  document.body.appendChild(sheet);
+  document.getElementById("challengeSheetClose")?.addEventListener("click", closeChallengeSheet);
+  sheet.addEventListener("click", event => { if (event.target === sheet) closeChallengeSheet(); });
+  document.getElementById("challengeSheetStart")?.addEventListener("click", () => {
+    const id = sheet.dataset.challengeId;
+    if (id) startChallenge(id);
+  });
+}
+
+function openChallengeSheet(challengeId) {
+  const challenge = PUSHUP_CHALLENGES[challengeId];
+  if (!challenge) return;
+  createChallengeSheet();
+  const sheet = document.getElementById("challengeSheet");
+  const meta = CHALLENGE_CATEGORY_META[challenge.category] || CHALLENGE_CATEGORY_META.CONTROL;
+  const completion = getChallengeCompletion(challengeId);
+  sheet.dataset.challengeId = challengeId;
+  sheet.style.setProperty("--challenge-accent", meta.color);
+  document.getElementById("challengeSheetCategory").textContent = `${meta.icon} ${challenge.category}`;
+  document.getElementById("challengeSheetNumber").textContent = challenge.number;
+  document.getElementById("challengeSheetTitle").textContent = challenge.title;
+  document.getElementById("challengeSheetStars").textContent = [1,2,3].map(i => i <= (completion?.stars || 0) ? "★" : "☆").join("");
+  document.getElementById("challengeSheetRequirements").innerHTML = (challenge.requirements || []).map((req, index) => `
+    <div class="challenge-requirement"><span>${index + 1}</span><strong>${req.text}</strong></div>
+  `).join("");
+  document.getElementById("challengeSheetStart").textContent = completion ? "Replay Challenge" : "Start Challenge";
+  sheet.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeChallengeSheet() {
+  const sheet = document.getElementById("challengeSheet");
+  if (!sheet) return;
+  sheet.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function startChallenge(challengeId) {
+  const challenge = PUSHUP_CHALLENGES[challengeId];
+  if (!challenge) return;
+  activeChallengeId = challengeId;
+  closeChallengeSheet();
+  openTraining();
+  setSelectedTrainingVariant(challenge.startVariant || "standard");
+  showStep("quick");
+  showPrepUI();
+  renderStaticIcons();
+  trainingTitle.textContent = `Challenge ${challenge.number}`;
+  prepCameraHint.textContent = challenge.requirements.map(req => req.text).join(" · ");
+  showAppToast(`Challenge ${challenge.number}: ${challenge.title}`);
+}
+
 function bindV1150TreeEvents() {
   skillTree.querySelectorAll('[data-tree-node="main"]').forEach(button => {
     button.addEventListener("click", () => {
+      const challengeId = button.dataset.challengeId;
+      if (challengeId) {
+        openChallengeSheet(challengeId);
+        return;
+      }
       const chapter = V012_CHAPTERS[Number(button.dataset.chapterIndex) || 0];
       const path = chapter?.paths.find(item => item.key === button.dataset.path);
       if (!path) return;
@@ -4575,6 +4872,23 @@ function renderHomeRankPaths(chapter) {
     return;
   }
 
+  if (currentPath.challengeId) {
+    const challenge = PUSHUP_CHALLENGES[currentPath.challengeId];
+    const meta = CHALLENGE_CATEGORY_META[challenge?.category] || CHALLENGE_CATEGORY_META.CONTROL;
+    homeRankPaths.innerHTML = `
+      <button class="home-next-challenge" type="button" data-home-challenge="${currentPath.challengeId}" style="--path-accent:${meta.color};">
+        <span class="home-next-challenge-kicker">NEXT CHALLENGE · ${challenge?.category || "CHALLENGE"}</span>
+        <strong>${challenge?.number || ""}. ${challenge?.title || currentPath.title}</strong>
+        <small>Open the Skill Tree to view & start</small>
+      </button>
+    `;
+    homeRankPaths.querySelector('[data-home-challenge]')?.addEventListener("click", () => {
+      showView("tree");
+      window.setTimeout(() => openChallengeSheet(currentPath.challengeId), 120);
+    });
+    return;
+  }
+
   const state = getHomePathProgressState(currentPath);
   homeRankPaths.innerHTML = `
     <div class="home-rank-path-row" style="--path-accent:${state.accent};">
@@ -4606,7 +4920,6 @@ function buildProgressOrb(label, current, target, type = "side") {
     <div class="orb-ring" style="--progress:${percent}%; --orb-color:${type === "daily" ? "#61d98c" : "#63a9ff"};">
       <div class="orb-content orb-content-side">
         <strong>${formatTreeNumber(safeCurrent)}</strong>
-        <span class="orb-corner-target">/${formatTreeNumber(safeTarget)}</span>
       </div>
     </div>
     <span class="home-progress-caption">${type === "daily" ? "Today" : "This Week"}</span>
