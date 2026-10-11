@@ -707,11 +707,11 @@ function bp66MigratedRankMasks(value) {
 }
 function bp66MigratedPlacement(value) {
  const old=value?.journeyLevelStars65||{};
- const current=['Starter','Holz','Stein','Bronze'].indexOf(value?.journeyPlacementRank65||'Starter');
+ const current=['Starter','Holz','Stein','Bronze','Silber','Gold','Platin','Diamond'].indexOf(value?.journeyPlacementRank65||'Starter');
  let completed=Number(old.A5)>=1?1:0;
  if(completed>=1&&(Number(old.H3)>=1||Number(old.H4)>=1))completed=2;
  if(completed>=2&&(Number(old.S5)>=1||Number(old.S6)>=1))completed=3;
- return ['Starter','Holz','Stein','Bronze'][Math.max(0,current,completed)];
+ return ['Starter','Holz','Stein','Bronze','Silber','Gold','Platin','Diamond'][Math.max(0,current,completed)] || 'Starter';
 }
 function normalizeProgress(value) {
   const trainingHistory = Array.isArray(value?.trainingHistory) ? value.trainingHistory : [];
@@ -781,9 +781,9 @@ function normalizeProgress(value) {
     journeyPlacementRank65: bp66MigratedPlacement(value),
     journeyLevelStars66: value?.journeyLevelStars66 && typeof value.journeyLevelStars66 === 'object' ? Object.fromEntries(Object.entries(value.journeyLevelStars66).filter(([k,v])=>/^L\d{2}$/.test(k)&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.min(3,Math.max(0,Math.floor(Number(v))))])) : bp66MigratedLevelStars(value),
     journeyLevelTotals66: value?.journeyLevelTotals66 && typeof value.journeyLevelTotals66 === 'object' ? Object.fromEntries(Object.entries(value.journeyLevelTotals66).filter(([k,v])=>/^L\d{2}$/.test(k)&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.floor(Number(v)))])) : {},
-    journeyRankMasks66: value?.journeyRankMasks66 && typeof value.journeyRankMasks66 === 'object' ? Object.fromEntries(Object.entries(value.journeyRankMasks66).filter(([k,v])=>/^L(04|09|16|25)$/.test(k)).map(([k,v])=>[k,Math.floor(Number(v)||0)&7])) : bp66MigratedRankMasks(value),
-    journeyShortcuts66: value?.journeyShortcuts66 && typeof value.journeyShortcuts66 === 'object' ? Object.fromEntries(Object.entries(value.journeyShortcuts66).filter(([k,v])=>/^C[1-4]$/.test(k)).map(([k,v])=>[k,!!v])) : {},
-    journeyShortcutLast66: /^C[1-4]$/.test(value?.journeyShortcutLast66||'')?value.journeyShortcutLast66:'',
+    journeyRankMasks66: value?.journeyRankMasks66 && typeof value.journeyRankMasks66 === 'object' ? Object.fromEntries(Object.entries(value.journeyRankMasks66).filter(([k,v])=>/^L(04|09|16|25|34|43|52)$/.test(k)).map(([k,v])=>[k,Math.floor(Number(v)||0)&7])) : bp66MigratedRankMasks(value),
+    journeyShortcuts66: value?.journeyShortcuts66 && typeof value.journeyShortcuts66 === 'object' ? Object.fromEntries(Object.entries(value.journeyShortcuts66).filter(([k,v])=>/^C[1-7]$/.test(k)).map(([k,v])=>[k,!!v])) : {},
+    journeyShortcutLast66: /^C[1-7]$/.test(value?.journeyShortcutLast66||'')?value.journeyShortcutLast66:'',
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
@@ -4026,6 +4026,7 @@ function getRankDisplayName(rank) {
     "Silber": "Silver",
     "Gold": "Gold",
     "Platin": "Platinum",
+    "Diamond": "Diamond",
     "Diamant I": "Diamond I",
     "Diamant II": "Diamond II",
     "Diamant III": "Diamond III",
@@ -4934,6 +4935,7 @@ const bp66Sets=(variant,count,reps)=>({type:'sets',variant,count,reps});
 const bp66Total=(variant,reps)=>({type:'total',variant,reps});
 const bp66Session=(variant,reps)=>({type:'session',variant,reps});
 const bp66Combo=(items)=>({type:'combo',items:items.map(([variant,reps])=>({variant,reps}))});
+
 const BP61_LEVELS=Object.fromEntries([
   bp61('L01','First Incline','incline','variant',bp66Max('incline',1),bp66Max('incline',3),bp66Sets('incline',2,3)),
   bp61('L02','Incline Builder','incline','variant',bp66Max('incline',5),bp66Max('incline',7),bp66Sets('incline',2,6)),
@@ -4959,43 +4961,85 @@ const BP61_LEVELS=Object.fromEntries([
   bp61('L22','Volume Challenge','standard','endurance',bp66Sets('standard',3,10),bp66Sets('standard',3,12),bp66Sets('standard',4,12)),
   bp61('L23','Wide Control','wide','variant',bp66Max('wide',7),bp66Max('wide',9),bp66Sets('wide',2,9)),
   bp61('L24','Variety Mix','standard','combo',bp66Combo([['standard',8],['wide',5],['pike',3]]),bp66Combo([['standard',10],['wide',6],['pike',4]]),bp66Combo([['standard',12],['wide',8],['pike',5]])),
-  bp61('L25','Unlock Silver','standard','rank',bp66Max('standard',18),null,null,'Silber')
+  bp61('L25','Unlock Silver','standard','rank',bp66Max('standard',18),null,null,'Silber'),
+  bp61('L26','First Diamond','diamond','variant',bp66Max('diamond',1),bp66Max('diamond',3),bp66Sets('diamond',2,3)),
+  bp61('L27','Fifteen Strong','standard','power',bp66Max('standard',15),bp66Max('standard',17),bp66Sets('standard',2,14)),
+  bp61('L28','Pike Control','pike','variant',bp66Max('pike',7),bp66Max('pike',9),bp66Sets('pike',2,8)),
+  bp61('L29','Diamond Builder','diamond','variant',bp66Max('diamond',3),bp66Max('diamond',5),bp66Sets('diamond',2,5)),
+  bp61('L30','Power Climb','standard','power',bp66Max('standard',18),bp66Max('standard',20),bp66Sets('standard',2,16)),
+  bp61('L31','Wide Endurance','wide','endurance',bp66Sets('wide',2,7),bp66Sets('wide',2,9),bp66Sets('wide',3,8)),
+  bp61('L32','Mixed Pressure','standard','combo',bp66Combo([['standard',10],['diamond',4]]),bp66Combo([['standard',12],['diamond',5]]),bp66Combo([['standard',14],['diamond',6]])),
+  bp61('L33','Variety Climb','standard','combo',bp66Combo([['standard',10],['wide',5],['pike',4],['diamond',3]]),bp66Combo([['standard',12],['wide',6],['pike',5],['diamond',4]]),bp66Combo([['standard',14],['wide',8],['pike',6],['diamond',5]])),
+  bp61('L34','Unlock Gold','standard','rank',bp66Max('standard',25),null,null,'Gold'),
+  bp61('L35','First Explosive','explosive','variant',bp66Max('explosive',1),bp66Max('explosive',3),bp66Sets('explosive',2,3)),
+  bp61('L36','Twenty Strong','standard','power',bp66Max('standard',20),bp66Max('standard',22),bp66Sets('standard',2,18)),
+  bp61('L37','Diamond Control','diamond','variant',bp66Max('diamond',5),bp66Max('diamond',7),bp66Sets('diamond',2,6)),
+  bp61('L38','Explosive Builder','explosive','variant',bp66Max('explosive',3),bp66Max('explosive',5),bp66Sets('explosive',2,4)),
+  bp61('L39','Volume Rush','standard','endurance',bp66Sets('standard',3,12),bp66Sets('standard',3,14),bp66Sets('standard',4,14)),
+  bp61('L40','Mixed Power','standard','combo',bp66Combo([['standard',12],['diamond',5],['explosive',3]]),bp66Combo([['standard',14],['diamond',6],['explosive',4]]),bp66Combo([['standard',16],['diamond',8],['explosive',5]])),
+  bp61('L41','Explosive Control','explosive','variant',bp66Max('explosive',5),bp66Max('explosive',7),bp66Sets('explosive',2,6)),
+  bp61('L42','Elite Mix','standard','combo',bp66Combo([['standard',16],['wide',8],['diamond',6],['explosive',4]]),bp66Combo([['standard',18],['wide',9],['diamond',7],['explosive',5]]),bp66Combo([['standard',20],['wide',10],['diamond',8],['explosive',6]])),
+  bp61('L43','Unlock Platin','standard','rank',bp66Max('standard',35),null,null,'Platin'),
+  bp61('L44','First Archer','archer','variant',bp66Max('archer',1),bp66Max('archer',3),bp66Sets('archer',2,3)),
+  bp61('L45','Twenty-Five Strong','standard','power',bp66Max('standard',25),bp66Max('standard',28),bp66Sets('standard',2,22)),
+  bp61('L46','Diamond Endurance','diamond','endurance',bp66Sets('diamond',2,7),bp66Sets('diamond',2,9),bp66Sets('diamond',3,8)),
+  bp61('L47','Archer Builder','archer','variant',bp66Max('archer',3),bp66Max('archer',5),bp66Sets('archer',2,4)),
+  bp61('L48','Power Sprint','standard','power',bp66Max('standard',30),bp66Max('standard',33),bp66Sets('standard',2,25)),
+  bp61('L49','Explosive Control II','explosive','endurance',bp66Sets('explosive',2,7),bp66Sets('explosive',2,9),bp66Sets('explosive',3,8)),
+  bp61('L50','Mixed Mastery','standard','combo',bp66Combo([['standard',18],['diamond',8],['explosive',5],['archer',3]]),bp66Combo([['standard',20],['diamond',9],['explosive',6],['archer',4]]),bp66Combo([['standard',22],['diamond',10],['explosive',7],['archer',5]])),
+  bp61('L51','Final Mix','standard','combo',bp66Combo([['standard',22],['wide',10],['pike',8],['diamond',8],['explosive',5],['archer',4]]),bp66Combo([['standard',25],['wide',12],['pike',9],['diamond',9],['explosive',6],['archer',5]]),bp66Combo([['standard',28],['wide',14],['pike',10],['diamond',10],['explosive',8],['archer',6]])),
+  bp61('L52','Unlock Diamond','standard','rank',bp66Max('standard',50),null,null,'Diamond')
 ].map(l=>[l.id,l]));
-const BP66_ORDER=Array.from({length:25},(_,i)=>`L${String(i+1).padStart(2,'0')}`);
+const BP66_ORDER=Array.from({length:52},(_,i)=>`L${String(i+1).padStart(2,'0')}`);
 const BP65_NUMBERS=Object.fromEntries(BP66_ORDER.map((id,i)=>[id,i+1]));
+const BP67_TOTAL_LEVELS=BP66_ORDER.length;
+const BP67_TOTAL_STARS=BP67_TOTAL_LEVELS*3;
 const BP66_RANK_CHOICES={
   L04:[bp66Max('standard',1),bp66Max('incline',10),bp66Sets('incline',2,8)],
   L09:[bp66Max('standard',5),bp66Sets('knee',2,10),bp66Combo([['standard',3],['knee',8]])],
   L16:[bp66Max('standard',10),bp66Sets('wide',2,6),bp66Sets('standard',3,8)],
-  L25:[bp66Max('standard',18),bp66Sets('pike',2,5),bp66Combo([['wide',10],['pike',5]])]
+  L25:[bp66Max('standard',18),bp66Sets('pike',2,5),bp66Combo([['wide',10],['pike',5]])],
+  L34:[bp66Max('standard',25),bp66Sets('diamond',2,6),bp66Combo([['standard',15],['diamond',6]])],
+  L43:[bp66Max('standard',35),bp66Sets('explosive',2,6),bp66Combo([['standard',20],['diamond',8],['explosive',5]])],
+  L52:[bp66Max('standard',50),bp66Sets('archer',2,5),bp66Combo([['standard',30],['diamond',10],['explosive',8],['archer',5]])]
 };
 const BP66_SHORTCUTS=[
  {id:'C1',from:0,to:4,label:'Direct Start',variant:'standard',objective:bp66Max('standard',1),side:'left'},
  {id:'C2',from:5,to:9,label:'Knee Shortcut',variant:'knee',objective:bp66Max('knee',10),side:'right'},
  {id:'C3',from:12,to:16,label:'Wide Shortcut',variant:'wide',objective:bp66Max('wide',5),side:'right'},
- {id:'C4',from:20,to:24,label:'Pike Shortcut',variant:'pike',objective:bp66Max('pike',5),side:'left'}
+ {id:'C4',from:20,to:24,label:'Pike Shortcut',variant:'pike',objective:bp66Max('pike',5),side:'left'},
+ {id:'C5',from:29,to:34,label:'Diamond Shortcut',variant:'diamond',objective:bp66Max('diamond',5),side:'right'},
+ {id:'C6',from:38,to:43,label:'Explosive Shortcut',variant:'explosive',objective:bp66Max('explosive',5),side:'left'},
+ {id:'C7',from:47,to:52,label:'Archer Shortcut',variant:'archer',objective:bp66Max('archer',5),side:'right'}
 ];
 const BP67_STAR_REWARDS=[
  {stars:10,label:'Unlock Profile Picture',note:'Placeholder reward'},
  {stars:25,label:'Unlock Banner',note:'Placeholder reward'},
- {stars:50,label:'Unlock Accent Color',note:'Placeholder reward'},
- {stars:75,label:'Unlock Special Cosmetic',note:'Placeholder reward'}
+ {stars:45,label:'Unlock Accent Color',note:'Placeholder reward'},
+ {stars:70,label:'Unlock Avatar Frame',note:'Placeholder reward'},
+ {stars:100,label:'Unlock Special Banner',note:'Placeholder reward'},
+ {stars:130,label:'Unlock Cosmetic Pack',note:'Placeholder reward'},
+ {stars:156,label:'Journey Complete Reward',note:'Placeholder reward'}
 ];
 const BP67_RANK_MARKERS=[
- {id:'R_WOOD',rank:'Holz',from:'L04',to:'L05',x:180,y:2500},
- {id:'R_STONE',rank:'Stein',from:'L09',to:'L10',x:180,y:1946},
- {id:'R_BRONZE',rank:'Bronze',from:'L16',to:'L17',x:180,y:1169},
- {id:'R_SILVER',rank:'Silber',from:'L25',to:null,x:180,y:90}
+ {id:'R_WOOD',rank:'Holz',from:'L04',to:'L05',x:180,y:5644},
+ {id:'R_STONE',rank:'Stein',from:'L09',to:'L10',x:180,y:5064},
+ {id:'R_BRONZE',rank:'Bronze',from:'L16',to:'L17',x:180,y:4252},
+ {id:'R_SILVER',rank:'Silber',from:'L25',to:'L26',x:180,y:3208},
+ {id:'R_GOLD',rank:'Gold',from:'L34',to:'L35',x:180,y:2164},
+ {id:'R_PLATIN',rank:'Platin',from:'L43',to:'L44',x:180,y:1120},
+ {id:'R_DIAMOND',rank:'Diamond',from:'L52',to:null,x:180,y:76}
 ];
-const BP61_TREE_HEIGHT=3130;
-const BP61_LAYOUT=[{id:'start',kind:'start',x:172,y:3050},...BP66_ORDER.map((id,index)=>({id,x:[102,230,123,171,109,245,198,103,173,234,102,208,105,233,104,174,236,107,210,124,238,102,214,119,172][index],y:3000-(index+1)*111,kind:BP61_LEVELS[id].rank?'rank':''}))];
-function bp66RankIndex(rank){return ['Starter','Holz','Stein','Bronze','Silber'].indexOf(rank);}
+const BP61_TREE_HEIGHT=6250;
+const BP67_X_PATTERN=[104,236,122,176,112,244,196,102,170,232,118,210];
+const BP61_LAYOUT=[{id:'start',kind:'start',x:172,y:6170},...BP66_ORDER.map((id,index)=>({id,x:BP67_X_PATTERN[index % BP67_X_PATTERN.length],y:6050-index*116,kind:BP61_LEVELS[id].rank?'rank':''}))];
+function bp66RankIndex(rank){return ['Starter','Holz','Stein','Bronze','Silber','Gold','Platin','Diamond'].indexOf(rank);}
 function bp66RankMask(id){return Number(progress.journeyRankMasks66?.[id]||0)&7;}
 function bp66BitCount(mask){return [0,1,2].filter(i=>!!(mask&(1<<i))).length;}
 function bp65RankFromJourney(){
  let highest=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
- for(const [id,rank] of [['L04','Holz'],['L09','Stein'],['L16','Bronze'],['L25','Silber']]) if(bp66RankMask(id))highest=Math.max(highest,bp66RankIndex(rank));
- return ['Starter','Holz','Stein','Bronze','Silber'][highest]||'Starter';
+ for(const [id,rank] of [['L04','Holz'],['L09','Stein'],['L16','Bronze'],['L25','Silber'],['L34','Gold'],['L43','Platin'],['L52','Diamond']]) if(bp66RankMask(id))highest=Math.max(highest,bp66RankIndex(rank));
+ return ['Starter','Holz','Stein','Bronze','Silber','Gold','Platin','Diamond'][highest]||'Starter';
 }
 function bp61LifetimeValue(level){return level?.core?.type==='total'?Math.max(0,Number(progress.journeyLevelTotals66?.[level.id])||0):0;}
 function bp61EarnedStars(id){const level=BP61_LEVELS[id];if(!level)return 0;return level.rank?bp66BitCount(bp66RankMask(id)):Math.min(3,Math.max(0,Number(progress.journeyLevelStars66?.[id])||0));}
@@ -5036,12 +5080,13 @@ function evaluateBP61Level(level,sets,previousTotal=0,rankStarIndex=0){
 function getBP61State(){
  const finished={start:true},available={start:true},skipped={};
  for(const id of BP66_ORDER)finished[id]=bp61CoreDone(id);
- const floor=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
- const sections=[0,4,9,16,25];
- for(let i=1;i<=25;i++){
+ const capMap={Starter:0,Holz:5,Stein:10,Bronze:17,Silber:26,Gold:35,Platin:44,Diamond:53};
+ const placedRank=progress.journeyPlacementRank65||'Starter';
+ const placementCap=capMap[placedRank]||0;
+ for(let i=1;i<=BP67_TOTAL_LEVELS;i++){
   const id=BP66_ORDER[i-1];
   const prev=i===1?'start':BP66_ORDER[i-2];
-  const abovePlacement=(floor>=1&&i<=5)||(floor>=2&&i<=10)||(floor>=3&&i<=17)||(floor>=4);
+  const abovePlacement=placementCap>0&&i<=placementCap;
   const ladder=BP66_SHORTCUTS.some(s=>s.to===i&&progress.journeyShortcuts66?.[s.id]);
   available[id]=!!(finished[prev]||finished[id]||ladder||abovePlacement);
   // Player can replay rank level if they reached this rank through placement
@@ -5057,10 +5102,11 @@ function bp61StarsMarkup(earned,id=''){
 function bp61FocusId(state){
  const ladder=BP66_SHORTCUTS.find(s=>s.id===progress.journeyShortcutLast66);
  if(ladder){for(let i=ladder.to;i<=25;i++){const id=BP66_ORDER[i-1];if(state.available[id]&&!state.finished[id])return id;}}
- const floor=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
- const start=[0,4,9,16,25][floor]||0;
- for(let i=start;i<25;i++){const id=BP66_ORDER[i];if(state.available[id]&&!state.finished[id])return id;}
- return BP66_ORDER.find(id=>state.available[id]&&!state.finished[id])||'L25';
+ const startMap={Starter:0,Holz:4,Stein:9,Bronze:16,Silber:25,Gold:34,Platin:43,Diamond:51};
+ const placedRank=progress.journeyPlacementRank65||'Starter';
+ const start=startMap[placedRank]||0;
+ for(let i=start;i<BP67_TOTAL_LEVELS;i++){const id=BP66_ORDER[i];if(state.available[id]&&!state.finished[id])return id;}
+ return BP66_ORDER.find(id=>state.available[id]&&!state.finished[id])||BP66_ORDER[BP66_ORDER.length-1];
 }
 function bp67RankMarkerMarkup(marker,state){
  const done=state.finished[marker.from];
@@ -5125,9 +5171,9 @@ function renderTree(){
  const earned=BP66_ORDER.reduce((a,id)=>a+bp61EarnedStars(id),0);
  const completed=BP66_ORDER.filter(id=>state.finished[id]).length;
  skillTree.className='skill-tree-v1161 bp63-tree bp66-tree bp67-tree';
- skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>Main Path · Shortcuts · Star Rewards</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 75</small></strong><span>STARS</span></div></div>
- <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} · ${completed}/25 complete</span></div>
- <div class="bp61-progress"><span style="width:${(earned/75*100).toFixed(1)}%"></span></div>
+ skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>Main Path · Shortcuts · Star Rewards</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / ${BP67_TOTAL_STARS}</small></strong><span>STARS</span></div></div>
+ <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} · ${completed}/${BP67_TOTAL_LEVELS} complete</span></div>
+ <div class="bp61-progress"><span style="width:${(earned/BP67_TOTAL_STARS*100).toFixed(1)}%"></span></div>
  <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
  <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
  ${bp67StarRailMarkup(earned)}
@@ -5223,7 +5269,7 @@ function showBP61Result(result){
 function openBP65Placement(){
  document.getElementById('bp65Placement')?.remove();
  const overlay=document.createElement('div');overlay.id='bp65Placement';overlay.className='bp61-sheet';
- overlay.innerHTML=`<div class="bp61-sheet-card bp65-placement-sheet" role="dialog" aria-modal="true" aria-label="Find Your Level"><button class="bp61-sheet-close" id="bp65PlacementClose" aria-label="Close">×</button><span class="bp61-sheet-eyebrow">EXPERIENCED PLAYER</span><h2>Find Your Level</h2><p>Already training? Choose a checkpoint to unlock a higher section without automatically earning Journey stars. Or follow the main path and its four optional shortcuts.</p><div class="bp65-placement-choices"><button type="button" data-bp65-target="1"><b>WOOD CHECKPOINT</b><small>1 Standard Push-Up in one set</small></button><button type="button" data-bp65-target="3"><b>STONE CHECKPOINT</b><small>3 Standard in one set</small></button><button type="button" data-bp65-target="10"><b>BRONZE CHECKPOINT</b><small>10 Standard in one set</small></button></div><p class="bp65-placement-note">Checkpoint access does not earn stars. The rank-up levels remain replayable with three separate star challenges.</p></div>`;
+ overlay.innerHTML=`<div class="bp61-sheet-card bp65-placement-sheet" role="dialog" aria-modal="true" aria-label="Find Your Level"><button class="bp61-sheet-close" id="bp65PlacementClose" aria-label="Close">×</button><span class="bp61-sheet-eyebrow">EXPERIENCED PLAYER</span><h2>Find Your Level</h2><p>Already training? Choose a checkpoint to unlock a higher section without automatically earning Journey stars. Or follow the main path and its seven optional shortcuts.</p><div class="bp65-placement-choices"><button type="button" data-bp65-target="1"><b>WOOD CHECKPOINT</b><small>1 Standard Push-Up in one set</small></button><button type="button" data-bp65-target="3"><b>STONE CHECKPOINT</b><small>3 Standard in one set</small></button><button type="button" data-bp65-target="10"><b>BRONZE CHECKPOINT</b><small>10 Standard in one set</small></button></div><p class="bp65-placement-note">Checkpoint access does not earn stars. The rank-up levels remain replayable with three separate star challenges.</p></div>`;
  document.body.appendChild(overlay);document.body.style.overflow='hidden';
  const close=()=>{overlay.remove();document.body.style.overflow='';};
  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
@@ -5272,7 +5318,7 @@ function getHomePathProgressState(path) {
 function renderHomeRankPaths(chapter) {
  if(!homeRankPaths)return;
  const state=getBP61State();const focus=bp61FocusId(state);const level=BP61_LEVELS[focus];
- homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${getRankDisplayName(state.rank)} · Journey</strong><small>Free Workout is separate from the 25 Journey levels.</small><div>${level?`<span>Next: Level ${BP65_NUMBERS[focus]} · ${level.title}</span>`:'<span>Silver reached · replay for stars!</span>'}</div></div>`;
+ homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${getRankDisplayName(state.rank)} · Journey</strong><small>Free Workout is separate from the ${BP67_TOTAL_LEVELS} Journey levels.</small><div>${level?`<span>Next: Level ${BP65_NUMBERS[focus]} · ${level.title}</span>`:'<span>Diamond reached · replay for stars!</span>'}</div></div>`;
 }
 function buildProgressOrb(label, current, target, type = "side") {
   const safeTarget = Math.max(1, Number(target) || 1);

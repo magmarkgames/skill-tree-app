@@ -1,3 +1,12 @@
+BodyPath v0.11.68
+
+- Journey expanded from Start to Diamond
+- Total Journey levels: 52
+- New sections: Silver → Gold, Gold → Platinum, Platinum → Diamond
+- New variants added to the Journey: Diamond, Explosive, Archer
+- Total Journey stars: 156
+- Rank separators and star reward rail kept in the new full tree
+
 BodyPath v0.11.67
 
 - Rank separators restored

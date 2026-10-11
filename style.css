@@ -13620,3 +13620,8 @@ body[data-hero-gender="female"] .home-v17 {
   .bp67-star-stop b{font-size:9px;}
   .bp67-star-stop small{font-size:7px;}
 }
+
+
+/* v0.11.68 — full Journey to Diamond */
+.bp66-tree .bp61-canvas,.bp66-tree .bp61-lines,.bp67-tree .bp61-canvas,.bp67-tree .bp61-lines{height:6250px!important;}
+.bp67-rank-diamond strong{color:#8fd7ff;}
