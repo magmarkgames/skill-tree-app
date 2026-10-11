@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.63</title>
-  <link rel="stylesheet" href="style.css?v=0.11.63" />
+  <title>BodyPath – v0.11.64</title>
+  <link rel="stylesheet" href="style.css?v=0.11.64" />
 </head>
 <body>
   <main class="app-shell">
@@ -384,8 +384,6 @@
       <section id="variantStep" class="step hidden" aria-hidden="true"></section>
 
       <section id="quickStep" class="step hidden">
-        <video id="cameraVideo" class="camera-feed-hidden" autoplay muted playsinline></video>
-
         <div class="quick-stage multi-set-stage">
           <div id="bp61TrainingBanner" class="bp61-training-banner hidden"></div>
           <div class="quick-meta">
@@ -397,11 +395,10 @@
             <div class="set-prep-copy">
               <span>ERSTES SET</span>
               <strong>Welche Variante willst du machen?</strong>
-              <small>Antippen, in Position gehen – der 3‑Sekunden-Countdown startet dann automatisch.</small>
+              <small>Handy vor dir anlehnen, Frontkamera ausrichten und loslegen. Kein bestimmter Winkel nötig.</small>
             </div>
             <div class="workout-variant-grid" aria-label="Push-up Variante wählen">
               <button class="workout-variant-btn" data-workout-variant="standard" type="button"><span data-variant-icon="standard"></span><small>Standard</small></button>
-              <button class="workout-variant-btn" data-workout-variant="wall" type="button"><span data-variant-icon="wall"></span><small>Wall</small></button>
               <button class="workout-variant-btn" data-workout-variant="knee" type="button"><span data-variant-icon="knee"></span><small>Knee</small></button>
               <button class="workout-variant-btn" data-workout-variant="wide" type="button"><span data-variant-icon="wide"></span><small>Wide</small></button>
               <button class="workout-variant-btn" data-workout-variant="military" type="button"><span data-variant-icon="military"></span><small>Military</small></button>
@@ -414,34 +411,43 @@
               <button class="workout-variant-btn" data-workout-variant="handstand" type="button"><span data-variant-icon="handstand"></span><small>Handstand</small></button>
               <button class="workout-variant-btn" data-workout-variant="pseudoPlanche" type="button"><span data-variant-icon="pseudoPlanche"></span><small>Planche</small></button>
             </div>
-            <div id="prepCameraHint" class="prep-camera-hint">Noch keine Variante ausgewählt.</div>
+            <div class="bp64-incline-hint"><strong>Beginner tip:</strong> Higher hands make Incline Push-Ups easier. Use a stable surface and gradually lower it as you get stronger.</div><div id="prepCameraHint" class="prep-camera-hint">Noch keine Variante ausgewählt.</div>
           </section>
 
           <section id="activeSetPanel" class="active-set-panel hidden">
+            <div class="bp64-camera-card" id="bp64CameraCard" data-frame-state="neutral">
+              <div class="bp64-camera-top"><span id="bp64FramingTitle">○ CAMERA SETUP</span><span id="bp64FramingDetail">FACE FRAMING</span></div>
+              <div class="bp64-camera-window">
+                <video id="cameraVideo" class="bp64-camera-video" autoplay muted playsinline></video>
+                <div class="bp64-guide-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                <div id="bp64FaceBox" class="bp64-face-box hidden" aria-hidden="true"></div>
+                <div id="bp64CameraPlaceholder" class="bp64-camera-placeholder" aria-hidden="true">
+                  <svg viewBox="0 0 180 110" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round" stroke-width="3"><circle cx="90" cy="26" r="11"/><path d="M66 53 90 46 114 53 133 84 M66 53 47 84 M90 46 90 75 M90 75 72 101 M90 75 108 101"/></svg>
+                  <span>Prop your phone up in front of you</span>
+                </div>
+              </div>
+              <div id="positionStatus" class="position-status neutral" aria-live="polite">
+                <span id="positionEmoji">○</span>
+                <div><strong id="positionTitle">Waiting for camera</strong><small id="positionHint">Keep your face in the frame.</small></div>
+              </div>
+            </div>
             <div class="rep-hero" aria-live="polite">
-              <strong id="liveRepCount">0</strong>
-              <span>PUSH-UPS</span>
+              <div class="bp64-rep-number"><strong id="liveRepCount">0</strong><span>REPS · CURRENT SET</span></div>
+              <i aria-hidden="true"></i>
+              <div class="bp64-rep-target"><strong id="bp64Target">—</strong><span>TARGET</span></div>
             </div>
 
             <div id="motionCue" class="motion-cue">Position einnehmen</div>
 
-            <div id="positionStatus" class="position-status neutral" aria-live="polite">
-              <span id="positionEmoji">⬜</span>
-              <div>
-                <strong id="positionTitle">Kamera wird vorbereitet</strong>
-                <small id="positionHint">Geh in deine obere Push-up-Position.</small>
-              </div>
-            </div>
-
             <section class="milestone-rail-panel" aria-labelledby="liveGoalsHeading">
               <div class="milestone-rail-head">
                 <div>
-                  <strong id="liveGoalsHeading">Nächstes Ziel</strong>
-                  <small id="liveGoalText">Deine nächsten Meilensteine erscheinen hier.</small>
+                  <strong id="liveGoalsHeading">NEXT GOALS</strong>
+                  <small id="liveGoalText">Your three closest goals</small>
                 </div>
                 <span id="liveGoalsVariantHint">Set 1</span>
               </div>
-              <div id="liveGoalsList" class="milestone-track" aria-live="polite"></div>
+              <div id="liveGoalsList" class="bp64-goals-list" aria-live="polite"></div>
             </section>
           </section>
 
@@ -470,7 +476,6 @@
             </div>
             <div class="workout-variant-grid compact" aria-label="Variante für das nächste Set wählen">
               <button class="workout-variant-btn" data-workout-variant="standard" type="button"><span data-variant-icon="standard"></span><small>Standard</small></button>
-              <button class="workout-variant-btn" data-workout-variant="wall" type="button"><span data-variant-icon="wall"></span><small>Wall</small></button>
               <button class="workout-variant-btn" data-workout-variant="knee" type="button"><span data-variant-icon="knee"></span><small>Knee</small></button>
               <button class="workout-variant-btn" data-workout-variant="wide" type="button"><span data-variant-icon="wide"></span><small>Wide</small></button>
               <button class="workout-variant-btn" data-workout-variant="military" type="button"><span data-variant-icon="military"></span><small>Military</small></button>
@@ -576,6 +581,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.63"></script>
+  <script type="module" src="app.js?v=0.11.64"></script>
 </body>
 </html>

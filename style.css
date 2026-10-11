@@ -13432,3 +13432,72 @@ body[data-hero-gender="female"] .home-v17 {
   backdrop-filter:none!important;
   box-shadow:none!important;
 }
+
+/* ======================================================================
+   v0.11.64 — Frontal Quick Setup / compact camera & goal display
+   No fake full-body confidence: face-only framing reflects the actual detector.
+   ====================================================================== */
+#trainingModal.quick-theme .modal-panel { background:#0D1524!important; color:#eef3fb!important; }
+#trainingModal.quick-theme .quick-stage {
+  min-height:0; border-color:#26364F; background:#121B2B;
+  padding:12px; gap:7px; border-radius:18px;
+}
+#trainingModal.quick-theme .active-set-panel { gap:7px; }
+.bp64-camera-card { --frame:#718097; padding:9px; border:1px solid #2f4059; background:#192537; border-radius:15px; }
+.bp64-camera-card[data-frame-state="good"]{--frame:#31c68a;}
+.bp64-camera-card[data-frame-state="warn"]{--frame:#e6bb55;}
+.bp64-camera-card[data-frame-state="bad"]{--frame:#ec717b;}
+.bp64-camera-top{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:7px;font-weight:800;letter-spacing:.085em;font-size:10px;color:var(--frame)}
+.bp64-camera-top span:last-child{color:#98a9c2;font-size:9px;font-weight:600;letter-spacing:.06em;}
+.bp64-camera-window{width:100%;height:clamp(125px,22svh,190px);background:#0a1321;overflow:hidden;position:relative;border-radius:10px;}
+.bp64-camera-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;}
+.bp64-camera-placeholder{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:7px;color:#8499b8;background:#111c2b;}
+.bp64-camera-placeholder svg{width:110px;height:78px;opacity:.65;}
+.bp64-camera-placeholder span{font-size:10px;color:#b3c2d5;text-align:center;}
+.bp64-guide-corners{position:absolute;inset:11px;pointer-events:none;z-index:2;}
+.bp64-guide-corners i{position:absolute;width:22px;height:22px;border:solid var(--frame);border-width:0;opacity:.9;}
+.bp64-guide-corners i:nth-child(1){left:0;top:0;border-left-width:2px;border-top-width:2px;border-radius:4px 0 0 0;}
+.bp64-guide-corners i:nth-child(2){right:0;top:0;border-right-width:2px;border-top-width:2px;border-radius:0 4px 0 0;}
+.bp64-guide-corners i:nth-child(3){left:0;bottom:0;border-left-width:2px;border-bottom-width:2px;border-radius:0 0 0 4px;}
+.bp64-guide-corners i:nth-child(4){right:0;bottom:0;border-right-width:2px;border-bottom-width:2px;border-radius:0 0 4px 0;}
+.bp64-face-box{position:absolute;border:2px solid var(--frame);border-radius:8px;z-index:2;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.3);transition:left .09s,top .09s,width .09s,height .09s;}
+#trainingModal.quick-theme .bp64-camera-card .position-status{margin-top:6px;min-height:30px;max-height:50px;padding:4px 7px;grid-template-columns:18px 1fr;gap:6px;border:0;background:transparent;border-radius:7px;}
+#trainingModal.quick-theme .bp64-camera-card .position-status>span{font-size:15px;}
+#trainingModal.quick-theme .bp64-camera-card .position-status strong{font-size:11px;color:#e4ecf7;}
+#trainingModal.quick-theme .bp64-camera-card .position-status small{font-size:9px;color:#a7b8d0;margin-top:0;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+#trainingModal.quick-theme .rep-hero{min-height:0;flex:0 0 auto;display:flex;flex-direction:row;justify-content:center;align-items:center;gap:25px;padding:5px 0 4px;}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number,#trainingModal.quick-theme .rep-hero .bp64-rep-target{display:flex;flex-direction:column;align-items:center;min-width:84px;}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number strong{font-size:clamp(53px,15vw,79px);line-height:.92;letter-spacing:-.055em;color:#f4f7ff;}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:clamp(48px,13vw,65px);line-height:.92;letter-spacing:-.055em;color:#f0c465;}
+#trainingModal.quick-theme .rep-hero span{font-size:9px;letter-spacing:.06em;font-weight:850;margin-top:5px;color:#acbad0;}
+#trainingModal.quick-theme .rep-hero i{height:50px;display:block;width:1px;background:#38485f;}
+#trainingModal.quick-theme .motion-cue{min-height:20px;margin:0;font-size:12px;color:#b5cfff;padding:0 4px;}
+#trainingModal.quick-theme .milestone-rail-panel{margin-top:2px;padding:10px;border-radius:13px;border-color:#2e3b51;background:#182438;}
+#trainingModal.quick-theme .milestone-rail-head{margin-bottom:8px;}
+#trainingModal.quick-theme .milestone-rail-head strong{font-size:11px;letter-spacing:.08em;}
+#trainingModal.quick-theme .milestone-rail-head small{font-size:9px;color:#92a6c3;font-weight:600;}
+.bp64-goals-list{display:grid;gap:8px;min-height:96px;}
+.bp64-goal-row{display:grid;gap:4px;}
+.bp64-goal-copy{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#e7edf7;font-size:10px;}
+.bp64-goal-copy span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bp64-goal-copy strong{color:#cdd9e9;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.bp64-goal-track{height:5px;border-radius:10px;overflow:hidden;background:#35435b;}
+.bp64-goal-track span{display:block;height:100%;border-radius:10px;background:#d8ac59;transition:width .2s;}
+.bp64-goal-row.primary .bp64-goal-track span{background:#eac45e;}
+.bp64-no-goals{font-size:11px;color:#75e1a9;align-self:center;}
+.bp64-incline-hint{padding:10px;border:1px solid #384764;border-radius:12px;background:#15243a;color:#b4c7df;font-size:11px;line-height:1.5;}
+.bp64-incline-hint strong{color:#eac364;}
+#trainingModal.quick-theme .quick-workout-actions{margin-top:3px;}
+#trainingModal.quick-theme .quick-workout-actions button{min-height:42px;}
+/* Keep all controls reachable on short displays without hiding next goals. */
+@media(max-height:730px){
+  .bp64-camera-window{height:clamp(105px,18svh,140px);}
+  #trainingModal.quick-theme .quick-stage{padding:8px;gap:4px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-number strong{font-size:55px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:49px;}
+  #trainingModal.quick-theme .bp64-camera-card .position-status small{display:none;}
+  #trainingModal.quick-theme .milestone-rail-panel{padding:7px;}
+  .bp64-goals-list{gap:6px;min-height:82px;}
+}
+/* 17-node Journey fits the shorter starter section. */
+.bp63-tree .bp61-canvas,.bp63-tree .bp61-lines{height:2030px;}

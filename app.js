@@ -23,7 +23,7 @@ const FACE_MODEL =
 const QUICK_CONFIG = {
   detectIntervalMs: 34,
   minDetectionConfidence: 0.46,
-  readyMinMetric: 0.095,
+  readyMinMetric: 0.065, // More forgiving when phone is propped up in front
   readyMaxMetric: 0.52,
   readyMinCenterX: 0.12,
   readyMaxCenterX: 0.88,
@@ -1611,6 +1611,7 @@ function isNodeAvailable(node) {
 }
 
 function isVariantAvailable(variant) {
+  if (variant === "wall") return false; // Archived workouts remain readable.
   return isV012VariantAvailable(variant);
 }
 
@@ -1661,6 +1662,7 @@ function updateVariantAvailability() {
   const apply = (element, variant) => {
     const unlocked = isVariantAvailable(variant);
     element.classList.toggle("unlock-hidden", !unlocked);
+    element.hidden = variant === "wall";
     element.disabled = !unlocked;
     element.setAttribute("aria-hidden", unlocked ? "false" : "true");
   };
@@ -1669,7 +1671,7 @@ function updateVariantAvailability() {
   workoutVariantButtons.forEach(button => apply(button, button.dataset.workoutVariant));
 
   if (!isVariantAvailable(currentTrainingVariant)) {
-    currentTrainingVariant = isVariantAvailable("standard") ? "standard" : "wall";
+    currentTrainingVariant = "standard";
   }
 }
 
@@ -2130,61 +2132,36 @@ function getLiveMilestoneState() {
   return { all, passed, upcoming, lastPassed, next, segmentProgress };
 }
 
+function bp64ProjectedGoalValue(level) {
+  const saved=bp61LifetimeValue(level);
+  if(level.core.type==='max') return Math.max(saved,getSessionVariantMax(level.variant));
+  if(level.core.type==='total') return saved+getSessionVariantTotal(level.variant);
+  return saved;
+}
 function renderLiveGoals() {
   if (!liveGoalsList) return;
-  const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
-  const state = getLiveMilestoneState();
-  const previousNextKey = lastRailNextKey;
-  lastRailNextKey = state.next?.key || null;
-  const setNo = workoutSets.length + 1;
-
-  liveGoalsVariantHint.textContent = `${meta.label} · Set ${setNo}`;
-  if (liveGoalText) {
-    if (state.next) {
-      const remaining = state.next.remaining;
-      liveGoalText.textContent = `Noch ${remaining} Push-up${remaining === 1 ? "" : "s"} bis ${state.next.title}`;
-    } else {
-      liveGoalText.textContent = "Alle sichtbaren Ziele in diesem Bereich geschafft.";
-    }
-  }
-
-  const firstGoalPosition = 64;
-  const upcomingPositions = [firstGoalPosition, 82, 95];
-  const fillEnd = state.next ? 5 + state.segmentProgress * (firstGoalPosition - 5) : 96;
-  const parts = [
-    '<div class="milestone-track-line" aria-hidden="true"></div>',
-    `<div class="milestone-track-fill" style="left:5%;width:${Math.max(0, fillEnd - 5)}%" aria-hidden="true"></div>`
-  ];
-
-  if (state.lastPassed) {
-    parts.push(`
-      <div class="milestone-emblem completed tone-${state.lastPassed.tone}" data-milestone-key="${state.lastPassed.key}" style="left:5%">
-        <span class="milestone-emblem-icon">${state.lastPassed.icon}</span>
-        <span class="milestone-check">✓</span>
-        <small>${state.lastPassed.short}</small>
-      </div>`);
-  } else {
-    parts.push('<div class="milestone-start-dot" style="left:5%" aria-hidden="true"></div>');
-  }
-
-  state.upcoming.slice(0, 3).forEach((goal, index) => {
-    parts.push(`
-      <div class="milestone-emblem ${index === 0 ? "next" : "future"} tone-${goal.tone}" data-milestone-key="${goal.key}" style="left:${upcomingPositions[index]}%" aria-label="${goal.title}">
-        <span class="milestone-emblem-icon">${goal.icon}</span>
-        <small>${goal.short}</small>
-      </div>`);
-  });
-
-  liveGoalsList.innerHTML = parts.join("");
-  if (previousNextKey && previousNextKey !== lastRailNextKey && state.lastPassed?.key === previousNextKey) {
-    const completed = liveGoalsList.querySelector(`[data-milestone-key="${previousNextKey}"]`);
-    if (completed?.animate) {
-      completed.animate(
-        [{ left: "64%", transform: "translateX(-50%) scale(1.05)" }, { left: "5%", transform: "translateX(-50%) scale(1)" }],
-        { duration: 380, easing: "cubic-bezier(.2,.8,.2,1)" }
-      );
-    }
-  }
+  const variant=currentTrainingVariant;
+  const meta=VARIANT_META[variant] || VARIANT_META.standard;
+  const setNo=workoutSets.length+1;
+  liveGoalsVariantHint.textContent=`${meta.label} · Set ${setNo}`;
+  const levels=Object.values(BP61_LEVELS).filter(level=>level.variant===variant);
+  const current=levels.map(level=>({
+    level,value:bp64ProjectedGoalValue(level),target:level.core.reps
+  })).filter(goal=>goal.value<goal.target).sort((a,b)=>
+    (a.target-a.value)-(b.target-b.value) || a.target-b.target);
+  const next=current.slice(0,3);
+  if(liveGoalText) liveGoalText.textContent=next.length? 'Closest unfinished Journey milestones':'All visible milestones completed!';
+  liveGoalsList.innerHTML=next.length?next.map((goal,i)=>{
+    const percent=Math.min(100,Math.round(goal.value/goal.target*100));
+    return `<div class="bp64-goal-row ${i===0?'primary':''}">
+      <div class="bp64-goal-copy"><span>${goal.level.title}</span><strong>${Math.min(goal.target,goal.value)}/${goal.target}</strong></div>
+      <div class="bp64-goal-track"><span style="width:${percent}%"></span></div>
+    </div>`;
+  }).join(''):'<span class="bp64-no-goals">All current variant goals complete. Keep going!</span>';
+  const target=document.getElementById('bp64Target');
+  if(target)target.textContent=activeJourneyLevelId && BP61_LEVELS[activeJourneyLevelId]
+    ? BP61_LEVELS[activeJourneyLevelId].core.reps
+    : next[0]?.target ?? '—';
 }
 
 function renderPauseChallenges() {
@@ -2501,7 +2478,7 @@ function showActiveUI() {
   setPrepPanel.classList.add("hidden");
   pausePanel.classList.add("hidden");
   activeSetPanel.classList.remove("hidden");
-  manualModeBtn.classList.add("hidden");
+  manualModeBtn.classList.toggle("hidden", workoutActive || countdownActive);
   finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0 && !workoutActive);
   pauseSetBtn.classList.toggle("hidden", !workoutActive);
   setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
@@ -2741,17 +2718,19 @@ async function initFaceDetector() {
 async function startCamera() {
   autoCountdownPending = true;
   startCameraBtn.classList.add("hidden");
+  bp64SetFraming("neutral");
 
   if (!navigator.mediaDevices?.getUserMedia) {
     autoCountdownPending = false;
     setPositionStatus("bad", "🟥", "Kamera nicht verfügbar", "Du kannst unten in den manuellen Modus wechseln.");
     startCameraBtn.classList.remove("hidden");
     startCameraBtn.textContent = "Kamera erneut versuchen";
+    manualModeBtn.classList.remove("hidden");
     return;
   }
 
   cameraStatus.textContent = "Frontkamera und Gesichtserkennung werden gestartet …";
-  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Leg das Handy schon in Position – der Countdown startet automatisch.");
+  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Lehn das Handy vor dir an und bleib mit dem Gesicht im Bild. Kein fester Winkel nötig.");
   motionCue.textContent = "Position einnehmen";
 
   try {
@@ -2777,6 +2756,7 @@ async function startCamera() {
 
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
+    bp64ShowPreview(true);
 
     if (!autoCountdownPending || manualMode || quickStep.classList.contains("hidden")) {
       stopCamera();
@@ -2807,6 +2787,7 @@ async function startCamera() {
     startCameraBtn.disabled = false;
     startCameraBtn.classList.remove("hidden");
     startCameraBtn.textContent = "Kamera erneut versuchen";
+    manualModeBtn.classList.remove("hidden");
   }
 }
 
@@ -2814,6 +2795,35 @@ function stopCamera() {
   if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
   cameraStream = null;
   cameraVideo.srcObject = null;
+  bp64SetFraming('neutral');
+  bp64UpdateBox(null);
+  bp64ShowPreview(false);
+}
+function bp64ShowPreview(visible) {
+  const el=document.getElementById('bp64CameraPlaceholder');
+  if(el) el.classList.toggle('hidden',visible);
+}
+function bp64SetFraming(state) {
+  const el=document.getElementById('bp64CameraCard');
+  if(el) el.dataset.frameState=state;
+  const title=document.getElementById('bp64FramingTitle');
+  if(title) title.textContent=state==='good'?'✓ GOOD POSITION':state==='warn'?'! ADJUST POSITION':state==='bad'?'× NOT DETECTED':'○ CAMERA SETUP';
+}
+function bp64UpdateBox(box) {
+  const el=document.getElementById('bp64FaceBox');
+  if(!el)return;
+  if(!box || !cameraVideo?.videoWidth || !cameraVideo?.videoHeight){el.classList.add('hidden');return;}
+  const w=cameraVideo.videoWidth,h=cameraVideo.videoHeight;
+  // object-fit:cover crop + CSS mirror; face box coordinates are video pixels.
+  const view=el.parentElement.getBoundingClientRect();
+  if(!view.width || !view.height)return;
+  const scale=Math.max(view.width/w,view.height/h);
+  const offX=(view.width-w*scale)/2,offY=(view.height-h*scale)/2;
+  const left=view.width-(offX+(box.originX+box.width)*scale);
+  const top=offY+box.originY*scale;
+  el.style.left=left+'px';el.style.top=top+'px';
+  el.style.width=box.width*scale+'px';el.style.height=box.height*scale+'px';
+  el.classList.remove('hidden');
 }
 
 function startDetectionLoop() {
@@ -2896,6 +2906,7 @@ function processFaceResult(result, now) {
   }
 
   lastFaceSeenAt = now;
+  bp64UpdateBox(box);
 
   if (countdownActive) {
     if (isFaceReady(currentFace)) calibrationSamples.push(currentFace.metric);
@@ -2910,9 +2921,13 @@ function processFaceResult(result, now) {
   }
 
   updateRepState(currentFace.metric, now);
+  // This is framing feedback only, independent of the repetition state.
+  bp64SetFraming(isFaceReady(currentFace) ? 'good' : 'warn');
 }
 
 function handleFaceLoss(now) {
+  bp64UpdateBox(null);
+  bp64SetFraming('bad');
   const lostFor = lastFaceSeenAt ? now - lastFaceSeenAt : Infinity;
 
   if (countdownActive) {
@@ -2930,7 +2945,7 @@ function handleFaceLoss(now) {
     if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = true;
     goodPositionSince = 0;
     if (trainingPhase === "prep" || trainingPhase === "countdown") {
-      setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Beug dich etwas über das Handy oder schieb es näher zu deinem Gesicht.");
+      setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Stell dich etwas mittiger vor die Frontkamera.");
       motionCue.textContent = "Gesicht ins Blickfeld bringen";
     } else if (trainingPhase === "pause" && autoCountdownPending) {
       setPositionStatus("neutral", "⬜", "Warte auf deine Position", "Geh in die obere Push-up-Position, wenn du bereit bist.");
@@ -2973,12 +2988,10 @@ function handleFaceLoss(now) {
     return;
   }
 
-  setPositionStatus("warn", "🟨", "Kopf wieder über das Handy", "Wenn du das Set beenden willst, geh vollständig aus dem Kamerablickfeld.");
+  setPositionStatus("warn", "🟨", "Zurück ins Kamerabild", "Bitte ins Bild zurückkehren oder das Set über Pause beenden.");
 
-  if (repCount > 0 && lostFor >= QUICK_CONFIG.autoSetEndLossMs && !setEnding) {
-    endCurrentSetToPause("face-left");
-    return;
-  }
+  // No auto-end when the face leaves frame: propped-up frontal camera can briefly lose tracking.
+  // Users can end sets with the Pause button.
 
   if (lostFor > QUICK_CONFIG.hardResetLossMs) {
     downFrames = 0;
@@ -2987,7 +3000,7 @@ function handleFaceLoss(now) {
     inferredBottomFromLoss = false;
     maxMetricSinceTop = null;
     motionCue.textContent = "RUNTER";
-    setPositionStatus("bad", "🟥", "Gesicht länger nicht erkannt", "Kopf wieder über das Handy bringen.");
+    setPositionStatus("bad", "🟥", "Gesicht länger nicht erkannt", "Zurück ins Kamerabild bringen.");
   }
 }
 
@@ -2997,14 +3010,14 @@ function updateSetupGuidance(face, now) {
 
   if (face.metric < QUICK_CONFIG.readyMinMetric) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Etwas näher ans Handy", "Schieb das Handy ein Stück weiter nach vorne unter dein Gesicht.");
+    setPositionStatus("warn", "🟨", "Etwas näher ans Handy", "Lehn das Handy etwas näher an dich oder gehe ein Stück näher heran.");
     motionCue.textContent = "Etwas näher";
     return;
   }
 
   if (face.metric > QUICK_CONFIG.readyMaxMetric) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Etwas weiter weg", "Das Gesicht ist sehr nah an der Frontkamera.");
+    setPositionStatus("warn", "🟨", "Etwas weiter weg", "Stell das Handy etwas weiter weg.");
     motionCue.textContent = "Etwas weiter weg";
     return;
   }
@@ -3017,7 +3030,7 @@ function updateSetupGuidance(face, now) {
 
   if (!centered) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Kopf etwas mittiger", "Schieb das Handy kurz so, dass es ungefähr unter deinem Gesicht liegt.");
+    setPositionStatus("warn", "🟨", "Kopf etwas mittiger", "Richte die Frontkamera so aus, dass dein Gesicht gut im Bild bleibt.");
     motionCue.textContent = "Handy etwas verschieben";
     return;
   }
@@ -3060,6 +3073,7 @@ function isFaceReady(face) {
 
 function setPositionStatus(state, emoji, title, hint) {
   positionStatus.className = `position-status ${state}`;
+  bp64SetFraming(state);
   positionEmoji.textContent = emoji;
   positionTitle.textContent = title;
   positionHint.textContent = hint;
@@ -3616,7 +3630,7 @@ function createEntrySetupSheet() {
     <div class="entry-setup-card">
       <span class="entry-setup-eyebrow">START SETUP</span>
       <h2>Can you already do Standard Push-Ups?</h2>
-      <p>This decides where your Push-Up Tree starts, so experienced users do not need to begin with Wall Push-Ups.</p>
+      <p>This decides where your Push-Up Tree starts, so experienced users can go straight to Standard Push-Ups.</p>
       <div class="entry-setup-actions">
         <button id="entrySetupNoBtn" class="secondary-btn" type="button">No — start from the beginning</button>
         <button id="entrySetupYesBtn" class="primary-btn" type="button">Yes — do an assessment test</button>
@@ -4842,8 +4856,6 @@ function bp61(id,title,variant,kind,core,bonus2,bonus3) {
   return {id,title,variant,kind,core,bonus2,bonus3};
 }
 const BP61_LEVELS = Object.fromEntries([
-  bp61('A1','First Wall','wall','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
-  bp61('A2','Wall Builder','wall','variant',{type:'max',reps:5},{type:'max',reps:8},{type:'sets',count:2,reps:8}),
   bp61('A3','First Incline','incline','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
   bp61('A4','Incline Builder','incline','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5}),
   bp61('A5','First Push-Up','standard','power',{type:'max',reps:1},{type:'max',reps:2},{type:'max',reps:3}),
@@ -4863,31 +4875,31 @@ const BP61_LEVELS = Object.fromEntries([
   bp61('W2','Wide Builder','wide','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5})
 ].map(level => [level.id,level]));
 
-// v0.11.63: Compact, connected rank chapters. All 19 challenges are preserved.
-// Standard can be challenged immediately; Wall/Incline are the learning route.
+// v0.11.64: 17 challenges; Wall retired from the active Journey.
+// Only Incline remains on the optional starter route; old history is untouched.
 // Knee/Wide rejoin the main routes rather than ending as dead ends.
-const BP61_TREE_HEIGHT = 2200;
+const BP61_TREE_HEIGHT = 2030;
 const BP61_LAYOUT = [
-  {id:'start',kind:'start',x:162,y:2115},
-  {id:'A1',x:266,y:2025},{id:'A2',x:207,y:1935},
-  {id:'A3',x:266,y:1845},{id:'A4',x:207,y:1755},
-  {id:'A5',x:113,y:1655},
-  {id:'wood',kind:'rank',rank:'Holz',x:170,y:1515},
-  {id:'H1',x:78,y:1370},{id:'K1',x:178,y:1370},{id:'H2',x:278,y:1370},
-  {id:'K2',x:178,y:1245},
-  {id:'H3',x:78,y:1120},{id:'H4',x:278,y:1120},
-  {id:'stone',kind:'rank',rank:'Stein',x:178,y:985},
-  {id:'S1',x:78,y:845},{id:'W1',x:178,y:845},{id:'S2',x:278,y:845},
-  {id:'S3',x:78,y:685},{id:'W2',x:178,y:685},{id:'S4',x:278,y:685},
-  {id:'S5',x:78,y:510},{id:'S6',x:278,y:510},
-  {id:'bronze',kind:'rank',rank:'Bronze',x:178,y:350},
-  {id:'pike',kind:'reward',variant:'pike',x:178,y:185}
+  {id:'start',kind:'start',x:178,y:1950},
+  {id:'A3',x:257,y:1870},
+  {id:'A4',x:240,y:1764},
+  {id:'A5',x:118,y:1715},
+  {id:'wood',kind:'rank',rank:'Holz',x:178,y:1595},
+  {id:'H1',x:78,y:1440},{id:'K1',x:178,y:1440},{id:'H2',x:278,y:1440},
+  {id:'K2',x:178,y:1315},
+  {id:'H3',x:78,y:1190},{id:'H4',x:278,y:1190},
+  {id:'stone',kind:'rank',rank:'Stein',x:178,y:1055},
+  {id:'S1',x:78,y:915},{id:'W1',x:178,y:915},{id:'S2',x:278,y:915},
+  {id:'S3',x:78,y:755},{id:'W2',x:178,y:755},{id:'S4',x:278,y:755},
+  {id:'S5',x:78,y:580},{id:'S6',x:278,y:580},
+  {id:'bronze',kind:'rank',rank:'Bronze',x:178,y:420},
+  {id:'pike',kind:'reward',variant:'pike',x:178,y:255}
 ];
 // Each connector reflects a real prerequisite. The bypass is the immediately
 // accessible A5 node; its dashed visual link is deliberately subdued.
 const BP61_EDGES = [
-  ['start','A1'],['start','A5',false,'direct'],
-  ['A1','A2'],['A2','A3'],['A3','A4'],['A4','A5'],['A5','wood'],
+  ['start','A3'],['start','A5',false,'direct'],
+  ['A3','A4'],['A4','A5'],['A5','wood'],
   ['wood','H1'],['wood','K1'],['wood','H2'],
   ['H1','H3'],['H2','H4'],['K1','K2'],
   ['K2','H3'],['K2','H4'],
@@ -4953,9 +4965,7 @@ function getBP61State() {
   for (const id of Object.keys(BP61_LEVELS)) finished[id]=bp61CoreDone(id);
 
   // Both entry choices are available at START, regardless of past performance.
-  available.A1=true;
-  available.A2=finished.A1;
-  available.A3=finished.A2;
+  available.A3=true;
   available.A4=finished.A3;
   available.A5=true;
 
@@ -4985,7 +4995,7 @@ function bp61StarsMarkup(earned) {
 function bp61FocusId(state) {
   if (!state.finished.wood) {
     if (state.finished.A4) return 'A5';
-    const next=['A1','A2','A3','A4'].find(id=>state.available[id]&&!state.finished[id]);
+    const next=['A3','A4'].find(id=>state.available[id]&&!state.finished[id]);
     return next || 'A5';
   }
   if (!state.finished.stone) return ['H1','H2','K1','K2','H3','H4'].find(id=>state.available[id]&&!state.finished[id])||'stone';
@@ -5043,16 +5053,16 @@ function renderTree() {
   const earned=Object.keys(BP61_LEVELS).reduce((sum,id)=>sum+bp61EarnedStars(id),0);
   const completed=Object.keys(BP61_LEVELS).filter(id=>state.finished[id]).length;
   skillTree.className='skill-tree-v1161 bp63-tree';
-  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>19 challenges · From first rep to Bronze</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 57</small></strong><span>STARS</span></div></div>
-    <div class="bp61-progress"><span style="width:${(earned/57*100).toFixed(1)}%"></span></div>
+  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>17 challenges · From first rep to Bronze</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 51</small></strong><span>STARS</span></div></div>
+    <div class="bp61-progress"><span style="width:${(earned/51*100).toFixed(1)}%"></span></div>
     <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
     <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
-      <div class="bp61-zone" style="top:265px"><b>STONE → BRONZE</b><span>WIDE PATH</span></div>
-      <div class="bp61-zone" style="top:1035px"><b>WOOD → STONE</b><span>KNEE PATH</span></div>
-      <div class="bp61-zone bp63-starter-zone" style="top:1574px"><b>START → WOOD</b><span>CHOOSE YOUR ROUTE</span></div>
+      <div class="bp61-zone" style="top:335px"><b>STONE → BRONZE</b><span>WIDE PATH</span></div>
+      <div class="bp61-zone" style="top:1110px"><b>WOOD → STONE</b><span>KNEE PATH</span></div>
+      <div class="bp61-zone bp63-starter-zone" style="top:1645px"><b>START → WOOD</b><span>CHOOSE YOUR ROUTE</span></div>
       ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
     </div>
-    <div class="bp61-footer">${state.finished.bronze?'Bronze achieved! Replay levels to collect missing stars.':'Reach Bronze with 10 Standard Push-Ups in one set OR 100 Standard total.'}<br>${completed}/19 levels finished · Bonus stars in Challenge Mode</div>`;
+    <div class="bp61-footer">${state.finished.bronze?'Bronze achieved! Replay levels to collect missing stars.':'Reach Bronze with 10 Standard Push-Ups in one set OR 100 Standard total.'}<br>${completed}/17 levels finished · Bonus stars in Challenge Mode</div>`;
   skillTree.querySelectorAll('[data-bp61-level]').forEach(btn=>btn.addEventListener('click',()=>openBP61Level(btn.dataset.bp61Level)));
   skillTree.querySelectorAll('[data-bp61-rank]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank(btn.dataset.bp61Rank)));
   skillTree.querySelectorAll('[data-bp61-reward]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank('Bronze')));
