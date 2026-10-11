@@ -4863,35 +4863,39 @@ const BP61_LEVELS = Object.fromEntries([
   bp61('W2','Wide Builder','wide','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5})
 ].map(level => [level.id,level]));
 
-// Bottom-up coordinates, 360-wide viewBox. 'unlock' is a reward, not a 20th level.
+// v0.11.63: Compact, connected rank chapters. All 19 challenges are preserved.
+// Standard can be challenged immediately; Wall/Incline are the learning route.
+// Knee/Wide rejoin the main routes rather than ending as dead ends.
+const BP61_TREE_HEIGHT = 2200;
 const BP61_LAYOUT = [
-  {id:'start',kind:'start',x:175,y:2450},
-  {id:'A1',x:267,y:2320},{id:'A2',x:267,y:2207},
-  {id:'A3',x:267,y:2094},{id:'A4',x:267,y:1981},
-  {id:'A5',x:175,y:1835},
-  {id:'wood',kind:'rank',rank:'Holz',x:175,y:1703},
-  {id:'H1',x:86,y:1549},{id:'H2',x:257,y:1549},
-  {id:'H3',x:86,y:1399},{id:'H4',x:237,y:1399},
-  {id:'K1',x:327,y:1330},{id:'K2',x:327,y:1200},
-  {id:'stone',kind:'rank',rank:'Stein',x:175,y:1234},
-  {id:'S1',x:85,y:1086},{id:'S2',x:267,y:1086},
-  {id:'W1',x:176,y:973},
-  {id:'S3',x:85,y:911},{id:'S4',x:267,y:911},
-  {id:'W2',x:176,y:788},
-  {id:'S5',x:85,y:730},{id:'S6',x:267,y:730},
-  {id:'bronze',kind:'rank',rank:'Bronze',x:175,y:567},
-  {id:'pike',kind:'reward',variant:'pike',x:175,y:397}
+  {id:'start',kind:'start',x:162,y:2115},
+  {id:'A1',x:266,y:2025},{id:'A2',x:207,y:1935},
+  {id:'A3',x:266,y:1845},{id:'A4',x:207,y:1755},
+  {id:'A5',x:113,y:1655},
+  {id:'wood',kind:'rank',rank:'Holz',x:170,y:1515},
+  {id:'H1',x:78,y:1370},{id:'K1',x:178,y:1370},{id:'H2',x:278,y:1370},
+  {id:'K2',x:178,y:1245},
+  {id:'H3',x:78,y:1120},{id:'H4',x:278,y:1120},
+  {id:'stone',kind:'rank',rank:'Stein',x:178,y:985},
+  {id:'S1',x:78,y:845},{id:'W1',x:178,y:845},{id:'S2',x:278,y:845},
+  {id:'S3',x:78,y:685},{id:'W2',x:178,y:685},{id:'S4',x:278,y:685},
+  {id:'S5',x:78,y:510},{id:'S6',x:278,y:510},
+  {id:'bronze',kind:'rank',rank:'Bronze',x:178,y:350},
+  {id:'pike',kind:'reward',variant:'pike',x:178,y:185}
 ];
+// Each connector reflects a real prerequisite. The bypass is the immediately
+// accessible A5 node; its dashed visual link is deliberately subdued.
 const BP61_EDGES = [
-  ['start','A1'],['start','A5',true,'shortcut'],
+  ['start','A1'],['start','A5',false,'direct'],
   ['A1','A2'],['A2','A3'],['A3','A4'],['A4','A5'],['A5','wood'],
-  ['wood','H1'],['wood','H2'],['wood','K1',true],
-  ['H1','H3'],['H2','H4'],['H1','H4',true],['H2','H3',true],
-  ['H3','stone'],['H4','stone'],['K1','K2'],
-  ['stone','S1'],['stone','S2'],['stone','W1',true],
-  ['S1','S3'],['S2','S4'],['S1','S4',true],['S2','S3',true],
-  ['S3','S5'],['S4','S6'],['S3','S6',true],['S4','S5',true],
-  ['W1','W2'],['S5','bronze'],['S6','bronze'],['bronze','pike']
+  ['wood','H1'],['wood','K1'],['wood','H2'],
+  ['H1','H3'],['H2','H4'],['K1','K2'],
+  ['K2','H3'],['K2','H4'],
+  ['H3','stone'],['H4','stone'],
+  ['stone','S1'],['stone','W1'],['stone','S2'],
+  ['S1','S3'],['S2','S4'],['W1','W2'],
+  ['S3','S5'],['S4','S6'],['W2','S5'],['W2','S6'],
+  ['S5','bronze'],['S6','bronze'],['bronze','pike']
 ];
 function bp61LifetimeValue(level) {
   const metric = level.core.type;
@@ -4947,18 +4951,32 @@ function getBP61State() {
   finished.bronze=isV012RankAtLeast(rank,'Bronze');
   finished.pike=finished.bronze;
   for (const id of Object.keys(BP61_LEVELS)) finished[id]=bp61CoreDone(id);
-  available.A1=true; available.A2=finished.A1;
-  available.A3=finished.A2; available.A4=finished.A3;
+
+  // Both entry choices are available at START, regardless of past performance.
+  available.A1=true;
+  available.A2=finished.A1;
+  available.A3=finished.A2;
+  available.A4=finished.A3;
   available.A5=true;
+
+  // Power and Volume remain independent main routes. Knee completes a
+  // bypass: K1 → K2 → H3 or H4; standard rank goals stay unchanged.
   available.H1=available.H2=available.K1=finished.wood;
-  available.H3=available.H4=finished.wood&&(finished.H1||finished.H2);
-  available.K2=finished.wood&&finished.K1;
+  available.K2=finished.wood && finished.K1;
+  available.H3=finished.wood && (finished.H1 || finished.K2);
+  available.H4=finished.wood && (finished.H2 || finished.K2);
+
+  // Wide also bypasses the second standard tier and reconnects at S5/S6.
   available.S1=available.S2=available.W1=finished.stone;
-  available.S3=available.S4=finished.stone&&(finished.S1||finished.S2);
-  available.S5=available.S6=finished.stone&&(finished.S3||finished.S4);
-  available.W2=finished.stone&&finished.W1;
-  available.wood=finished.wood; available.stone=finished.stone;
-  available.bronze=finished.bronze;available.pike=finished.pike;
+  available.S3=finished.stone && finished.S1;
+  available.S4=finished.stone && finished.S2;
+  available.W2=finished.stone && finished.W1;
+  available.S5=finished.stone && (finished.S3 || finished.W2);
+  available.S6=finished.stone && (finished.S4 || finished.W2);
+  available.wood=finished.wood;
+  available.stone=finished.stone;
+  available.bronze=finished.bronze;
+  available.pike=finished.pike;
   return {finished,available,rank};
 }
 function bp61StarsMarkup(earned) {
@@ -4966,14 +4984,12 @@ function bp61StarsMarkup(earned) {
 }
 function bp61FocusId(state) {
   if (!state.finished.wood) {
-    if (state.finished.A1 && !state.finished.A2) return 'A2';
-    if (state.finished.A2 && !state.finished.A3) return 'A3';
-    if (state.finished.A3 && !state.finished.A4) return 'A4';
     if (state.finished.A4) return 'A5';
-    return 'start';
+    const next=['A1','A2','A3','A4'].find(id=>state.available[id]&&!state.finished[id]);
+    return next || 'A5';
   }
-  if (!state.finished.stone) return ['H1','H2','H3','H4'].find(id=>state.available[id]&&!state.finished[id])||'stone';
-  if (!state.finished.bronze) return ['S1','S2','S3','S4','S5','S6'].find(id=>state.available[id]&&!state.finished[id])||'bronze';
+  if (!state.finished.stone) return ['H1','H2','K1','K2','H3','H4'].find(id=>state.available[id]&&!state.finished[id])||'stone';
+  if (!state.finished.bronze) return ['S1','S2','W1','W2','S3','S4','S5','S6'].find(id=>state.available[id]&&!state.finished[id])||'bronze';
   return 'bronze';
 }
 function bp61NodeMarkup(item,state,focusId) {
@@ -4989,17 +5005,35 @@ function bp61NodeMarkup(item,state,focusId) {
   if(item.kind==='reward') return `<button type="button" class="bp61-reward ${status}" data-bp61-reward="pike" style="left:${item.x/360*100}%;top:${item.y}px"><span class="bp61-reward-icon">${getVariantIconSvg('pike')}</span><span class="bp61-reward-text"><b>PIKE UNLOCK</b><small>${done?'New variant available':'Reach Bronze to unlock'}</small></span></button>`;
   const level=BP61_LEVELS[item.id];const earned=bp61EarnedStars(item.id);
   const kindColor=level.kind==='power'?'#F0808B':level.kind==='volume'?'#7CB6FF':'#B49BFF';
-  return `<button type="button" class="bp61-goal ${status} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="${level.title}. ${earned} of 3 stars. ${status}"><span class="bp61-orb"><span class="bp61-orb-icon">${getVariantIconSvg(level.variant)}</span><span class="bp61-kind-tag">${level.kind==='power'?'◆':level.kind==='volume'?'▤':'✧'}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span></button>`;
+  return `<button type="button" class="bp61-goal ${status} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="${level.title}. ${earned} of 3 stars. ${status}"><span class="bp61-orb"><span class="bp61-orb-icon">${getVariantIconSvg(level.variant)}</span><span class="bp61-kind-tag">${level.kind==='power'?'◆':level.kind==='volume'?'▤':'✧'}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span>${item.id==='A5'?'<span class="bp63-direct-label">DIRECT ACCESS</span>':''}</button>`;
 }
 function bp61EdgeMarkup(state) {
   const lookup=Object.fromEntries(BP61_LAYOUT.map(x=>[x.id,x]));
-  return `<svg class="bp61-lines" viewBox="0 0 360 2510" preserveAspectRatio="none" aria-hidden="true">${BP61_EDGES.map(([src,dest,cross,kind])=>{
-    const a=lookup[src], b=lookup[dest];
-    if (!a||!b) return '';
-    const done=state.finished[src];
-    if(src==='wood'&&dest==='K1') return `<path class="bp61-line ${done?'done':''} cross" d="M${a.x} ${a.y} C330 ${a.y-60} 327 ${b.y+100} ${b.x} ${b.y}" />`;
-    if(kind==='shortcut')return `<path class="bp61-line ${done?'done':''} shortcut" d="M${a.x} ${a.y-20} Q65 ${a.y-12} 61 ${a.y-95} V${b.y+55} Q61 ${b.y} ${b.x-25} ${b.y}" />`;
-    return `<path class="bp61-line ${done?'done':''} ${cross?'cross':''}" d="M${a.x} ${a.y} L${b.x} ${b.y}" />`;
+  const curves = (a,b,kind) => {
+    if (kind==='direct') {
+      // Shortest practical left-side lane, no oversized detour/rotated label.
+      return `M${a.x} ${a.y} C85 ${a.y-55} 101 ${b.y+80} ${b.x} ${b.y}`;
+    }
+    if(a.id==='A4' && b.id==='A5')return `M${a.x} ${a.y} Q150 ${a.y-20} ${b.x} ${b.y}`;
+    if(a.id==='K2' || a.id==='W2') {
+      const half=(a.y+b.y)/2;
+      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
+    }
+    if(a.id==='start' || a.id==='wood' || a.id==='stone') {
+      const half=(a.y+b.y)/2;
+      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
+    }
+    if(b.kind==='rank') {
+      const half=(a.y+b.y)/2;
+      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
+    }
+    return `M${a.x} ${a.y} L${b.x} ${b.y}`;
+  };
+  return `<svg class="bp61-lines" viewBox="0 0 360 ${BP61_TREE_HEIGHT}" preserveAspectRatio="none" aria-hidden="true">${BP61_EDGES.map(([src,dest,cross,kind])=>{
+    const a=lookup[src],b=lookup[dest];
+    if(!a||!b)return '';
+    const complete=state.finished[src] && (state.available[dest]||state.finished[dest]);
+    return `<path class="bp61-line ${complete?'done':''} ${kind==='direct'?'direct':''} ${['K2','W2'].includes(src)?'variant-link':''}" d="${curves(a,b,kind)}" />`;
   }).join('')}</svg>`;
 }
 function renderTree() {
@@ -5008,14 +5042,14 @@ function renderTree() {
   const focusId=bp61FocusId(state);
   const earned=Object.keys(BP61_LEVELS).reduce((sum,id)=>sum+bp61EarnedStars(id),0);
   const completed=Object.keys(BP61_LEVELS).filter(id=>state.finished[id]).length;
-  skillTree.className='skill-tree-v1161';
+  skillTree.className='skill-tree-v1161 bp63-tree';
   skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>19 challenges · From first rep to Bronze</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 57</small></strong><span>STARS</span></div></div>
     <div class="bp61-progress"><span style="width:${(earned/57*100).toFixed(1)}%"></span></div>
     <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
-    <div class="bp61-canvas">${bp61EdgeMarkup(state)}
-      <div class="bp61-zone" style="top:280px"><b>BRONZE</b><span>NEW: PIKE PUSH-UPS</span></div>
-      <div class="bp61-zone" style="top:1320px"><b>WOOD</b><span>NEW: KNEE PUSH-UPS</span></div>
-      <div class="bp61-route-hint" style="top:2186px;left:10%">DIRECT SHORTCUT</div>
+    <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
+      <div class="bp61-zone" style="top:265px"><b>STONE → BRONZE</b><span>WIDE PATH</span></div>
+      <div class="bp61-zone" style="top:1035px"><b>WOOD → STONE</b><span>KNEE PATH</span></div>
+      <div class="bp61-zone bp63-starter-zone" style="top:1574px"><b>START → WOOD</b><span>CHOOSE YOUR ROUTE</span></div>
       ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
     </div>
     <div class="bp61-footer">${state.finished.bronze?'Bronze achieved! Replay levels to collect missing stars.':'Reach Bronze with 10 Standard Push-Ups in one set OR 100 Standard total.'}<br>${completed}/19 levels finished · Bonus stars in Challenge Mode</div>`;

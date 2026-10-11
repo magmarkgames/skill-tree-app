@@ -13378,3 +13378,57 @@ body[data-hero-gender="female"] .home-v17 {
 .bp61-result-card p{color:#bac8df;font-size:12px;margin:12px 0 22px}
 .bp61-result-rank{color:#eec47b;font-size:13px;font-weight:900;letter-spacing:.075em;background:#394033;border-radius:9px;padding:12px;margin:-5px 0 17px}
 #bp61ResultClose{width:100%;height:49px;border:0;border-radius:11px;background:#447add;color:white;font-size:12px;font-weight:850;letter-spacing:.075em;cursor:pointer}
+
+/* v0.11.63 — true branching journey, compact mobile-first chapters. */
+.bp63-tree .bp61-canvas {
+  height:2200px;
+  background:linear-gradient(180deg,rgba(76,100,143,.04) 0%,transparent 35%,rgba(70,100,143,.045) 74%,transparent);
+}
+.bp63-tree .bp61-lines {height:2200px;}
+.bp63-tree .bp61-goal {
+  transform:translate(-50%,-32px);min-height:0;
+}
+.bp63-tree .bp61-orb {
+  box-shadow:0 3px 9px rgba(0,0,0,.12);
+}
+.bp63-tree .bp61-line {stroke:#586780;stroke-width:2.7px;opacity:.53;}
+.bp63-tree .bp61-line.done {stroke:#31ba83;stroke-width:3.2px;opacity:.9;}
+.bp63-tree .bp61-line.direct {stroke-dasharray:3 10;stroke-width:2;opacity:.18;}
+.bp63-tree .bp61-line.direct.done {stroke:#50bb93;opacity:.32;stroke-width:2.1px;}
+.bp63-tree .bp61-line.variant-link {stroke-width:3.0px;}
+.bp63-tree .bp61-line.variant-link.done {stroke-width:3.6px;}
+.bp63-tree .bp61-zone {left:6%;right:6%;border-top:1px solid rgba(135,161,196,.12);z-index:1;padding-top:10px;}
+.bp63-tree .bp61-zone b{font-size:9px;letter-spacing:.1em;}
+.bp63-tree .bp61-zone span{font-size:8px;}
+.bp63-tree .bp63-direct-hint {
+  position:absolute;pointer-events:none;z-index:1;
+  color:#c3b48b;font-size:8px;font-weight:850;letter-spacing:.08em;
+  border:1px solid rgba(223,193,116,.22);border-radius:8px;
+  padding:5px 7px;background:rgba(38,38,44,.83);
+}
+.bp63-tree .bp63-direct-hint span {color:#e1bc62;}
+.bp63-tree .bp61-goal.kind-variant .bp61-kind-tag {color:#c5b4f9;}
+.bp63-tree .bp61-stars span {color:#efbe55;}
+.bp63-tree .bp61-node-caption {text-shadow:none;}
+@media(max-width:390px) {
+  .bp63-tree .bp61-goal {width:81px;}
+  .bp63-tree .bp61-orb{width:61px;height:61px;}
+  .bp63-tree .bp61-orb-icon{width:40px;height:40px;}
+  .bp63-tree .bp61-node-caption{font-size:9px;}
+  .bp63-tree .bp61-kind-tag{right:-4px;bottom:-1px;}
+}
+
+.bp63-tree .bp63-direct-label {
+  display:block;color:#d3b56a;font-size:8px;line-height:1.2;
+  letter-spacing:.05em;white-space:nowrap;opacity:.85;
+}
+/* Quiet scrim beneath the floating controls, preventing passing nodes
+   from competing visually with the fixed header text while scrolling. */
+.tree-view .tree-header {
+  min-height:58px!important;
+  top:0!important;
+  padding:6px 14px 12px!important;
+  background:linear-gradient(180deg,#0b1020 40%,rgba(11,16,32,.91) 79%,transparent)!important;
+  backdrop-filter:none!important;
+  box-shadow:none!important;
+}
