@@ -1,3 +1,29 @@
+# BodyPath v0.11.60 — Journey Start → Bronze
+
+## What changed
+- **11 small circular goals**, plus Start and the larger Wood, Stone and Bronze circles.
+- Goal states: green = completed, yellow = available, gray = locked. A completed goal turns the outgoing connections green, even before the next goal is complete.
+- Exercise category is marked in the inner circle: **Power** (red) or **Volume** (blue).
+- Two alternative, interconnected paths. **Either final Power OR final Volume goal awards the next rank**; the unused path remains available.
+- **Start → Wood:** 1 Standard Push-Up in a set.
+- **Wood → Stone:** Power 2 → 3 in a set; Volume 5 → 15 Standard Push-Ups overall.
+- **Stone → Bronze:** Power 5 → 7 → 10 in a set; Volume 30 → 60 → 100 Standard Push-Ups overall.
+- No outdated challenge trials gate these ranks anymore. Previously recorded training contributes immediately; all eleven goals remain visible.
+- Home next-rank panel and in-training milestones follow the new goals.
+- The display is a single vertically scrollable tree without nested rank-chapter boxes.
+
+## Data migration / limitations
+- Existing browser storage key (`skillTreeAppProgressV010`), workout history, XP, cosmetic selections, and backups remain compatible.
+- `journeyStandardTotal` is a new persisted counter, **derived from identified Standard sets in saved history** on first load, then incremented on every newly saved Standard set. This avoids a preexisting bug where the old `variantStats.standard.total` could include Wall and other variants.
+- The old app caps stored history at 200 sessions. Where older Standard sessions have already fallen outside those 200 sessions, their individual counts cannot be reconstructed reliably, so migrated historical Volume may be undercounted. Future Standard repetitions are tracked cumulatively.
+- Other variants remain available in the existing training alpha; they do not count toward the new Standard-specific Journey.
+- Later ranks are intentionally not part of this iteration.
+
+## Local usage
+Open `index.html` as before (or deploy all active files to the same directory). `app.js` and `style.css` are cache-busted at `v0.11.60`.
+
+---
+
 # BodyPath v0.11.53
 
 ## Neu
