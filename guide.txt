@@ -1,0 +1,113 @@
+57:  challengeProgress: createEmptyChallengeProgress(),
+70:const VARIANT_META = {
+182:function createEmptyChallengeProgress() {
+191:    Object.keys(VARIANT_META).map(key => [key, { max: 0, total: 0 }])
+234:  const meta = VARIANT_META[variant] || VARIANT_META.standard;
+250:function getRankIconSvg(rank, className = "") {
+448:let trainingPhase = "prep"; // prep | countdown | active | transition | pause | result
+618:  return { ...DEFAULT_PROGRESS, challengeProgress: createEmptyChallengeProgress(), trainingHistory: [] };
+641:  const fresh = createEmptyChallengeProgress();
+657:// variants when loading old saves. Rebuild the new Journey counter from actual
+659:function calculateJourneyStandardTotalFromHistory(history) {
+682:        const variant = VARIANT_META[set?.variant] ? set.variant : "standard";
+689:    const variant = VARIANT_META[item?.variant] ? item.variant : "standard";
+710:      calculateJourneyStandardTotalFromHistory(trainingHistory),
+727:    challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
+844:    const variant = VARIANT_META[set?.variant] ? set.variant : "standard";
+1069:function getNextRankName(currentRank) {
+1104:  if (node.variant) return `Noch ${left} ${VARIANT_META[node.variant]?.label || "Varianten"}-Push-ups bis zum Unlock.`;
+1132:  if (!progress.challengeProgress || typeof progress.challengeProgress !== "object") {
+1133:    progress.challengeProgress = createEmptyChallengeProgress();
+1135:  if (!progress.challengeProgress[metric] || typeof progress.challengeProgress[metric] !== "object") {
+1136:    progress.challengeProgress[metric] = createEmptyChallengeProgress()[metric];
+1138:  const bucket = progress.challengeProgress[metric];
+1305:function getCurrentRankName() {
+1408:        const setVariant = VARIANT_META[set?.variant] ? set.variant : "standard";
+1417:    const fallbackVariant = VARIANT_META[workout?.variant] ? workout.variant : "standard";
+1538:      count = new Set(sets.map(set => VARIANT_META[set?.variant] ? set.variant : "standard")).size;
+1677:  if (node.metric === "variantMax") return VARIANT_META[node.variant]?.shortLabel || "Variante";
+1678:  if (node.metric === "variantPoints") return `${VARIANT_META[node.variant]?.shortLabel || "Variante"} Stufe`;
+1682:function getRankDescription(node) {
+1695:function getNodeRankTier(node) {
+1718:      return `${node.target || 10} ${VARIANT_META[node.variant]?.label || "Variante"} Push-ups`;
+1720:    return `${VARIANT_META[node.variant]?.label || "Variante"} freischalten`;
+1723:    return `${VARIANT_META[node.variant]?.label || "Variante"} ${node.target}/10 Meilensteine`;
+1726:    return `${node.target} ${VARIANT_META[node.variant]?.label || "Variante"} am Stück`;
+1739:const TREE_COLUMN_ANCHORS = [52, 188, 328, 468, 595];
+1740:const TREE_VERTICAL_SCALE = 0.84;
+1741:const TREE_TOP_PADDING = 18;
+1796:function renderTreeLegacy() {
+1817:    if (node.variant && VARIANT_META[node.variant]) {
+1818:      el.style.setProperty("--branch", VARIANT_META[node.variant].color);
+1858:      const meta = VARIANT_META[node.variant] || { label: node.variant, color: "#8B6CFF" };
+1907:        if (node.metric === "variantMax") detail += `\n\nDiese Wiederholungen zählen nur für ${VARIANT_META[node.variant]?.label || "diese Variante"}.`;
+1937:  const meta = VARIANT_META[variant] || { label: variant, color: "#8B6CFF" };
+2045:  const current = includeCurrent && currentTrainingVariant === variant && (trainingPhase === "active" || trainingPhase === "countdown")
+2055:  const current = currentTrainingVariant === variant && (trainingPhase === "active" || trainingPhase === "countdown")
+2063:  const meta = VARIANT_META[variant] || VARIANT_META.standard;
+2127:  const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
+2341:    const variants = [...new Set(sets.map(set => VARIANT_META[set.variant]?.label || "Standard"))];
+2344:    details.textContent = VARIANT_META[item?.variant]?.label || "Standard";
+2448:  trainingPhase = "prep";
+2460:  const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
+2467:  currentTrainingVariant = VARIANT_META[variant] ? variant : "standard";
+2472:  if (trainingPhase === "pause") {
+2473:    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
+2479:  trainingPhase = "prep";
+2500:  trainingPhase = "pause";
+2510:    lastSetSummary.textContent = `${VARIANT_META[lastSet.variant]?.label || "Standard"} · ${lastSet.reps} Push-up${lastSet.reps === 1 ? "" : "s"}`;
+2520:    : `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · Training fortsetzen, wenn du bereit bist.`;
+2531:  trainingPhase = "prep";
+2598:  if (trainingPhase === "prep") {
+2600:    prepCameraHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt. Kamera wird gestartet …`;
+2605:  if (trainingPhase === "pause") {
+2612:    pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
+2618:  if (trainingPhase !== "pause" || countdownActive || workoutActive) return;
+2895:    if (trainingPhase === "prep" || trainingPhase === "pause" || trainingPhase === "countdown") {
+2919:    if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = true;
+2921:    if (trainingPhase === "prep" || trainingPhase === "countdown") {
+2924:    } else if (trainingPhase === "pause" && autoCountdownPending) {
+2985:  if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = true;
+3024:  if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = false;
+3029:    if (trainingPhase === "pause") pauseReadyHint.textContent = "Position erkannt · Countdown startet …";
+3061:  const cameFromPause = trainingPhase === "pause";
+3062:  trainingPhase = "countdown";
+3096:      trainingPhase = "prep";
+3126:  trainingPhase = "active";
+3150:  if (!workoutActive && trainingPhase !== "active") return null;
+3209:  trainingPhase = "transition";
+3213:  setCompleteLabel.textContent = `${VARIANT_META[set.variant]?.label || "Standard"} Push-ups`;
+3218:    if (trainingPhase !== "transition") return;
+3339:  trainingPhase = "result";
+3359:    left.textContent = `Set ${index + 1} · ${VARIANT_META[set.variant]?.label || "Standard"}`;
+3381:  trainingPhase = "result";
+3391:    const saved = completedSets.length > 0 ? saveTrainingResult({ showSuccess: false }) : false;
+3421:function saveTrainingResult(options = {}) {
+3449:    const variant = VARIANT_META[set.variant] ? set.variant : "standard";
+3517:  sets.forEach((set, index) => addSuccessLine(`Set ${index + 1}: ${set.reps} ${VARIANT_META[set.variant]?.label || "Standard"}`));
+3774:// BodyPath Journey v0.11.60 — 11 small nodes, two independent rank routes.
+3885:function getV012CurrentRankName() {
+3900:function getRankDisplayName(rank) {
+3933:function getV114RankRemaining(rank) {
+3978:  return Boolean(VARIANT_META[variant]);
+4012:function getV012RankIcon(rank, className = "") {
+4024:  if (node.variant && VARIANT_META[node.variant]?.color) return VARIANT_META[node.variant].color;
+4026:  if (node.metric === "standardMax") return VARIANT_META.standard.color;
+4077:          const meta = VARIANT_META[state.variant] || { label: state.variant };
+4119:      const meta = VARIANT_META[variant] || { label: variant };
+4193:          const meta = VARIANT_META[state.variant] || { label: state.variant };
+4229:  const meta = VARIANT_META[landmarkState.variant] || { label: landmarkState.title, color: "#8B6CFF" };
+4245:  const meta = VARIANT_META[variant] || { label: title || variant, color: "#8B6CFF" };
+4409:  const meta = node.variant ? (VARIANT_META[node.variant] || { label: node.variant }) : null;
+4442:      const meta = VARIANT_META[variant] || { label: variant };
+4537:  const meta = VARIANT_META[variant] || { label: variant, color: "#8b6cff" };
+4636:  const meta = VARIANT_META.diamond || { label: "Diamond", color: "#e75ba8" };
+4729:function openChallengeSheet(challengeId) {
+4797:      const meta = VARIANT_META[variant] || { label: variant };
+4803:// v0.11.60 — connected, bottom-up Journey (11 milestones until Bronze).
+4902:function renderTree() {
+4910:      <strong>YOUR JOURNEY</strong>
+5139:    if (workoutSets.length || workoutActive || trainingPhase === "pause") {
+5159:  if (trainingPhase === "pause") {
+5168:document.getElementById("saveTrainingBtn").addEventListener("click", saveTrainingResult);
+5188:  progress = { ...DEFAULT_PROGRESS, challengeProgress: createEmptyChallengeProgress(), trainingHistory: [] };

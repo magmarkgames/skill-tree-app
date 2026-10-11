@@ -200,19 +200,19 @@ function createEmptyVariantStats() {
 // ---------- v0.10.1 Generated Asset Icon System ----------
 const ASSET_PATHS = {
   variants: {
-    standard: "variant-standard-v1134.webp",
-    wall: "variant-wall-v1134.webp",
-    knee: "variant-knee-v01161.svg",
-    wide: "variant-wide-v1134.webp",
-    military: "variant-military-v1134.webp",
-    diamond: "variant-diamond-v1134.webp",
-    pike: "variant-pike.webp",
-    incline: "variant-incline-v1134.webp",
-    decline: "variant-decline-v1134.webp",
-    explosive: "variant-explosive.webp",
-    archer: "variant-archer.webp",
-    handstand: "variant-handstand.webp",
-    pseudoPlanche: "variant-pseudo-planche.webp"
+    standard: "variant-standard-min.svg",
+    wall: "variant-wall-min.svg",
+    knee: "variant-knee-min.svg",
+    wide: "variant-wide-min.svg",
+    military: "variant-military-min.svg",
+    diamond: "variant-diamond-min.svg",
+    pike: "variant-pike-min.svg",
+    incline: "variant-incline-min.svg",
+    decline: "variant-decline-min.svg",
+    explosive: "variant-explosive-min.svg",
+    archer: "variant-archer-min.svg",
+    handstand: "variant-handstand-min.svg",
+    pseudoPlanche: "variant-pseudo-planche-min.svg"
   },
   metrics: {
     max: "metric-max.webp",
