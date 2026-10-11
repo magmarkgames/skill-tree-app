@@ -47,7 +47,10 @@ const DEFAULT_PROGRESS = {
   pushupMax: 0,
   pushupTotal: 0,
   journeyStandardTotal: 0,
-  journeyStars: {},
+  journeyStars: {}, // legacy, archived
+  journeyLevelStars65: {},
+  journeyLevelTotals65: {},
+  journeyPlacementRank65: "Starter",
   pushupBestDay: 0,
   pushupBestWeek: 0,
   // Nur für saubere Migration älterer Versionen behalten; v0.8 zeigt/benutzt keine Streak mehr.
@@ -170,13 +173,13 @@ const VARIANT_SUBTREE_LAYOUT = {
 const RANK_ORDER = ["Starter", "Holz", "Stein", "Bronze", "Silber", "Gold", "Platin", "Diamant I", "Diamant II", "Diamant III", "Diamant IV"];
 const HOME_CHALLENGE_TIERS = {
   day: [
-    { id: "day-1", level: "I", target: 50, unlockRank: "Bronze" },
+    { id: "day-1", level: "I", target: 50, unlockRank: "Starter" },
     { id: "day-2", level: "II", target: 100, unlockRank: "Silber" },
     { id: "day-3", level: "III", target: 150, unlockRank: "Gold" },
     { id: "day-4", level: "IV", target: 200, unlockRank: "Platin" }
   ],
   week: [
-    { id: "week-1", level: "I", target: 250, unlockRank: "Bronze" },
+    { id: "week-1", level: "I", target: 250, unlockRank: "Starter" },
     { id: "week-2", level: "II", target: 500, unlockRank: "Silber" },
     { id: "week-3", level: "III", target: 750, unlockRank: "Gold" },
     { id: "week-4", level: "IV", target: 1000, unlockRank: "Platin" }
@@ -463,6 +466,7 @@ let lastPauseVibrationMark = 0;
 let entryAssessmentActive = false;
 let activeChallengeId = null;
 let activeJourneyLevelId = null;
+let activePlacementTarget65 = 0;
 let lastBP61Result = null;
 
 // ---------- DOM ----------
@@ -734,6 +738,13 @@ function normalizeProgress(value) {
     challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
     challengeCompletions: value?.challengeCompletions && typeof value.challengeCompletions === "object" ? value.challengeCompletions : {},
     journeyStars: value?.journeyStars && typeof value.journeyStars === "object" ? Object.fromEntries(Object.entries(value.journeyStars).filter(([k,v]) => /^([AHKSW]\d+)$/.test(k) && Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0, Math.min(3, Math.floor(Number(v))))])) : {},
+    // Do NOT promote old auto-earned v0.11.64 stars: impossible to distinguish them
+    // from intentional challenges. Keep them in journeyStars as archived data.
+    journeyLevelStars65: value?.journeyLevelStars65 && typeof value.journeyLevelStars65 === "object"
+      ? Object.fromEntries(Object.entries(value.journeyLevelStars65).filter(([id,n]) => /^([AHKSW]\d+)$/.test(id) && Number.isFinite(Number(n))).map(([id,n]) => [id,Math.max(0,Math.min(3,Math.floor(Number(n))))])) : {},
+    journeyLevelTotals65: value?.journeyLevelTotals65 && typeof value.journeyLevelTotals65 === "object"
+      ? Object.fromEntries(Object.entries(value.journeyLevelTotals65).filter(([id,n]) => /^([AHKSW]\d+)$/.test(id) && Number.isFinite(Number(n))).map(([id,n]) => [id,Math.max(0,Math.floor(Number(n)))])) : {},
+    journeyPlacementRank65: ["Starter","Holz","Stein","Bronze"].includes(value?.journeyPlacementRank65) ? value.journeyPlacementRank65 : "Starter",
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
@@ -754,7 +765,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.61",
+    appVersion: "0.11.65",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -2132,65 +2143,50 @@ function getLiveMilestoneState() {
   return { all, passed, upcoming, lastPassed, next, segmentProgress };
 }
 
-function bp64ProjectedGoalValue(level) {
-  const saved=bp61LifetimeValue(level);
-  if(level.core.type==='max') return Math.max(saved,getSessionVariantMax(level.variant));
-  if(level.core.type==='total') return saved+getSessionVariantTotal(level.variant);
-  return saved;
-}
 function renderLiveGoals() {
-  if (!liveGoalsList) return;
+  if(!liveGoalsList)return;
   const variant=currentTrainingVariant;
   const meta=VARIANT_META[variant] || VARIANT_META.standard;
-  const setNo=workoutSets.length+1;
-  liveGoalsVariantHint.textContent=`${meta.label} · Set ${setNo}`;
-  const levels=Object.values(BP61_LEVELS).filter(level=>level.variant===variant);
-  const current=levels.map(level=>({
-    level,value:bp64ProjectedGoalValue(level),target:level.core.reps
-  })).filter(goal=>goal.value<goal.target).sort((a,b)=>
-    (a.target-a.value)-(b.target-b.value) || a.target-b.target);
-  const next=current.slice(0,3);
-  if(liveGoalText) liveGoalText.textContent=next.length? 'Closest unfinished Journey milestones':'All visible milestones completed!';
-  liveGoalsList.innerHTML=next.length?next.map((goal,i)=>{
-    const percent=Math.min(100,Math.round(goal.value/goal.target*100));
-    return `<div class="bp64-goal-row ${i===0?'primary':''}">
-      <div class="bp64-goal-copy"><span>${goal.level.title}</span><strong>${Math.min(goal.target,goal.value)}/${goal.target}</strong></div>
-      <div class="bp64-goal-track"><span style="width:${percent}%"></span></div>
-    </div>`;
-  }).join(''):'<span class="bp64-no-goals">All current variant goals complete. Keep going!</span>';
-  const target=document.getElementById('bp64Target');
-  if(target)target.textContent=activeJourneyLevelId && BP61_LEVELS[activeJourneyLevelId]
-    ? BP61_LEVELS[activeJourneyLevelId].core.reps
-    : next[0]?.target ?? '—';
-}
-
-function renderPauseChallenges() {
-  if (!pauseChallengesList) return;
-  const state = getLiveMilestoneState();
-  const goals = state.upcoming.slice(0, 3);
-
-  if (!goals.length) {
-    pauseChallengesList.innerHTML = '<div class="pause-challenge-empty">Alle sichtbaren Challenges geschafft.</div>';
-    return;
+  liveGoalsVariantHint.textContent=`${meta.label} · Set ${workoutSets.length+1}`;
+  let goals=[];
+  if(activeJourneyLevelId && BP61_LEVELS[activeJourneyLevelId]) {
+    const level=BP61_LEVELS[activeJourneyLevelId];
+    const session=getSessionVariantTotal(level.variant);
+    const max=getSessionVariantMax(level.variant);
+    const past=Number(progress.journeyLevelTotals65?.[level.id])||0;
+    const value=level.core.type==='total'?past+session:max;
+    const current=(obj)=>obj.type==='total'?past+session:obj.type==='session'?session:obj.type==='sets'
+      ? workoutSets.filter(s=>s.variant===level.variant&&Number(s.reps)>=obj.reps).length:max;
+    goals=[level.core,level.bonus2,level.bonus3].map((obj,i)=>({
+      label:`${'★'.repeat(i+1)} ${bp61ObjectiveLabel(obj,level.variant)}`,
+      current:current(obj), target:obj.type==='sets'?obj.count:obj.reps
+    }));
+    if(liveGoalText)liveGoalText.textContent=`Level ${BP65_NUMBERS[level.id]} · Three star objectives`;
+  } else if (activePlacementTarget65) {
+    goals=[{label:`Checkpoint · ${activePlacementTarget65} Standard in one set`,current:getSessionVariantMax('standard'),target:activePlacementTarget65}];
+    if(liveGoalText)liveGoalText.textContent='Find Your Level · Placement Test';
+  } else {
+    const today=getTodayTotal()+getSessionVariantTotal(variant);
+    const week=getCurrentWeekTotal()+getSessionVariantTotal(variant);
+    const record=(getVariantStats(variant).max||0)+1;
+    goals=[{label:'Daily Push-Ups',current:today,target:50},
+      {label:'Weekly Push-Ups',current:week,target:250},
+      {label:`${meta.label} · Beat your best`,current:getSessionVariantMax(variant),target:record}];
+    if(liveGoalText)liveGoalText.textContent='Free Workout · Daily, Weekly & Record';
   }
-
-  pauseChallengesList.innerHTML = goals.map(goal => {
-    const pct = Math.round(clamp(goal.progressFraction, 0, 1) * 100);
-    const remaining = Math.max(0, Math.ceil(goal.remaining));
-    return `
-      <div class="pause-challenge-row tone-${goal.tone}">
-        <span class="pause-challenge-icon">${goal.icon}</span>
-        <div class="pause-challenge-copy">
-          <div class="pause-challenge-line">
-            <strong>${goal.title}</strong>
-            <small>Noch ${remaining}</small>
-          </div>
-          <div class="pause-challenge-progress" aria-label="${pct}% Fortschritt">
-            <span style="width:${pct}%"></span>
-          </div>
-        </div>
-      </div>`;
-  }).join("");
+  liveGoalsList.innerHTML=goals.map((goal,i)=>{
+    const pct=Math.max(0,Math.min(100,Math.round(goal.current/Math.max(1,goal.target)*100)));
+    return `<div class="bp64-goal-row ${i===0?'primary':''}"><div class="bp64-goal-copy"><span>${goal.label}</span><strong>${Math.min(goal.target,goal.current)}/${goal.target}</strong></div><div class="bp64-goal-track"><span style="width:${pct}%"></span></div></div>`;
+  }).join('');
+  const target=document.getElementById('bp64Target');
+  if(target)target.textContent=activeJourneyLevelId?BP61_LEVELS[activeJourneyLevelId]?.core?.reps:activePlacementTarget65||'—';
+}
+function renderPauseChallenges() {
+  if(!pauseChallengesList)return;
+  // Use the same live targets as the camera screen. Do not display old
+  // metric milestones that might suggest Free Workout earns Journey stars.
+  renderLiveGoals();
+  pauseChallengesList.innerHTML=liveGoalsList?.innerHTML || '<div class="pause-challenge-empty">No current goals.</div>';
 }
 
 let toastTimer = null;
@@ -2429,6 +2425,7 @@ function closeTraining() {
   workoutActive = false;
   activeChallengeId = null;
   activeJourneyLevelId = null;
+  activePlacementTarget65 = 0;
   lastBP61Result = null;
   countdownActive = false;
   autoCountdownPending = false;
@@ -3452,6 +3449,7 @@ function saveTrainingResult(options = {}) {
   const assessmentWasActive = entryAssessmentActive;
   const challengeWasActive = activeChallengeId;
   const journeyWasActive = activeJourneyLevelId;
+  const placementWasActive65=activePlacementTarget65;
   const priorJourneyStars = journeyWasActive ? bp61EarnedStars(journeyWasActive) : 0;
   let journeyResult = null;
   let challengeResult = null;
@@ -3529,15 +3527,31 @@ function saveTrainingResult(options = {}) {
   if (journeyWasActive) {
     const level = BP61_LEVELS[journeyWasActive];
     if (level) {
-      journeyResult = evaluateBP61Level(level, sets);
+      const priorTotal=Number(progress.journeyLevelTotals65?.[level.id])||0;
+      journeyResult = evaluateBP61Level(level, sets, priorTotal);
+      if(level.core.type==='total') {
+        progress.journeyLevelTotals65=progress.journeyLevelTotals65||{};
+        progress.journeyLevelTotals65[level.id]=priorTotal+journeyResult.addedTotal;
+      }
       if (journeyResult.stars > 0) {
-        progress.journeyStars = progress.journeyStars || {};
-        progress.journeyStars[level.id] = Math.max(Number(progress.journeyStars[level.id]) || 0, journeyResult.stars);
+        progress.journeyLevelStars65 = progress.journeyLevelStars65 || {};
+        progress.journeyLevelStars65[level.id] = Math.max(Number(progress.journeyLevelStars65[level.id]) || 0, journeyResult.stars);
       }
     }
     activeJourneyLevelId = null;
   }
 
+  let placementResult65=null;
+  if (placementWasActive65) {
+    const bestSet=Math.max(0,...sets.filter(s=>s.variant==='standard').map(s=>Number(s.reps)||0));
+    const nextRank=placementWasActive65>=10?'Bronze':placementWasActive65>=3?'Stein':'Holz';
+    const passed=bestSet>=placementWasActive65;
+    if(passed && isV012RankAtLeast(nextRank,progress.journeyPlacementRank65||'Starter')) {
+      progress.journeyPlacementRank65=nextRank;
+    }
+    placementResult65={passed,bestSet,target:placementWasActive65,rank:nextRank};
+    activePlacementTarget65=0;
+  }
   if (assessmentWasActive) {
     progress.entrySetupDone = true;
     progress.entryPath = "assessment";
@@ -3570,7 +3584,10 @@ function saveTrainingResult(options = {}) {
     const level = BP61_LEVELS[journeyWasActive];
     addSuccessLine(`${journeyResult?.stars ? "★".repeat(journeyResult.stars) + "☆".repeat(3 - journeyResult.stars) : "☆☆☆"} ${level.title} · ${journeyResult?.stars ? "Challenge progress saved" : "Try again to earn stars"}`, !!journeyResult?.stars);
   }
-  if (assessmentWasActive) addSuccessLine(`⚡ Assessment complete · your starting rank was adjusted`, true);
+  if (assessmentWasActive) addSuccessLine('Assessment saved', true);
+  if (placementResult65) addSuccessLine(placementResult65.passed
+    ? `✓ ${placementResult65.rank} checkpoint passed · higher section available, old levels remain unplayed`
+    : `Checkpoint not passed (${placementResult65.bestSet}/${placementResult65.target}) · try again`,placementResult65.passed);
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (levelUps > 0) addSuccessLine(`⬆ Level Up! ${oldAccountLevel} → ${newAccountInfo.level}`, true);
   cosmeticUnlocks.forEach(item => addSuccessLine(`🎁 ${item.kind} unlocked: ${item.label}`, true));
@@ -3677,7 +3694,7 @@ function closeEntrySetupSheet() {
 
 function shouldAskEntrySetup() {
   const hasHistory = Array.isArray(progress.trainingHistory) && progress.trainingHistory.length > 0;
-  return !progress.entrySetupDone && !hasHistory && (Number(progress.pushupTotal) || 0) === 0;
+  return false; // v0.11.65: Placement is deliberately launched from the Journey, never automatically.
 }
 
 function startEntryAssessment() {
@@ -3690,7 +3707,7 @@ function startEntryAssessment() {
   showPrepUI();
   renderStaticIcons();
   trainingTitle.textContent = "Assessment Test";
-  prepCameraHint.textContent = "Do one strong set of Standard Push-Ups. The result places you higher in the tree automatically.";
+  prepCameraHint.textContent = "Do one strong set of Standard Push-Ups. Only a dedicated Journey checkpoint changes your Journey rank.";
   showAppToast("Assessment started: Standard Push-Ups");
 }
 
@@ -3927,13 +3944,7 @@ function isV012ChapterComplete(chapter) {
 }
 
 function getV012CurrentRankName() {
-  let rank = "Starter";
-  for (const chapter of V012_CHAPTERS) {
-    if (chapter.from !== rank) break;
-    if (!isV012ChapterComplete(chapter)) break;
-    rank = chapter.to;
-  }
-  return rank;
+  return bp65RankFromJourney();
 }
 
 function getV012CurrentChapter() {
@@ -4020,9 +4031,7 @@ function getV1150VariantUnlockState(variant) {
 function isV012VariantAvailable(variant) {
   if (!VARIANT_META[variant]) return false;
   const required = V012_VARIANT_UNLOCK_RANK[variant];
-  // Previously trained variants remain usable when importing old saves.
-  const legacy = progress?.variantStats?.[variant];
-  if ((Number(legacy?.max) || 0) > 0 || (Number(legacy?.total) || 0) > 0) return true;
+  // Free Workout never grants Journey rank/variant unlocks.
   if (!required) return false;
   return isV012RankAtLeast(getV012CurrentRankName(), required);
 }
@@ -4909,27 +4918,34 @@ const BP61_EDGES = [
   ['S3','S5'],['S4','S6'],['W2','S5'],['W2','S6'],
   ['S5','bronze'],['S6','bronze'],['bronze','pike']
 ];
+// Ordered along the on-screen route from Start (bottom) to Bronze (top).
+const BP65_NUMBER_ORDER=['A3','A4','A5','H1','K1','H2','K2','H3','H4','S1','W1','S2','S3','W2','S4','S5','S6'];
+const BP65_NUMBERS=Object.fromEntries(BP65_NUMBER_ORDER.map((id,i)=>[id,i+1]));
+function bp65RankFromJourney() {
+  const stars=progress.journeyLevelStars65 || {};
+  const placement=progress.journeyPlacementRank65 || 'Starter';
+  const above=r=>isV012RankAtLeast(placement,r);
+  const wood=above('Holz') || Number(stars.A5)>=1;
+  const stone=above('Stein') || (wood && (Number(stars.H3)>=1 || Number(stars.H4)>=1));
+  const bronze=above('Bronze') || (stone && (Number(stars.S5)>=1 || Number(stars.S6)>=1));
+  return bronze?'Bronze':stone?'Stein':wood?'Holz':'Starter';
+}
 function bp61LifetimeValue(level) {
-  const metric = level.core.type;
-  if (level.variant === 'standard' && metric === 'max') return Number(progress.pushupMax)||0;
-  if (level.variant === 'standard' && metric === 'total') return Number(progress.journeyStandardTotal)||0;
-  const stats = getVariantStats(level.variant);
-  return Math.max(0,Number(stats[metric])||0);
+  // Intentionally tracked per level, not per user's overall exercise history.
+  if(!level)return 0;
+  return level.core.type==='total' ? (Number(progress.journeyLevelTotals65?.[level.id])||0) : 0;
 }
 function bp61CoreDone(id) {
-  const level = BP61_LEVELS[id];
-  if (!level) return false;
-  return bp61LifetimeValue(level) >= level.core.reps || Number(progress.journeyStars?.[id]) >= 1;
+  return !!BP61_LEVELS[id] && Number(progress.journeyLevelStars65?.[id])>=1;
 }
 function bp61EarnedStars(id) {
-  if (!bp61CoreDone(id)) return 0;
-  return Math.max(1,Math.min(3,Math.floor(Number(progress.journeyStars?.[id])||0)));
+  return bp61CoreDone(id) ? Math.max(1,Math.min(3,Math.floor(Number(progress.journeyLevelStars65?.[id])||0))) : 0;
 }
 function bp61ObjectiveLabel(objective,variant,first=false) {
   const name = VARIANT_META[variant]?.label || 'Standard';
   const n = objective.reps;
   if (objective.type === 'max') return `${n} ${name} Push-Up${n===1?'':'s'} in one set`;
-  if (objective.type === 'total') return `${n} ${name} Push-Ups overall`;
+  if (objective.type === 'total') return `${n} ${name} Push-Ups in this level (across its attempts)`;
   if (objective.type === 'session') return `${n} ${name} Push-Ups in one challenge`;
   if (objective.type === 'sets') return `${objective.count} sets of ${n} ${name} Push-Ups`;
   return 'Challenge';
@@ -4943,51 +4959,51 @@ function bp61SessionMeets(objective,variant,sets) {
   if (objective.type==='total') return counts.reduce((a,b)=>a+b,0)>=objective.reps;
   return false;
 }
-function evaluateBP61Level(level,sets) {
-  if (!level) return {stars:0};
-  // Core can be completed by ANY saved workout, while bonus stars come from
-  // one explicitly started challenge. Never evaluate from unrelated workouts.
-  const core = bp61CoreDone(level.id) || bp61SessionMeets(level.core,level.variant,sets);
-  if (!core) return {stars:0};
+function evaluateBP61Level(level,sets,previousTotal=0) {
+  if (!level) return {stars:0,addedTotal:0};
+  const matched=(sets||[]).filter(set=>set.variant===level.variant);
+  const addedTotal=matched.reduce((sum,s)=>sum+Math.max(0,Math.floor(Number(s.reps)||0)),0);
+  // Volume goals accumulate ONLY attempts specifically launched for this level.
+  const core=level.core.type==='total' ? previousTotal+addedTotal>=level.core.reps : bp61SessionMeets(level.core,level.variant,sets);
+  if (!core) return {stars:0,addedTotal};
   let stars=1;
   if (bp61SessionMeets(level.bonus2,level.variant,sets)) stars=2;
   if (bp61SessionMeets(level.bonus3,level.variant,sets)) stars=3;
-  return {stars};
+  return {stars,addedTotal};
 }
 function getBP61State() {
   const finished={start:true};
   const available={start:true};
-  const rank=getV012CurrentRankName();
+  const rank=bp65RankFromJourney();
   finished.wood=isV012RankAtLeast(rank,'Holz');
   finished.stone=isV012RankAtLeast(rank,'Stein');
   finished.bronze=isV012RankAtLeast(rank,'Bronze');
   finished.pike=finished.bronze;
-  for (const id of Object.keys(BP61_LEVELS)) finished[id]=bp61CoreDone(id);
-
-  // Both entry choices are available at START, regardless of past performance.
-  available.A3=true;
-  available.A4=finished.A3;
-  available.A5=true;
-
-  // Power and Volume remain independent main routes. Knee completes a
-  // bypass: K1 → K2 → H3 or H4; standard rank goals stay unchanged.
+  for(const id of Object.keys(BP61_LEVELS))finished[id]=bp61CoreDone(id);
+  // Direct starter entry, or take the two-step Incline beginner path.
+  available.A3=true; available.A4=finished.A3; available.A5=true;
   available.H1=available.H2=available.K1=finished.wood;
   available.K2=finished.wood && finished.K1;
   available.H3=finished.wood && (finished.H1 || finished.K2);
   available.H4=finished.wood && (finished.H2 || finished.K2);
-
-  // Wide also bypasses the second standard tier and reconnects at S5/S6.
   available.S1=available.S2=available.W1=finished.stone;
   available.S3=finished.stone && finished.S1;
   available.S4=finished.stone && finished.S2;
   available.W2=finished.stone && finished.W1;
   available.S5=finished.stone && (finished.S3 || finished.W2);
   available.S6=finished.stone && (finished.S4 || finished.W2);
-  available.wood=finished.wood;
-  available.stone=finished.stone;
-  available.bronze=finished.bronze;
-  available.pike=finished.pike;
-  return {finished,available,rank};
+  // Placement opens sections for replay, but does not mark a single level done.
+  const placed=progress.journeyPlacementRank65 || 'Starter';
+  const skipped={};
+  for (const id of Object.keys(BP61_LEVELS)) {
+    const section=id.startsWith('A')?'Starter':id.startsWith('H')||id.startsWith('K')?'Holz':'Stein';
+    const placementAccess=section==='Starter' || (section==='Holz' && isV012RankAtLeast(placed,'Holz')) || (section==='Stein' && isV012RankAtLeast(placed,'Stein'));
+    if(placementAccess && !available[id]) {available[id]=true;skipped[id]=true;}
+    if(finished[id])available[id]=true; // replay old levels any time
+  }
+  available.wood=finished.wood; available.stone=finished.stone;
+  available.bronze=finished.bronze; available.pike=finished.pike;
+  return {finished,available,skipped,rank};
 }
 function bp61StarsMarkup(earned) {
   return `<span class="bp61-stars" aria-label="${earned} of 3 stars">${[1,2,3].map(n=>`<span class="${n<=earned?'earned':''}">★</span>`).join('')}</span>`;
@@ -5014,8 +5030,10 @@ function bp61NodeMarkup(item,state,focusId) {
   }
   if(item.kind==='reward') return `<button type="button" class="bp61-reward ${status}" data-bp61-reward="pike" style="left:${item.x/360*100}%;top:${item.y}px"><span class="bp61-reward-icon">${getVariantIconSvg('pike')}</span><span class="bp61-reward-text"><b>PIKE UNLOCK</b><small>${done?'New variant available':'Reach Bronze to unlock'}</small></span></button>`;
   const level=BP61_LEVELS[item.id];const earned=bp61EarnedStars(item.id);
+  const isSkipped=state.skipped?.[item.id] && !done;
+  const levelStatus=isSkipped?'skipped':status;
   const kindColor=level.kind==='power'?'#F0808B':level.kind==='volume'?'#7CB6FF':'#B49BFF';
-  return `<button type="button" class="bp61-goal ${status} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="${level.title}. ${earned} of 3 stars. ${status}"><span class="bp61-orb"><span class="bp61-orb-icon">${getVariantIconSvg(level.variant)}</span><span class="bp61-kind-tag">${level.kind==='power'?'◆':level.kind==='volume'?'▤':'✧'}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span>${item.id==='A5'?'<span class="bp63-direct-label">DIRECT ACCESS</span>':''}</button>`;
+  return `<button type="button" class="bp61-goal ${levelStatus} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="Level ${BP65_NUMBERS[item.id]}: ${level.title}. ${earned} of 3 stars. ${levelStatus}"><span class="bp61-orb"><span class="bp65-level-number">${BP65_NUMBERS[item.id]}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span>${item.id==='A5'?'<span class="bp63-direct-label">DIRECT ACCESS</span>':''}</button>`;
 }
 function bp61EdgeMarkup(state) {
   const lookup=Object.fromEntries(BP61_LAYOUT.map(x=>[x.id,x]));
@@ -5053,7 +5071,8 @@ function renderTree() {
   const earned=Object.keys(BP61_LEVELS).reduce((sum,id)=>sum+bp61EarnedStars(id),0);
   const completed=Object.keys(BP61_LEVELS).filter(id=>state.finished[id]).length;
   skillTree.className='skill-tree-v1161 bp63-tree';
-  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>17 challenges · From first rep to Bronze</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 51</small></strong><span>STARS</span></div></div>
+  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>17 replayable levels · Free Workout is separate</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 51</small></strong><span>STARS</span></div></div>
+    <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} rank · ${completed}/17 levels</span></div>
     <div class="bp61-progress"><span style="width:${(earned/51*100).toFixed(1)}%"></span></div>
     <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
     <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
@@ -5062,10 +5081,11 @@ function renderTree() {
       <div class="bp61-zone bp63-starter-zone" style="top:1645px"><b>START → WOOD</b><span>CHOOSE YOUR ROUTE</span></div>
       ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
     </div>
-    <div class="bp61-footer">${state.finished.bronze?'Bronze achieved! Replay levels to collect missing stars.':'Reach Bronze with 10 Standard Push-Ups in one set OR 100 Standard total.'}<br>${completed}/17 levels finished · Bonus stars in Challenge Mode</div>`;
+    <div class="bp61-footer">${state.finished.bronze?'Bronze checkpoint reached. Replay earlier levels for stars.':'Complete a Journey level or take an optional checkpoint to find your rank.'}<br>Free Workout cannot complete Journey levels · ${completed}/17 levels · ${earned}/51 stars</div>`;
   skillTree.querySelectorAll('[data-bp61-level]').forEach(btn=>btn.addEventListener('click',()=>openBP61Level(btn.dataset.bp61Level)));
   skillTree.querySelectorAll('[data-bp61-rank]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank(btn.dataset.bp61Rank)));
   skillTree.querySelectorAll('[data-bp61-reward]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank('Bronze')));
+  document.getElementById('bp65FindLevel')?.addEventListener('click',openBP65Placement);
 }
 function ensureBP61Sheet(){
   if(document.getElementById('bp61Sheet'))return;
@@ -5083,8 +5103,8 @@ function openBP61Level(id){
   const cat=level.kind==='power'?'POWER':level.kind==='volume'?'VOLUME':'NEW VARIANT';
   const value=bp61LifetimeValue(level);const max=level.core.reps;
   const descriptions=[level.core,level.bonus2,level.bonus3];
-  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">LEVEL ${id} · ${cat}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon">${getVariantIconSvg(level.variant)}</span><div><h2 id="bp61SheetTitle">${level.title}</h2><p>${VARIANT_META[level.variant].label} Push-Ups</p></div></div><div class="bp61-sheet-starshow">${bp61StarsMarkup(stars)}<strong>${stars}/3 STARS</strong></div>
-   <div class="bp61-sheet-objectives">${descriptions.map((desc,i)=>`<div class="bp61-objective ${i<stars?'achieved':''}"><span class="bp61-objective-star">★</span><div><small>${i===0?'COMPLETE LEVEL':i===1?'BONUS CHALLENGE':'MASTER CHALLENGE'}</small><strong>${bp61ObjectiveLabel(desc,level.variant,i===0)}</strong></div><span class="bp61-objective-check">${i<stars?'✓':i===0?`${Math.min(max,value)}/${max}`:'○'}</span></div>`).join('')}</div><p class="bp61-sheet-tip">${active||done?'★ Core progress counts in free training. Earn bonus stars by playing this challenge.':'🔒 Complete the previous connected level or reach the required rank to start. Existing performances still count.'}</p>`;
+  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">LEVEL ${BP65_NUMBERS[id]} · ${cat}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon"><strong class="bp65-sheet-number">${BP65_NUMBERS[id]}</strong></span><div><h2 id="bp61SheetTitle">${level.title}</h2><p>${VARIANT_META[level.variant].label} Push-Ups</p></div></div><div class="bp61-sheet-starshow">${bp61StarsMarkup(stars)}<strong>${stars}/3 STARS</strong></div>
+   <div class="bp61-sheet-objectives">${descriptions.map((desc,i)=>`<div class="bp61-objective ${i<stars?'achieved':''}"><span class="bp61-objective-star">★</span><div><small>${i===0?'COMPLETE LEVEL':i===1?'BONUS CHALLENGE':'MASTER CHALLENGE'}</small><strong>${bp61ObjectiveLabel(desc,level.variant,i===0)}</strong></div><span class="bp61-objective-check">${i<stars?'✓':i===0&&level.core.type==='total'?`${Math.min(max,value)}/${max}`:'○'}</span></div>`).join('')}</div><p class="bp61-sheet-tip">${active||done?'Only attempts started from this level count toward its stars. Free Workout still counts toward Daily and Weekly.':'🔒 Play connected levels, or use Find Your Level to unlock a higher starting point.'}</p>`;
   const start=sheet.querySelector('#bp61SheetStart');start.disabled=!(active||done);start.textContent=!(active||done)?'LOCKED':done?'REPLAY CHALLENGE →':'START CHALLENGE →';
   sheet.classList.remove('hidden');document.body.style.overflow='hidden';
 }
@@ -5113,7 +5133,7 @@ function updateBP61TrainingBanner(){
   const level=BP61_LEVELS[activeJourneyLevelId];
   el.classList.toggle('hidden',!level);
   if(!level)return;
-  el.innerHTML=`<span>★ JOURNEY CHALLENGE · ${level.id}</span><strong>${level.title}</strong><small>${bp61ObjectiveLabel(level.core,level.variant)}</small>`;
+  el.innerHTML=`<span>★ JOURNEY LEVEL ${BP65_NUMBERS[level.id]}</span><strong>${level.title}</strong><small>${bp61ObjectiveLabel(level.core,level.variant)}</small>`;
 }
 
 function showBP61Result(result) {
@@ -5122,10 +5142,38 @@ function showBP61Result(result) {
   const level=BP61_LEVELS[result.id];
   const popup=document.createElement('div');popup.id='bp61Result';popup.className='bp61-result';
   const gain=Math.max(0,result.stars-result.prior);
-  popup.innerHTML=`<div class="bp61-result-card" role="dialog" aria-modal="true" aria-label="Challenge results"><small class="bp61-result-eyebrow">${gain?'LEVEL PROGRESS!':result.stars?'CHALLENGE COMPLETE':'TRY AGAIN'}</small><span class="bp61-result-icon">${getVariantIconSvg(level.variant)}</span><h2>${level.title}</h2><div class="bp61-result-stars">${bp61StarsMarkup(result.stars)}</div><p>${result.stars}/3 stars earned ${gain?`· +${gain} new`:''}</p>${result.rankUp?`<div class="bp61-result-rank">✦ NEW RANK: ${getRankDisplayName(result.rankUp).toUpperCase()}</div>`:''}<button type="button" id="bp61ResultClose">CONTINUE JOURNEY →</button></div>`;
+  popup.innerHTML=`<div class="bp61-result-card" role="dialog" aria-modal="true" aria-label="Challenge results"><small class="bp61-result-eyebrow">${gain?'LEVEL PROGRESS!':result.stars?'CHALLENGE COMPLETE':'TRY AGAIN'}</small><span class="bp61-result-icon"><strong class="bp65-result-number">${BP65_NUMBERS[level.id]}</strong></span><h2>${level.title}</h2><div class="bp61-result-stars">${bp61StarsMarkup(result.stars)}</div><p>${result.stars}/3 stars earned ${gain?`· +${gain} new`:''}</p>${result.rankUp?`<div class="bp61-result-rank">✦ NEW RANK: ${getRankDisplayName(result.rankUp).toUpperCase()}</div>`:''}<button type="button" id="bp61ResultClose">CONTINUE JOURNEY →</button></div>`;
   document.body.appendChild(popup);
   document.body.style.overflow='hidden';
   popup.querySelector('button').addEventListener('click',()=>{popup.remove();document.body.style.overflow='';});
+}
+
+function openBP65Placement() {
+  document.getElementById('bp65Placement')?.remove();
+  const current=bp65RankFromJourney();
+  const overlay=document.createElement('div');overlay.id='bp65Placement';overlay.className='bp61-sheet';
+  overlay.innerHTML=`<div class="bp61-sheet-card bp65-placement-sheet" role="dialog" aria-modal="true" aria-label="Find Your Level">
+    <button class="bp61-sheet-close" id="bp65PlacementClose" aria-label="Close">×</button>
+    <span class="bp61-sheet-eyebrow">OPTIONAL SHORTCUT</span><h2>Find Your Level</h2>
+    <p>Skip beginner levels with a dedicated checkpoint test. Skipped levels stay playable and earn no stars until completed separately.</p>
+    <div class="bp65-placement-choices">
+      <button type="button" data-bp65-target="1"><b>WOOD CHECKPOINT</b><small>1 Standard Push-Up in one set</small></button>
+      <button type="button" data-bp65-target="3"><b>STONE CHECKPOINT</b><small>3 Standard Push-Ups in one set</small></button>
+      <button type="button" data-bp65-target="10"><b>BRONZE CHECKPOINT</b><small>10 Standard Push-Ups in one set</small></button>
+    </div><p class="bp65-placement-note">Current Journey rank: ${getRankDisplayName(current)}. A checkpoint does not complete levels or award stars. Your workout still counts for Daily and Weekly.</p>
+  </div>`;
+  document.body.appendChild(overlay);document.body.style.overflow='hidden';
+  const close=()=>{overlay.remove();document.body.style.overflow='';};
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+  overlay.querySelector('#bp65PlacementClose').addEventListener('click',close);
+  overlay.querySelectorAll('[data-bp65-target]').forEach(btn=>btn.addEventListener('click',()=>{
+    const target=Number(btn.dataset.bp65Target);close();
+    openTraining();activePlacementTarget65=target;activeJourneyLevelId=null;
+    setSelectedTrainingVariant('standard');showStep('quick');showPrepUI();
+    trainingTitle.textContent=`${target} Reps · Checkpoint`;
+    prepCameraHint.textContent=`${target} Standard Push-Up${target>1?'s':''} in one set. No Journey stars are awarded by this test.`;
+    renderLiveGoals();showAppToast(`Checkpoint: ${target} Standard in one set`);
+  }));
 }
 
 function syncTreeCanvasHeight() {
@@ -5161,25 +5209,13 @@ function getHomePathProgressState(path) {
 }
 
 function renderHomeRankPaths(chapter) {
-  if (!homeRankPaths) return;
-  if (!chapter?.paths?.length) {
-    homeRankPaths.innerHTML = `<div class="home-rank-paths-done"><strong>Bronze unlocked!</strong><small>Next chapter is coming soon. Remaining milestones can still be completed.</small></div>`;
-    return;
-  }
-  const paths = chapter.paths.map(path => ({ path, state: getHomePathProgressState(path) }));
-  homeRankPaths.innerHTML = `
-    <div class="bp60-home-paths">
-      ${paths.map(({ path, state }) => `
-        <div class="bp60-home-path" style="--bp60-accent:${path.accent};">
-          <div class="bp60-home-path-top"><strong>${path.title}</strong><span>${formatTreeNumber(state.current)} / ${formatTreeNumber(state.target)}</span></div>
-          <div class="bp60-home-track"><span style="width:${state.percent}%"></span></div>
-          <small>${path.key === "first" ? "1 Standard Push-Up" : path.key.includes("power") ? "Standard · best set" : "Standard · lifetime total"}</small>
-        </div>
-      `).join("")}
-      ${paths.length > 1 ? '<div class="bp60-or-note">Complete either path to rank up</div>' : ''}
-    </div>`;
+  if(!homeRankPaths)return;
+  const state=getBP61State();
+  const section=!state.finished.wood?'Start → Wood':!state.finished.stone?'Wood → Stone':!state.finished.bronze?'Stone → Bronze':'Bronze reached';
+  const relevant=Object.keys(BP61_LEVELS).filter(id=>state.available[id]&&!state.finished[id]).slice(0,3);
+  homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${section}</strong><small>Journey levels are played separately from Free Workout.</small>
+    <div>${relevant.map(id=>`<span>Level ${BP65_NUMBERS[id]} · ${BP61_LEVELS[id].title}</span>`).join('')||'<span>Replay old levels for more stars!</span>'}</div></div>`;
 }
-
 function buildProgressOrb(label, current, target, type = "side") {
   const safeTarget = Math.max(1, Number(target) || 1);
   const safeCurrent = Math.max(0, Number(current) || 0);

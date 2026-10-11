@@ -1,27 +1,21 @@
-# BodyPath v0.11.64 — Frontal Quick Setup
+# BodyPath v0.11.65 – Separate Journey & Free Workout
 
-## New
+## New rules
 
-- **Wall Push-Ups retired from the active app.** The Journey now contains 17 playable levels and 51 possible stars. Starter options are **First Incline → Incline Builder → First Standard**, or directly **First Standard**. Existing Wall history and old A1/A2 star records are retained in storage, but Wall is no longer selectable for new workouts.
-- **Incline guidance** in the workout selection: a *higher*, stable hand support makes the exercise easier; lower it gradually.
-- **Frontal training screen**: a mirrored live Front Camera preview, colored framing corners, actual face-detection bounding box, short status/hints, large current-set rep count, challenge target, and **three live Journey goals with progress bars**.
-- The countdown and existing face-based repetition counter remain; hands-free quick start from a stable face position is still supported. An accessible **manual mode** stays available, including when camera initialization fails.
-- A face leaving the image no longer automatically ends the set (to avoid unintended endings with a propped-up phone). Use **Pause** / **Finish** as needed.
-- No fixed phone inclination, angle calibration, or setup wizard.
+- **Free Workout:** Daily / Weekly totals, personal records, history and XP still update. Free workouts **never grant Journey level stars or ranks**.
+- **Journey:** Nodes show **level numbers** 1–17. Each is a replayable challenge with 1–3 gold stars. Only the challenge explicitly opened from a numbered node may earn stars for **that node**. A different or higher-level workout cannot mass-complete all earlier nodes.
+- **Volume objectives** (5/15/30/60/100 Standard total): count **only reps accumulated during attempts launched for that exact level**. Partial attempts on that level are preserved. Free sessions and attempts on other levels don't count toward it.
+- **Find Your Level:** button on the Journey opens optional Wood (1 Standard/set), Stone (3 Standard/set) or Bronze (10 Standard/set) placement checkpoints. Passing a checkpoint unlocks access to that rank/section; **no skipped levels are completed and no stars are awarded**. You can revisit any earlier level to collect its stars. Already granted higher checkpoint ranks cannot be lost.
+- **Rank progression:** Wood after Journey A5, Stone after Journey H3 or H4, Bronze after Journey S5 or S6; or by explicitly passing the corresponding checkpoint. Free Workout cannot award a Journey rank. Knee/Wide variants still serve as alternative prerequisite routes to final levels.
+- The training screen continues to display the large rep counter and three targets. For a Journey level these are its three star requirements; for Free Workout they are Daily, Weekly and the next personal-best target.
+- The frontal face-framing indicator and original camera rep counter are unchanged. Pose/form scoring is still **not** provided.
 
-## Technical limits (important)
+## Existing users: important data handling
 
-The new green/yellow/red camera status is a **face-framing aid**, not whole-body pose tracking or a reliable measure of push-up technique. The existing face-size-based rep-count algorithm has not been replaced with a new pose estimation model; frontal counting from a leaned-up camera **must be tested on a real phone** for different distances and exercises, especially Incline, Wide and Pike. No claim is made that this release scores execution depth, arm width, or form.
+Local storage key remains `skillTreeAppProgressV010`; **all past workouts, history, personal records, XP, Daily/Weekly state and old saved Journey star entries remain in storage**.
 
-## Deploying
+However previous versions could give Journey credit automatically for Free Workouts, and they did not record which level was explicitly played. **Those old automatic stars cannot be reliably separated from genuine attempts.** v0.11.65 therefore starts a **new, independent Journey progress track** (`journeyLevelStars65`, `journeyLevelTotals65`, `journeyPlacementRank65`) without migrating the old automatic stars. The old `journeyStars` is *preserved in the backup but not counted*. No fitness statistics are reset. You can use the new Find Your Level checkpoints to reach your present ability without earning free stars. **Export a backup before deploying.**
 
-Upload the **contents** of the `BodyPath-v0.11.64` folder to the existing GitHub Pages repository, replacing previous files (at least `app.js`, `index.html`, `style.css` together). URLs in `index.html` use `?v=0.11.64` to avoid old caches. No new external assets are required beyond the packaged files.
+## Deploy
 
-The local-storage key is unchanged (`skillTreeAppProgressV010`), so your training history and unlocked stars stay intact. Export a backup before testing major changes. Never press the app's reset-test-data button unless you intend to reset local progress.
-
-## Checks performed
-
-- JavaScript syntax (`node --check`).
-- Browser rendering on 390 × 844 and 360 × 720 viewports (using offline-injected assets because local networking was restricted).
-- Browser logic assertions for the 17 Journey challenges / 51 stars, 3 live goal progress rows, Wall not being selectable, Incline remaining selectable, and fallback manual mode.
-- No physical camera/rep-counter test was possible here. On-device confirmation is needed.
+Upload the contents of the `BodyPath-v0.11.65` folder to the existing GitHub Pages root, overwriting `app.js`, `style.css`, `index.html` and assets. Cache query strings in index.html use `?v=0.11.65`.

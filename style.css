@@ -13501,3 +13501,46 @@ body[data-hero-gender="female"] .home-v17 {
 }
 /* 17-node Journey fits the shorter starter section. */
 .bp63-tree .bp61-canvas,.bp63-tree .bp61-lines{height:2030px;}
+
+/* ================================================================
+   v0.11.65 – Actual level-game progression / numeric journey nodes
+   ================================================================ */
+.bp65-level-number {
+  font-size: 25px; font-weight: 900; line-height: 1; color: #f7faff;
+  font-variant-numeric: tabular-nums; letter-spacing: -.055em;
+}
+.bp63-tree .bp61-goal .bp61-orb { background:#222d40; }
+.bp63-tree .bp61-goal.done .bp61-orb { background:#203a35; border-color:#30c987; }
+.bp63-tree .bp61-goal.active .bp61-orb { background:#342f27; border-color:#ebbf52; }
+.bp63-tree .bp61-goal.skipped .bp61-orb { background:#28384b; border-color:#7890ad; }
+.bp63-tree .bp61-goal.skipped .bp65-level-number { color:#d7e7f8; }
+.bp63-tree .bp61-goal.skipped .bp61-node-caption { color:#99b5d4; }
+.bp63-tree .bp61-goal.skipped { opacity:.84; }
+.bp63-tree .bp61-goal.locked .bp65-level-number { color:#8998ad; }
+.bp63-tree .bp61-goal .bp61-stars .earned { color:#f0c15b; opacity:1; }
+.bp63-tree .bp61-goal .bp61-stars span:not(.earned) { color:#64758f; opacity:.6; }
+.bp65-placement-bar {
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:9px 10px 8px;
+}
+.bp65-placement-bar button {
+ background:#24344c; border:1px solid #5779b1; border-radius:11px;
+ color:#eac45e; font-size:11px; font-weight:850; letter-spacing:.055em;
+ padding:12px 13px; cursor:pointer; min-height:42px;
+}
+.bp65-placement-bar span{font-size:10px;color:#adbfda;text-align:right;}
+.bp65-placement-sheet h2{font-size:25px;margin:9px 0 9px;color:#eff4ff;}
+.bp65-placement-sheet p{font-size:12px;color:#b8c7dd;line-height:1.6;margin:0 10px 16px 0;}
+.bp65-placement-choices{display:grid;gap:10px;margin:16px 0;}
+.bp65-placement-choices button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:15px 16px;background:#23324b;border:1px solid #597191;border-radius:13px;color:#f4f7ff;cursor:pointer;text-align:left;}
+.bp65-placement-choices button:active{background:#304a71;}
+.bp65-placement-choices b{font-size:12px;color:#f0c56a;letter-spacing:.08em;}
+.bp65-placement-choices small{font-size:12px;color:#c0d0e7;}
+.bp65-placement-note{font-size:11px!important;color:#90a3c2!important;}
+.bp65-sheet-number,.bp65-result-number{font-size:36px;font-weight:900;line-height:1;color:#f4f8ff;}
+.bp65-home-journey{display:flex;flex-direction:column;gap:5px;border:1px solid #334762;border-radius:14px;background:#172337;padding:14px;color:#e7edf8;}
+.bp65-home-journey>strong{font-size:14px;}
+.bp65-home-journey>small{color:#9bb0cc;font-size:11px;}
+.bp65-home-journey>div{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.bp65-home-journey>div>span{padding:6px 8px;border:1px solid #374c6c;border-radius:7px;font-size:10px;color:#cadbf3;}
+@media(max-width:390px){.bp65-level-number{font-size:23px}.bp65-placement-bar button{font-size:10px;padding:10px}.bp65-placement-bar span{font-size:9px;}}
