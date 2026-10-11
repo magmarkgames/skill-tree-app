@@ -1,3 +1,11 @@
+BodyPath v0.11.67
+
+- Rank separators restored
+- Start circle enlarged
+- Stats moved to bottom navigation; profile opens from home banner
+- Tree section labels and footer hints removed
+- Simple star reward rail added on the left side of the tree
+
 # BodyPath v0.11.66 — One Main Path + Shortcuts
 
 - 25 numbered Journey levels including Wood (4), Stone (9), Bronze (16) and Silver (25) as playable rank-up levels. Each level has up to three stars; the special rank levels have three *alternative* stars and any one awards the rank.

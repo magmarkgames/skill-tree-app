@@ -7,14 +7,14 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.64</title>
-  <link rel="stylesheet" href="style.css?v=0.11.66" />
+  <title>BodyPath – v0.11.67</title>
+  <link rel="stylesheet" href="style.css?v=0.11.67" />
 </head>
 <body>
   <main class="app-shell">
     <!-- HOME -->
     <section id="homeView" class="view home-view home-v17">
-      <section class="home-hero-v17 home-account-hero" aria-label="Your BodyPath profile">
+      <section id="homeProfileBanner" class="home-hero-v17 home-account-hero home-profile-banner" aria-label="Your BodyPath profile">
         <div class="home-account-card">
           <div id="homeAccountAvatar" class="home-account-avatar" aria-hidden="true">BP</div>
           <div class="home-account-main">
@@ -80,7 +80,7 @@
         <button id="homeNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
+        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
     </section>
 
@@ -91,10 +91,7 @@
         <div>
           <h1 id="treeTitle">Skill Tree</h1>
         </div>
-        <button id="openTreeStatsBtn" class="tree-stats-btn" type="button" aria-label="Stats öffnen">
-          <span class="tree-stats-btn-icon">▥</span>
-          <span>Stats</span>
-        </button>
+        <div class="tree-header-spacer" aria-hidden="true"></div>
       </header>
 
       <section id="treeScroll" class="tree-scroll tree-scroll-light tree-scroll-v112" aria-label="Vertikal scrollbarer Push-up Skill Tree">
@@ -136,7 +133,7 @@
         <button id="historyNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>◷</span><small>History</small></button>
-        <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
+        <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
     </section>
 
@@ -148,7 +145,7 @@
           <h1 id="skillsHeading">Skills</h1>
           <small>Wähle deine Disziplin</small>
         </div>
-        <span class="profile-version-pill">v0.11.61</span>
+        <span class="profile-version-pill">v0.11.67</span>
       </header>
 
       <section class="skills-intro-card">
@@ -184,7 +181,7 @@
         <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button"><span>◇</span><small>Skills</small></button>
         <button id="skillsNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="skillsNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>●</span><small>Profile</small></button>
+        <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
     </section>
 
@@ -195,7 +192,7 @@
           <p class="eyebrow">BODYPATH</p>
           <h1 id="profileHeading">Profile</h1>
         </div>
-        <span class="profile-version-pill">v0.11.61</span>
+        <span class="profile-version-pill">v0.11.67</span>
       </header>
 
       <section class="profile-hero-card profile-account-card">
@@ -303,7 +300,7 @@
         <button id="profileNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
         <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="profileNavProfileBtn" class="home-nav-item active" type="button"><span>●</span><small>Profile</small></button>
+        <button id="profileNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
     </section>
   </main>

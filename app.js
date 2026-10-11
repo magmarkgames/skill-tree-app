@@ -1012,7 +1012,7 @@ function showView(name) {
   profileView.classList.toggle("hidden", name !== "profile");
   skillsView?.classList.toggle("hidden", name !== "skills");
 
-  setBottomNavActive(name);
+  setBottomNavActive(name === "profile" ? "" : name);
   window.scrollTo(0, 0);
 
   if (name === "tree") {
@@ -4975,6 +4975,18 @@ const BP66_SHORTCUTS=[
  {id:'C3',from:12,to:16,label:'Wide Shortcut',variant:'wide',objective:bp66Max('wide',5),side:'right'},
  {id:'C4',from:20,to:24,label:'Pike Shortcut',variant:'pike',objective:bp66Max('pike',5),side:'left'}
 ];
+const BP67_STAR_REWARDS=[
+ {stars:10,label:'Unlock Profile Picture',note:'Placeholder reward'},
+ {stars:25,label:'Unlock Banner',note:'Placeholder reward'},
+ {stars:50,label:'Unlock Accent Color',note:'Placeholder reward'},
+ {stars:75,label:'Unlock Special Cosmetic',note:'Placeholder reward'}
+];
+const BP67_RANK_MARKERS=[
+ {id:'R_WOOD',rank:'Holz',from:'L04',to:'L05',x:180,y:2500},
+ {id:'R_STONE',rank:'Stein',from:'L09',to:'L10',x:180,y:1946},
+ {id:'R_BRONZE',rank:'Bronze',from:'L16',to:'L17',x:180,y:1169},
+ {id:'R_SILVER',rank:'Silber',from:'L25',to:null,x:180,y:90}
+];
 const BP61_TREE_HEIGHT=3130;
 const BP61_LAYOUT=[{id:'start',kind:'start',x:172,y:3050},...BP66_ORDER.map((id,index)=>({id,x:[102,230,123,171,109,245,198,103,173,234,102,208,105,233,104,174,236,107,210,124,238,102,214,119,172][index],y:3000-(index+1)*111,kind:BP61_LEVELS[id].rank?'rank':''}))];
 function bp66RankIndex(rank){return ['Starter','Holz','Stein','Bronze','Silber'].indexOf(rank);}
@@ -5050,24 +5062,47 @@ function bp61FocusId(state){
  for(let i=start;i<25;i++){const id=BP66_ORDER[i];if(state.available[id]&&!state.finished[id])return id;}
  return BP66_ORDER.find(id=>state.available[id]&&!state.finished[id])||'L25';
 }
+function bp67RankMarkerMarkup(marker,state){
+ const done=state.finished[marker.from];
+ return `<div class="bp67-rank-separator ${done?'done':''}" style="left:${marker.x/360*100}%;top:${marker.y}px" aria-hidden="true"><span class="bp67-rank-line"></span><div class="bp67-rank-circle bp67-rank-${marker.rank.toLowerCase()}"><strong>${getRankDisplayName(marker.rank)}</strong></div></div>`;
+}
+function bp67StarRailMarkup(earned){
+ const top=150,bottom=2980;
+ const first=BP67_STAR_REWARDS[0].stars,last=BP67_STAR_REWARDS[BP67_STAR_REWARDS.length-1].stars;
+ const calcY=(stars)=>bottom-((stars-first)/(last-first||1))*(bottom-top);
+ return `<div class="bp67-star-rail" aria-hidden="true"><span class="bp67-star-line"></span>${BP67_STAR_REWARDS.map(item=>`<div class="bp67-star-stop ${earned>=item.stars?'done':''}" style="top:${calcY(item.stars)}px"><i></i><div><b>${item.stars} 🌟</b><small>${item.label}</small></div></div>`).join('')}</div>`;
+}
 function bp61NodeMarkup(item,state,focusId){
  const focused=item.id===focusId;
- if(item.kind==='start')return `<div class="bp61-start" style="left:${item.x/360*100}%;top:${item.y}px"><span>⚑</span><small>START</small></div>`;
+ if(item.kind==='start')return `<div class="bp61-start bp67-start" style="left:${item.x/360*100}%;top:${item.y}px"><span>⚑</span><small>START</small></div>`;
  const level=BP61_LEVELS[item.id],earned=bp61EarnedStars(item.id),done=state.finished[item.id],active=state.available[item.id];
  const status=done?'done':active?(state.skipped[item.id]?'skipped':'active'):'locked';
- return `<button type="button" class="bp61-goal bp66-goal ${level.rank?'bp66-rank':''} ${status} ${focused?'bp66-focused':''}" data-bp61-level="${level.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px" aria-label="Level ${BP65_NUMBERS[level.id]} ${level.title}, ${earned} of 3 stars, ${status}"><span class="bp61-orb"><span class="bp65-level-number">${BP65_NUMBERS[level.id]}</span></span>${bp61StarsMarkup(earned,level.id)}<span class="bp61-node-caption">${level.rank?getRankDisplayName(level.rank)+' · RANK':level.title}</span></button>`;
+ const caption=level.rank?`${getRankDisplayName(level.rank)} Challenge`:level.title;
+ return `<button type="button" class="bp61-goal bp66-goal ${status} ${focused?'bp66-focused':''}" data-bp61-level="${level.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px" aria-label="Level ${BP65_NUMBERS[level.id]} ${caption}, ${earned} of 3 stars, ${status}"><span class="bp61-orb"><span class="bp65-level-number">${BP65_NUMBERS[level.id]}</span></span>${bp61StarsMarkup(earned,level.id)}<span class="bp61-node-caption">${caption}</span></button>`;
 }
 function bp66ShortcutUsable(ladder,state){
  return !!(progress.journeyShortcuts66?.[ladder.id]||ladder.from===0||state.finished[BP66_ORDER[ladder.from-1]]);
 }
 function bp61EdgeMarkup(state){
  const layout=Object.fromEntries(BP61_LAYOUT.map(n=>[n.id,n]));
- const links=BP66_ORDER.map((id,i)=>{
-  const a=layout[i===0?'start':BP66_ORDER[i-1]],b=layout[id];
-  const ym=(a.y+b.y)/2;
-  const d=`M${a.x} ${a.y} C${a.x} ${ym} ${b.x} ${ym} ${b.x} ${b.y}`;
-  return `<path class="bp61-line ${state.finished[a.id]?'done':''}" d="${d}"/>`;
- });
+ const markerMap=Object.fromEntries(BP67_RANK_MARKERS.map(m=>[m.from,m]));
+ const points=['start'];
+ BP66_ORDER.forEach(id=>{points.push(id); if(markerMap[id]) points.push(markerMap[id].id);});
+ const getPoint=(id)=>layout[id]||BP67_RANK_MARKERS.find(m=>m.id===id);
+ const pointDone=(id)=>{
+  if(id==='start') return true;
+  const marker=BP67_RANK_MARKERS.find(m=>m.id===id);
+  if(marker) return !!state.finished[marker.from];
+  return !!state.finished[id];
+ };
+ const links=[];
+ for(let i=1;i<points.length;i++){
+   const a=getPoint(points[i-1]),b=getPoint(points[i]);
+   if(!a||!b) continue;
+   const ym=(a.y+b.y)/2;
+   const d=`M${a.x} ${a.y} C${a.x} ${ym} ${b.x} ${ym} ${b.x} ${b.y}`;
+   links.push(`<path class="bp61-line ${pointDone(points[i-1])?'done':''}" d="${d}"/>`);
+ }
  const shortcutLines=BP66_SHORTCUTS.map(s=>{
   const a=layout[s.from===0?'start':BP66_ORDER[s.from-1]],b=layout[BP66_ORDER[s.to-1]];
   const lane=s.side==='left'?21:338;
@@ -5089,16 +5124,17 @@ function renderTree(){
  const state=getBP61State(),focusId=bp61FocusId(state);
  const earned=BP66_ORDER.reduce((a,id)=>a+bp61EarnedStars(id),0);
  const completed=BP66_ORDER.filter(id=>state.finished[id]).length;
- skillTree.className='skill-tree-v1161 bp63-tree bp66-tree';
- skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>25 levels · Main Path + Shortcuts</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 75</small></strong><span>STARS</span></div></div>
+ skillTree.className='skill-tree-v1161 bp63-tree bp66-tree bp67-tree';
+ skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>Main Path · Shortcuts · Star Rewards</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 75</small></strong><span>STARS</span></div></div>
  <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} · ${completed}/25 complete</span></div>
  <div class="bp61-progress"><span style="width:${(earned/75*100).toFixed(1)}%"></span></div>
  <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
  <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
- ${[['BRONZE → SILVER',178],['STONE → BRONZE',1170],['WOOD → STONE',1950],['START → WOOD',2680]].map(([label,y])=>`<div class="bp61-zone" style="top:${y}px"><b>${label}</b></div>`).join('')}
+ ${bp67StarRailMarkup(earned)}
+ ${BP67_RANK_MARKERS.map(marker=>bp67RankMarkerMarkup(marker,state)).join('')}
  ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
  ${BP66_SHORTCUTS.map(s=>bp66ShortcutMarkup(s,state)).join('')}
- </div><div class="bp61-footer">Follow the numbered path, or take a shortcut if you know the exercise.<br>Skipped levels stay replayable and earn no free stars. · ${completed}/25 levels · ${earned}/75 stars</div>`;
+ </div>`;
  skillTree.querySelectorAll('[data-bp61-level]').forEach(b=>b.addEventListener('click',()=>openBP61Level(b.dataset.bp61Level)));
  skillTree.querySelectorAll('[data-bp66-shortcut]').forEach(b=>b.addEventListener('click',()=>openBP66Shortcut(b.dataset.bp66Shortcut)));
  document.getElementById('bp65FindLevel')?.addEventListener('click',openBP65Placement);
@@ -5317,25 +5353,26 @@ window.addEventListener("resize", () => {
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeTreeTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
-document.getElementById("openTreeStatsBtn").addEventListener("click", openTreeStats);
-document.getElementById("closeTreeStatsBtn").addEventListener("click", closeTreeStats);
-treeStatsSheet.addEventListener("click", (event) => {
+document.getElementById("openTreeStatsBtn")?.addEventListener("click", openTreeStats);
+document.getElementById("closeTreeStatsBtn")?.addEventListener("click", closeTreeStats);
+treeStatsSheet?.addEventListener("click", (event) => {
   if (event.target === treeStatsSheet) closeTreeStats();
 });
 document.getElementById("openHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("openHomeStatsBtn")?.addEventListener("click", openTreeStats);
+document.getElementById("homeProfileBanner")?.addEventListener("click", () => showView("profile"));
 document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("homeNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("homeNavHistoryBtn")?.addEventListener("click", () => showView("history"));
-document.getElementById("homeNavProfileBtn").addEventListener("click", () => showView("profile"));
+document.getElementById("homeNavProfileBtn").addEventListener("click", openTreeStats);
 document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("profileHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("profileNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("profileNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
 document.getElementById("profileNavHistoryBtn")?.addEventListener("click", () => showView("history"));
-document.getElementById("profileNavProfileBtn").addEventListener("click", () => showView("profile"));
+document.getElementById("profileNavProfileBtn").addEventListener("click", openTreeStats);
 profileGenderMaleBtn?.addEventListener("click", () => setHeroGender("male"));
 profileGenderFemaleBtn?.addEventListener("click", () => setHeroGender("female"));
 profileNameInput?.addEventListener("change", () => {
@@ -5350,14 +5387,14 @@ document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => sh
 document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("historyNavHistoryBtn")?.addEventListener("click", () => showView("history"));
-document.getElementById("historyNavProfileBtn")?.addEventListener("click", () => showView("profile"));
+document.getElementById("historyNavProfileBtn")?.addEventListener("click", openTreeStats);
 
 document.getElementById("homeNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("skillsNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("skillsNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("skillsNavTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("skillsNavHistoryBtn")?.addEventListener("click", () => showView("history"));
-document.getElementById("skillsNavProfileBtn")?.addEventListener("click", () => showView("profile"));
+document.getElementById("skillsNavProfileBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("profileNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("historyNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("skillsPushupCard")?.addEventListener("click", () => showView("tree"));
