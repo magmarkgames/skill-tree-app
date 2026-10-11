@@ -1,3 +1,27 @@
+# BodyPath v0.11.61 — The Star Journey
+
+## New playable Journey
+- **19 levels / 57 collectable stars**, including 11 main levels and the beginner (Wall/Incline), Knee and Wide side branches.
+- Start has two routes: a one-rep Standard shortcut or a progressive Wall → Incline route leading to the first Standard rep.
+- Wood unlocks **Knee**, Stone unlocks **Wide**, Bronze unlocks **Pike** (Pike missions arrive with the next chapter).
+- Rank milestones are unchanged: Wood = 1 Standard set max; Stone = 3 Standard max **OR** 15 Standard lifetime; Bronze = 10 Standard max **OR** 100 Standard lifetime.
+- All nodes use exercise images plus color-coded challenge symbols instead of a single target number. Small gold stars show 0–3 mastery.
+- Tap a goal to see three unique objectives and start a real camera/manual training session with its starting variant pre-selected.
+- **First star** is automatically awarded for a lifetime milestone, including existing saved workouts. **Bonus stars** require a targeted Challenge session (more reps or multiple sets). Bonus stars are persistent and replayable.
+- Knee is a new exercise type with its own stats and a small included SVG pictogram. Variant picker locks unearned new exercises, but historically recorded variants remain usable.
+- Old profile/workout history/backups remain compatible; new progress stored in `journeyStars` under existing localStorage key.
+
+## Limitations
+- The camera currently counts push-up reps, not precise form or knee/floor position; choose the correct variant yourself. No speed/form judgment is asserted.
+- Total Standard figures may be incomplete if historical sessions fell off the old 200-workout history limit (unchanged from v0.11.60).
+- For accurate multi-set bonus stars use camera training and complete each set; manual fallback records a single set only.
+- Later rank chapters still arrive in future versions. Other specialized variants keep their existing training-history data.
+
+## Install
+Replace the entire deployed folder, or at least `app.js`, `style.css`, `index.html`, and `variant-knee-v01161.svg` plus all existing assets. Cache-busted version is `v0.11.61`.
+
+---
+
 # BodyPath v0.11.60 — Journey Start → Bronze
 
 ## What changed

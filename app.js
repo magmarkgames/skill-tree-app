@@ -47,6 +47,7 @@ const DEFAULT_PROGRESS = {
   pushupMax: 0,
   pushupTotal: 0,
   journeyStandardTotal: 0,
+  journeyStars: {},
   pushupBestDay: 0,
   pushupBestWeek: 0,
   // Nur für saubere Migration älterer Versionen behalten; v0.8 zeigt/benutzt keine Streak mehr.
@@ -70,6 +71,7 @@ const DEFAULT_PROGRESS = {
 const VARIANT_META = {
   standard: { label: "Standard", shortLabel: "Standard", color: "#4DA3FF" },
   wall: { label: "Wall", shortLabel: "Wall", color: "#6C9CFF" },
+  knee: { label: "Knee", shortLabel: "Knee", color: "#A994FF" },
   wide: { label: "Wide", shortLabel: "Wide", color: "#E65BC8" },
   military: { label: "Military", shortLabel: "Military", color: "#FF5D6C" },
   diamond: { label: "Diamond", shortLabel: "Diamond", color: "#F2A65A" },
@@ -84,6 +86,7 @@ const VARIANT_META = {
 
 const VARIANT_XP_PER_REP = {
   wall: 1,
+  knee: 1.25,
   incline: 1.5,
   standard: 2,
   wide: 2.25,
@@ -126,6 +129,7 @@ const ACCOUNT_BACKGROUNDS = [
 const VARIANT_UNLOCK_NODES = {
   standard: null,
   wall: null,
+  knee: null,
   wide: "wideSkill",
   military: "militarySkill",
   diamond: "diamondSkill",
@@ -198,6 +202,7 @@ const ASSET_PATHS = {
   variants: {
     standard: "variant-standard-v1134.webp",
     wall: "variant-wall-v1134.webp",
+    knee: "variant-knee-v01161.svg",
     wide: "variant-wide-v1134.webp",
     military: "variant-military-v1134.webp",
     diamond: "variant-diamond-v1134.webp",
@@ -457,6 +462,8 @@ let pauseSeconds = 0;
 let lastPauseVibrationMark = 0;
 let entryAssessmentActive = false;
 let activeChallengeId = null;
+let activeJourneyLevelId = null;
+let lastBP61Result = null;
 
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
@@ -726,6 +733,7 @@ function normalizeProgress(value) {
     variantStats,
     challengeProgress: normalizeChallengeProgress(value?.challengeProgress),
     challengeCompletions: value?.challengeCompletions && typeof value.challengeCompletions === "object" ? value.challengeCompletions : {},
+    journeyStars: value?.journeyStars && typeof value.journeyStars === "object" ? Object.fromEntries(Object.entries(value.journeyStars).filter(([k,v]) => /^([AHKSW]\d+)$/.test(k) && Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0, Math.min(3, Math.floor(Number(v))))])) : {},
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
@@ -746,7 +754,7 @@ function buildBackupPayload() {
   return {
     format: "power-push-backup",
     version: 1,
-    appVersion: "0.11.60",
+    appVersion: "0.11.61",
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     progress: normalizeProgress(progress)
@@ -2443,6 +2451,8 @@ function openTraining() {
 function closeTraining() {
   workoutActive = false;
   activeChallengeId = null;
+  activeJourneyLevelId = null;
+  lastBP61Result = null;
   countdownActive = false;
   autoCountdownPending = false;
   trainingPhase = "prep";
@@ -2476,6 +2486,7 @@ function setSelectedTrainingVariant(variant) {
 }
 
 function showPrepUI() {
+  updateBP61TrainingBanner();
   trainingPhase = "prep";
   setPrepPanel.classList.remove("hidden");
   activeSetPanel.classList.add("hidden");
@@ -3389,9 +3400,13 @@ function finishWorkout() {
   if (!manualMode) {
     const completedSets = workoutSets.filter(set => Number(set?.reps) >= 1);
     const saved = completedSets.length > 0 ? saveTrainingResult({ showSuccess: false }) : false;
+    const resultCard = lastBP61Result;
     closeTraining();
     showView("tree");
-    if (saved) showAppToast("Training gespeichert");
+    if (saved) {
+      if (resultCard) showBP61Result(resultCard);
+      else showAppToast("Training gespeichert");
+    }
     return;
   }
 
@@ -3422,6 +3437,9 @@ function saveTrainingResult(options = {}) {
   const showSuccess = options.showSuccess !== false;
   const assessmentWasActive = entryAssessmentActive;
   const challengeWasActive = activeChallengeId;
+  const journeyWasActive = activeJourneyLevelId;
+  const priorJourneyStars = journeyWasActive ? bp61EarnedStars(journeyWasActive) : 0;
+  let journeyResult = null;
   let challengeResult = null;
   const oldMax = progress.pushupMax;
   const oldRank = getCurrentRankName();
@@ -3494,6 +3512,18 @@ function saveTrainingResult(options = {}) {
     activeChallengeId = null;
   }
 
+  if (journeyWasActive) {
+    const level = BP61_LEVELS[journeyWasActive];
+    if (level) {
+      journeyResult = evaluateBP61Level(level, sets);
+      if (journeyResult.stars > 0) {
+        progress.journeyStars = progress.journeyStars || {};
+        progress.journeyStars[level.id] = Math.max(Number(progress.journeyStars[level.id]) || 0, journeyResult.stars);
+      }
+    }
+    activeJourneyLevelId = null;
+  }
+
   if (assessmentWasActive) {
     progress.entrySetupDone = true;
     progress.entryPath = "assessment";
@@ -3522,12 +3552,19 @@ function saveTrainingResult(options = {}) {
     if (challengeResult?.passed) addSuccessLine(`⭐ Challenge ${challenge?.number || ""} complete · ${"★".repeat(challengeResult.stars)}${"☆".repeat(3 - challengeResult.stars)}`, true);
     else addSuccessLine(`Challenge ${challenge?.number || ""} not completed yet · try again`);
   }
+  if (journeyWasActive && BP61_LEVELS[journeyWasActive]) {
+    const level = BP61_LEVELS[journeyWasActive];
+    addSuccessLine(`${journeyResult?.stars ? "★".repeat(journeyResult.stars) + "☆".repeat(3 - journeyResult.stars) : "☆☆☆"} ${level.title} · ${journeyResult?.stars ? "Challenge progress saved" : "Try again to earn stars"}`, !!journeyResult?.stars);
+  }
   if (assessmentWasActive) addSuccessLine(`⚡ Assessment complete · your starting rank was adjusted`, true);
   if (newStandardRecord) addSuccessLine(`🏆 Neuer Standard-Rekord: ${progress.pushupMax}`, true);
   if (levelUps > 0) addSuccessLine(`⬆ Level Up! ${oldAccountLevel} → ${newAccountInfo.level}`, true);
   cosmeticUnlocks.forEach(item => addSuccessLine(`🎁 ${item.kind} unlocked: ${item.label}`, true));
   if (rankUp) addSuccessLine(`⭐ Neuer Rang: ${newRank}`, true);
   else addSuccessLine(`Rang: ${newRank}`);
+  lastBP61Result = journeyWasActive && BP61_LEVELS[journeyWasActive]
+    ? { id:journeyWasActive,stars:bp61EarnedStars(journeyWasActive),prior:priorJourneyStars,rankUp:rankUp?newRank:null }
+    : null;
   if (showSuccess) showStep("success");
   return true;
 }
@@ -3814,17 +3851,10 @@ const V012_CHAPTERS = [
 ];
 
 const V012_VARIANT_UNLOCK_RANK = {
-  standard: "Starter",
-  wall: "Starter",
-  incline: "Starter",
-  wide: "Holz",
-  diamond: "Stein",
-  military: "Silber",
-  decline: "Gold",
-  pike: "Gold",
-  explosive: "Platin",
-  archer: "Platin",
-  handstand: "Diamant II",
+  standard: "Starter", wall: "Starter", incline: "Starter",
+  knee: "Holz", wide: "Stein", pike: "Bronze",
+  diamond: "Silber", military: "Silber", decline: "Gold",
+  explosive: "Gold", archer: "Platin", handstand: "Diamant II",
   pseudoPlanche: "Diamant III"
 };
 
@@ -3974,8 +4004,13 @@ function getV1150VariantUnlockState(variant) {
 }
 
 function isV012VariantAvailable(variant) {
-  // v0.11.59 alpha test: all Push-Up variants are intentionally available.
-  return Boolean(VARIANT_META[variant]);
+  if (!VARIANT_META[variant]) return false;
+  const required = V012_VARIANT_UNLOCK_RANK[variant];
+  // Previously trained variants remain usable when importing old saves.
+  const legacy = progress?.variantStats?.[variant];
+  if ((Number(legacy?.max) || 0) > 0 || (Number(legacy?.total) || 0) > 0) return true;
+  if (!required) return false;
+  return isV012RankAtLeast(getV012CurrentRankName(), required);
 }
 
 function getV012PathState(path) {
@@ -4800,143 +4835,253 @@ function bindV1150TreeEvents() {
   });
 }
 
-// v0.11.60 — connected, bottom-up Journey (11 milestones until Bronze).
-// Edge unlocks use the source-node state, not the target-node state.
-const BP60_LAYOUT = [
-  { id: "start", kind: "start", x: 180, y: 1170 },
-  { id: "first", kind: "goal", chapter: 0, path: 0, step: 0, x: 180, y: 1065 },
-  { id: "wood", kind: "rank", rank: "Holz", x: 180, y: 940 },
-  { id: "w-p2", kind: "goal", chapter: 1, path: 0, step: 0, x: 85, y: 817, row: "wood1" },
-  { id: "w-v5", kind: "goal", chapter: 1, path: 1, step: 0, x: 275, y: 817, row: "wood1" },
-  { id: "w-p3", kind: "goal", chapter: 1, path: 0, step: 1, x: 114, y: 712, row: "wood2", prior: "wood1" },
-  { id: "w-v15", kind: "goal", chapter: 1, path: 1, step: 1, x: 246, y: 712, row: "wood2", prior: "wood1" },
-  { id: "stone", kind: "rank", rank: "Stein", x: 180, y: 583 },
-  { id: "s-p5", kind: "goal", chapter: 2, path: 0, step: 0, x: 85, y: 455, row: "stone1" },
-  { id: "s-v30", kind: "goal", chapter: 2, path: 1, step: 0, x: 275, y: 455, row: "stone1" },
-  { id: "s-p7", kind: "goal", chapter: 2, path: 0, step: 1, x: 114, y: 345, row: "stone2", prior: "stone1" },
-  { id: "s-v60", kind: "goal", chapter: 2, path: 1, step: 1, x: 246, y: 345, row: "stone2", prior: "stone1" },
-  { id: "s-p10", kind: "goal", chapter: 2, path: 0, step: 2, x: 85, y: 235, row: "stone3", prior: "stone2" },
-  { id: "s-v100", kind: "goal", chapter: 2, path: 1, step: 2, x: 275, y: 235, row: "stone3", prior: "stone2" },
-  { id: "bronze", kind: "rank", rank: "Bronze", x: 180, y: 102 }
+// BodyPath v0.11.61 — 19 real, replayable Journey levels.
+// Each level has one lifetime core goal and two optional single-session bonuses.
+// Existing v0.11.60 rank logic remains the authority for the three ranks.
+function bp61(id,title,variant,kind,core,bonus2,bonus3) {
+  return {id,title,variant,kind,core,bonus2,bonus3};
+}
+const BP61_LEVELS = Object.fromEntries([
+  bp61('A1','First Wall','wall','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
+  bp61('A2','Wall Builder','wall','variant',{type:'max',reps:5},{type:'max',reps:8},{type:'sets',count:2,reps:8}),
+  bp61('A3','First Incline','incline','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
+  bp61('A4','Incline Builder','incline','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5}),
+  bp61('A5','First Push-Up','standard','power',{type:'max',reps:1},{type:'max',reps:2},{type:'max',reps:3}),
+  bp61('H1','Double Up','standard','power',{type:'max',reps:2},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
+  bp61('H2','First Five','standard','volume',{type:'total',reps:5},{type:'session',reps:5},{type:'sets',count:2,reps:3}),
+  bp61('H3','Triple Up','standard','power',{type:'max',reps:3},{type:'max',reps:4},{type:'sets',count:2,reps:4}),
+  bp61('H4','First Fifteen','standard','volume',{type:'total',reps:15},{type:'session',reps:8},{type:'sets',count:2,reps:5}),
+  bp61('K1','First Knee','knee','variant',{type:'max',reps:1},{type:'max',reps:5},{type:'sets',count:2,reps:5}),
+  bp61('K2','Knee Builder','knee','variant',{type:'max',reps:5},{type:'max',reps:10},{type:'sets',count:2,reps:10}),
+  bp61('S1','Five Strong','standard','power',{type:'max',reps:5},{type:'max',reps:6},{type:'sets',count:2,reps:6}),
+  bp61('S2','Thirty Total','standard','volume',{type:'total',reps:30},{type:'session',reps:10},{type:'sets',count:2,reps:8}),
+  bp61('S3','Seven Strong','standard','power',{type:'max',reps:7},{type:'max',reps:9},{type:'sets',count:2,reps:9}),
+  bp61('S4','Sixty Total','standard','volume',{type:'total',reps:60},{type:'session',reps:15},{type:'sets',count:3,reps:6}),
+  bp61('S5','Double Digits','standard','power',{type:'max',reps:10},{type:'max',reps:12},{type:'sets',count:2,reps:10}),
+  bp61('S6','Century Club','standard','volume',{type:'total',reps:100},{type:'session',reps:25},{type:'sets',count:3,reps:10}),
+  bp61('W1','First Wide','wide','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
+  bp61('W2','Wide Builder','wide','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5})
+].map(level => [level.id,level]));
+
+// Bottom-up coordinates, 360-wide viewBox. 'unlock' is a reward, not a 20th level.
+const BP61_LAYOUT = [
+  {id:'start',kind:'start',x:175,y:2450},
+  {id:'A1',x:267,y:2320},{id:'A2',x:267,y:2207},
+  {id:'A3',x:267,y:2094},{id:'A4',x:267,y:1981},
+  {id:'A5',x:175,y:1835},
+  {id:'wood',kind:'rank',rank:'Holz',x:175,y:1703},
+  {id:'H1',x:86,y:1549},{id:'H2',x:257,y:1549},
+  {id:'H3',x:86,y:1399},{id:'H4',x:237,y:1399},
+  {id:'K1',x:327,y:1330},{id:'K2',x:327,y:1200},
+  {id:'stone',kind:'rank',rank:'Stein',x:175,y:1234},
+  {id:'S1',x:85,y:1086},{id:'S2',x:267,y:1086},
+  {id:'W1',x:176,y:973},
+  {id:'S3',x:85,y:911},{id:'S4',x:267,y:911},
+  {id:'W2',x:176,y:788},
+  {id:'S5',x:85,y:730},{id:'S6',x:267,y:730},
+  {id:'bronze',kind:'rank',rank:'Bronze',x:175,y:567},
+  {id:'pike',kind:'reward',variant:'pike',x:175,y:397}
 ];
-// Cross-links allow users to choose a different training style at every stage.
-const BP60_EDGES = [
-  ["start", "first"], ["first", "wood"],
-  ["wood", "w-p2"], ["wood", "w-v5"],
-  ["w-p2", "w-p3"], ["w-v5", "w-v15"],
-  ["w-p2", "w-v15", true], ["w-v5", "w-p3", true],
-  ["w-p3", "stone"], ["w-v15", "stone"],
-  ["stone", "s-p5"], ["stone", "s-v30"],
-  ["s-p5", "s-p7"], ["s-v30", "s-v60"],
-  ["s-p5", "s-v60", true], ["s-v30", "s-p7", true],
-  ["s-p7", "s-p10"], ["s-v60", "s-v100"],
-  ["s-p7", "s-v100", true], ["s-v60", "s-p10", true],
-  ["s-p10", "bronze"], ["s-v100", "bronze"]
+const BP61_EDGES = [
+  ['start','A1'],['start','A5',true,'shortcut'],
+  ['A1','A2'],['A2','A3'],['A3','A4'],['A4','A5'],['A5','wood'],
+  ['wood','H1'],['wood','H2'],['wood','K1',true],
+  ['H1','H3'],['H2','H4'],['H1','H4',true],['H2','H3',true],
+  ['H3','stone'],['H4','stone'],['K1','K2'],
+  ['stone','S1'],['stone','S2'],['stone','W1',true],
+  ['S1','S3'],['S2','S4'],['S1','S4',true],['S2','S3',true],
+  ['S3','S5'],['S4','S6'],['S3','S6',true],['S4','S5',true],
+  ['W1','W2'],['S5','bronze'],['S6','bronze'],['bronze','pike']
 ];
-
-function getBP60State() {
-  const rank = getV012CurrentRankName();
-  const rankIndex = V012_RANKS.indexOf(rank);
-  const finished = {};
-  BP60_LAYOUT.forEach(layout => {
-    if (layout.kind === "start") finished[layout.id] = true;
-    else if (layout.kind === "rank") finished[layout.id] = rankIndex >= V012_RANKS.indexOf(layout.rank);
-    else {
-      const path = V012_CHAPTERS[layout.chapter].paths[layout.path];
-      finished[layout.id] = getV012PathState(path).nodes[layout.step].done;
-    }
-  });
-  const rows = {
-    wood1: ["w-p2", "w-v5"], wood2: ["w-p3", "w-v15"],
-    stone1: ["s-p5", "s-v30"], stone2: ["s-p7", "s-v60"]
-  };
-  const available = {};
-  BP60_LAYOUT.forEach(layout => {
-    if (finished[layout.id]) available[layout.id] = true;
-    else if (layout.kind !== "goal") available[layout.id] = false;
-    else if (layout.id === "first") available[layout.id] = true;
-    else if (layout.row?.startsWith("wood")) {
-      available[layout.id] = finished.wood && (!layout.prior || rows[layout.prior].some(id => finished[id]));
-    } else if (layout.row?.startsWith("stone")) {
-      available[layout.id] = finished.stone && (!layout.prior || rows[layout.prior].some(id => finished[id]));
-    } else available[layout.id] = false;
-  });
-  return { finished, available, rank };
+function bp61LifetimeValue(level) {
+  const metric = level.core.type;
+  if (level.variant === 'standard' && metric === 'max') return Number(progress.pushupMax)||0;
+  if (level.variant === 'standard' && metric === 'total') return Number(progress.journeyStandardTotal)||0;
+  const stats = getVariantStats(level.variant);
+  return Math.max(0,Number(stats[metric])||0);
 }
-
-function renderBP60Rank(node, state) {
-  const unlocked = state.finished[node.id];
-  const labels = { Holz: "WOOD", Stein: "STONE", Bronze: "BRONZE" };
-  const symbols = { Holz: "✦", Stein: "◆", Bronze: "⬡" };
-  return `<button type="button" class="bp60-rank bp60-rank-${node.id} ${unlocked ? "done" : "locked"}" data-bp60-rank="${node.rank}" aria-label="${labels[node.rank]} rank ${unlocked ? 'unlocked' : 'locked'}" style="left:${node.x/360*100}%;top:${node.y}px">
-    <span class="bp60-rank-symbol">${symbols[node.rank]}</span>
-    <strong>${labels[node.rank]}</strong>
-  </button>`;
+function bp61CoreDone(id) {
+  const level = BP61_LEVELS[id];
+  if (!level) return false;
+  return bp61LifetimeValue(level) >= level.core.reps || Number(progress.journeyStars?.[id]) >= 1;
 }
-
-function renderBP60Goal(node, state) {
-  const path = V012_CHAPTERS[node.chapter].paths[node.path];
-  const goal = getV012PathState(path).nodes[node.step];
-  const done = state.finished[node.id];
-  const active = !done && state.available[node.id];
-  const status = done ? "done" : active ? "active" : "locked";
-  const isPower = goal.metric === "standardMax";
-  const description = isPower ? "Standard Push-Ups in one set" : "Standard Push-Ups overall";
-  return `<button type="button" class="bp60-goal ${status} ${isPower ? 'power' : 'volume'}" data-bp60-goal="${node.id}" ${active ? 'data-tree-current="true"' : ''} style="left:${node.x/360*100}%;top:${node.y}px;--bp60-kind:${isPower ? '#F07786' : '#79AEFF'}" aria-label="${goal.label}: ${goal.target} ${description}. ${done ? 'Completed' : active ? 'Available' : 'Locked'}">
-    <span class="bp60-goal-circle"><span class="bp60-goal-inner"><span class="bp60-kind-icon">${isPower ? '◆' : '▥'}</span><b>${goal.target}</b></span></span>
-    <span class="bp60-goal-caption">${isPower ? 'POWER' : 'VOLUME'}</span>
-  </button>`;
+function bp61EarnedStars(id) {
+  if (!bp61CoreDone(id)) return 0;
+  return Math.max(1,Math.min(3,Math.floor(Number(progress.journeyStars?.[id])||0)));
 }
-
-function renderBP60Edges(state) {
-  const lookup = Object.fromEntries(BP60_LAYOUT.map(node => [node.id, node]));
-  return `<svg class="bp60-lines" viewBox="0 0 360 1240" preserveAspectRatio="none" aria-hidden="true">
-    ${BP60_EDGES.map(([source, target, cross]) => {
-      const a = lookup[source], b = lookup[target];
-      const green = state.finished[source];
-      return `<line class="bp60-line ${green ? 'done' : 'locked'} ${cross ? 'cross' : ''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" />`;
-    }).join("")}
-  </svg>`;
+function bp61ObjectiveLabel(objective,variant,first=false) {
+  const name = VARIANT_META[variant]?.label || 'Standard';
+  const n = objective.reps;
+  if (objective.type === 'max') return `${n} ${name} Push-Up${n===1?'':'s'} in one set`;
+  if (objective.type === 'total') return `${n} ${name} Push-Ups overall`;
+  if (objective.type === 'session') return `${n} ${name} Push-Ups in one challenge`;
+  if (objective.type === 'sets') return `${objective.count} sets of ${n} ${name} Push-Ups`;
+  return 'Challenge';
 }
-
+function bp61SessionMeets(objective,variant,sets) {
+  const matched = (sets||[]).filter(set=>set.variant===variant);
+  const counts = matched.map(set=>Math.max(0,Number(set.reps)||0));
+  if (objective.type==='max') return counts.some(n=>n>=objective.reps);
+  if (objective.type==='session') return counts.reduce((a,b)=>a+b,0)>=objective.reps;
+  if (objective.type==='sets') return counts.filter(n=>n>=objective.reps).length>=objective.count;
+  if (objective.type==='total') return counts.reduce((a,b)=>a+b,0)>=objective.reps;
+  return false;
+}
+function evaluateBP61Level(level,sets) {
+  if (!level) return {stars:0};
+  // Core can be completed by ANY saved workout, while bonus stars come from
+  // one explicitly started challenge. Never evaluate from unrelated workouts.
+  const core = bp61CoreDone(level.id) || bp61SessionMeets(level.core,level.variant,sets);
+  if (!core) return {stars:0};
+  let stars=1;
+  if (bp61SessionMeets(level.bonus2,level.variant,sets)) stars=2;
+  if (bp61SessionMeets(level.bonus3,level.variant,sets)) stars=3;
+  return {stars};
+}
+function getBP61State() {
+  const finished={start:true};
+  const available={start:true};
+  const rank=getV012CurrentRankName();
+  finished.wood=isV012RankAtLeast(rank,'Holz');
+  finished.stone=isV012RankAtLeast(rank,'Stein');
+  finished.bronze=isV012RankAtLeast(rank,'Bronze');
+  finished.pike=finished.bronze;
+  for (const id of Object.keys(BP61_LEVELS)) finished[id]=bp61CoreDone(id);
+  available.A1=true; available.A2=finished.A1;
+  available.A3=finished.A2; available.A4=finished.A3;
+  available.A5=true;
+  available.H1=available.H2=available.K1=finished.wood;
+  available.H3=available.H4=finished.wood&&(finished.H1||finished.H2);
+  available.K2=finished.wood&&finished.K1;
+  available.S1=available.S2=available.W1=finished.stone;
+  available.S3=available.S4=finished.stone&&(finished.S1||finished.S2);
+  available.S5=available.S6=finished.stone&&(finished.S3||finished.S4);
+  available.W2=finished.stone&&finished.W1;
+  available.wood=finished.wood; available.stone=finished.stone;
+  available.bronze=finished.bronze;available.pike=finished.pike;
+  return {finished,available,rank};
+}
+function bp61StarsMarkup(earned) {
+  return `<span class="bp61-stars" aria-label="${earned} of 3 stars">${[1,2,3].map(n=>`<span class="${n<=earned?'earned':''}">★</span>`).join('')}</span>`;
+}
+function bp61FocusId(state) {
+  if (!state.finished.wood) {
+    if (state.finished.A1 && !state.finished.A2) return 'A2';
+    if (state.finished.A2 && !state.finished.A3) return 'A3';
+    if (state.finished.A3 && !state.finished.A4) return 'A4';
+    if (state.finished.A4) return 'A5';
+    return 'start';
+  }
+  if (!state.finished.stone) return ['H1','H2','H3','H4'].find(id=>state.available[id]&&!state.finished[id])||'stone';
+  if (!state.finished.bronze) return ['S1','S2','S3','S4','S5','S6'].find(id=>state.available[id]&&!state.finished[id])||'bronze';
+  return 'bronze';
+}
+function bp61NodeMarkup(item,state,focusId) {
+  const focused=item.id===focusId;
+  const done=state.finished[item.id], active=state.available[item.id];
+  const status=done?'done':active?'active':'locked';
+  if (item.kind==='start') return `<div class="bp61-start" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px"><span>⚑</span><small>START</small></div>`;
+  if (item.kind==='rank') {
+    const icons={Holz:'✦',Stein:'◆',Bronze:'⬡'};
+    const unlocked={Holz:'Knee',Stein:'Wide',Bronze:'Pike'};
+    return `<button type="button" class="bp61-rank bp61-rank-${item.id} ${status}" ${focused?'data-tree-current="true"':''} data-bp61-rank="${item.rank}" style="left:${item.x/360*100}%;top:${item.y}px" aria-label="${item.rank} ${done?'unlocked':'locked'}"><span class="bp61-rank-symbol">${icons[item.rank]}</span><strong>${getRankDisplayName(item.rank).toUpperCase()}</strong><small>+ ${unlocked[item.rank]} ↗</small></button>`;
+  }
+  if(item.kind==='reward') return `<button type="button" class="bp61-reward ${status}" data-bp61-reward="pike" style="left:${item.x/360*100}%;top:${item.y}px"><span class="bp61-reward-icon">${getVariantIconSvg('pike')}</span><span class="bp61-reward-text"><b>PIKE UNLOCK</b><small>${done?'New variant available':'Reach Bronze to unlock'}</small></span></button>`;
+  const level=BP61_LEVELS[item.id];const earned=bp61EarnedStars(item.id);
+  const kindColor=level.kind==='power'?'#F0808B':level.kind==='volume'?'#7CB6FF':'#B49BFF';
+  return `<button type="button" class="bp61-goal ${status} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="${level.title}. ${earned} of 3 stars. ${status}"><span class="bp61-orb"><span class="bp61-orb-icon">${getVariantIconSvg(level.variant)}</span><span class="bp61-kind-tag">${level.kind==='power'?'◆':level.kind==='volume'?'▤':'✧'}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span></button>`;
+}
+function bp61EdgeMarkup(state) {
+  const lookup=Object.fromEntries(BP61_LAYOUT.map(x=>[x.id,x]));
+  return `<svg class="bp61-lines" viewBox="0 0 360 2510" preserveAspectRatio="none" aria-hidden="true">${BP61_EDGES.map(([src,dest,cross,kind])=>{
+    const a=lookup[src], b=lookup[dest];
+    if (!a||!b) return '';
+    const done=state.finished[src];
+    if(src==='wood'&&dest==='K1') return `<path class="bp61-line ${done?'done':''} cross" d="M${a.x} ${a.y} C330 ${a.y-60} 327 ${b.y+100} ${b.x} ${b.y}" />`;
+    if(kind==='shortcut')return `<path class="bp61-line ${done?'done':''} shortcut" d="M${a.x} ${a.y-20} Q65 ${a.y-12} 61 ${a.y-95} V${b.y+55} Q61 ${b.y} ${b.x-25} ${b.y}" />`;
+    return `<path class="bp61-line ${done?'done':''} ${cross?'cross':''}" d="M${a.x} ${a.y} L${b.x} ${b.y}" />`;
+  }).join('')}</svg>`;
+}
 function renderTree() {
-  if (!skillTree) return;
-  const state = getBP60State();
-  const completed = BP60_LAYOUT.filter(node => node.kind === "goal" && state.finished[node.id]).length;
-  const visibleCount = BP60_LAYOUT.filter(node => node.kind === "goal").length;
-  const newestActive = BP60_LAYOUT.filter(node => node.kind === "goal" && state.available[node.id] && !state.finished[node.id]);
-  skillTree.className = "skill-tree-v1160";
-  skillTree.innerHTML = `<div class="bp60-headline">
-      <strong>YOUR JOURNEY</strong>
-      <span>${completed} / ${visibleCount} milestones</span>
+  if(!skillTree)return;
+  const state=getBP61State();
+  const focusId=bp61FocusId(state);
+  const earned=Object.keys(BP61_LEVELS).reduce((sum,id)=>sum+bp61EarnedStars(id),0);
+  const completed=Object.keys(BP61_LEVELS).filter(id=>state.finished[id]).length;
+  skillTree.className='skill-tree-v1161';
+  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>19 challenges · From first rep to Bronze</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 57</small></strong><span>STARS</span></div></div>
+    <div class="bp61-progress"><span style="width:${(earned/57*100).toFixed(1)}%"></span></div>
+    <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
+    <div class="bp61-canvas">${bp61EdgeMarkup(state)}
+      <div class="bp61-zone" style="top:280px"><b>BRONZE</b><span>NEW: PIKE PUSH-UPS</span></div>
+      <div class="bp61-zone" style="top:1320px"><b>WOOD</b><span>NEW: KNEE PUSH-UPS</span></div>
+      <div class="bp61-route-hint" style="top:2186px;left:10%">DIRECT SHORTCUT</div>
+      ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
     </div>
-    <div class="bp60-legend"><span><i class="bp60-dot done"></i>Completed</span><span><i class="bp60-dot active"></i>Available</span><span><i class="bp60-dot locked"></i>Locked</span></div>
-    <div class="bp60-tree">
-      ${renderBP60Edges(state)}
-      ${BP60_LAYOUT.map(node => node.kind === "rank" ? renderBP60Rank(node, state) : node.kind === "start" ? `<div class="bp60-start" style="left:${node.x/360*100}%;top:${node.y}px"><span>⚑</span><small>START</small></div>` : renderBP60Goal(node, state)).join("")}
-    </div>
-    <div class="bp60-end-note">${state.finished.bronze ? "Bronze unlocked · more ranks coming soon" : 'Reach Bronze with 10 in one set OR 100 Standard Push-Ups total'}</div>`;
+    <div class="bp61-footer">${state.finished.bronze?'Bronze achieved! Replay levels to collect missing stars.':'Reach Bronze with 10 Standard Push-Ups in one set OR 100 Standard total.'}<br>${completed}/19 levels finished · Bonus stars in Challenge Mode</div>`;
+  skillTree.querySelectorAll('[data-bp61-level]').forEach(btn=>btn.addEventListener('click',()=>openBP61Level(btn.dataset.bp61Level)));
+  skillTree.querySelectorAll('[data-bp61-rank]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank(btn.dataset.bp61Rank)));
+  skillTree.querySelectorAll('[data-bp61-reward]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank('Bronze')));
+}
+function ensureBP61Sheet(){
+  if(document.getElementById('bp61Sheet'))return;
+  const el=document.createElement('div');el.id='bp61Sheet';el.className='bp61-sheet hidden';
+  el.innerHTML=`<div class="bp61-sheet-card" role="dialog" aria-modal="true" aria-labelledby="bp61SheetTitle"><button type="button" class="bp61-sheet-close" aria-label="Close">×</button><div id="bp61SheetBody"></div><button type="button" id="bp61SheetStart" class="bp61-sheet-primary">START CHALLENGE →</button></div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click',e=>{if(e.target===el)closeBP61Sheet();});
+  el.querySelector('.bp61-sheet-close').addEventListener('click',closeBP61Sheet);
+  el.querySelector('#bp61SheetStart').addEventListener('click',()=>{if(el.dataset.level)startBP61Challenge(el.dataset.level);});
+}
+function openBP61Level(id){
+  const level=BP61_LEVELS[id];if(!level)return;
+  ensureBP61Sheet();const state=getBP61State();const done=state.finished[id];const active=state.available[id];
+  const stars=bp61EarnedStars(id);const sheet=document.getElementById('bp61Sheet');sheet.dataset.level=id;
+  const cat=level.kind==='power'?'POWER':level.kind==='volume'?'VOLUME':'NEW VARIANT';
+  const value=bp61LifetimeValue(level);const max=level.core.reps;
+  const descriptions=[level.core,level.bonus2,level.bonus3];
+  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">LEVEL ${id} · ${cat}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon">${getVariantIconSvg(level.variant)}</span><div><h2 id="bp61SheetTitle">${level.title}</h2><p>${VARIANT_META[level.variant].label} Push-Ups</p></div></div><div class="bp61-sheet-starshow">${bp61StarsMarkup(stars)}<strong>${stars}/3 STARS</strong></div>
+   <div class="bp61-sheet-objectives">${descriptions.map((desc,i)=>`<div class="bp61-objective ${i<stars?'achieved':''}"><span class="bp61-objective-star">★</span><div><small>${i===0?'COMPLETE LEVEL':i===1?'BONUS CHALLENGE':'MASTER CHALLENGE'}</small><strong>${bp61ObjectiveLabel(desc,level.variant,i===0)}</strong></div><span class="bp61-objective-check">${i<stars?'✓':i===0?`${Math.min(max,value)}/${max}`:'○'}</span></div>`).join('')}</div><p class="bp61-sheet-tip">${active||done?'★ Core progress counts in free training. Earn bonus stars by playing this challenge.':'🔒 Complete the previous connected level or reach the required rank to start. Existing performances still count.'}</p>`;
+  const start=sheet.querySelector('#bp61SheetStart');start.disabled=!(active||done);start.textContent=!(active||done)?'LOCKED':done?'REPLAY CHALLENGE →':'START CHALLENGE →';
+  sheet.classList.remove('hidden');document.body.style.overflow='hidden';
+}
+function closeBP61Sheet(){const sheet=document.getElementById('bp61Sheet');if(sheet)sheet.classList.add('hidden');document.body.style.overflow='';}
+function openBP61Rank(rank){
+  const states=getBP61State();const id={Holz:'wood',Stein:'stone',Bronze:'bronze'}[rank];
+  const reward={Holz:'Knee',Stein:'Wide',Bronze:'Pike'}[rank];
+  const requirements={Holz:'1 Standard Push-Up in one set',Stein:'3 Standard in one set OR 15 Standard total',Bronze:'10 Standard in one set OR 100 Standard total'}[rank];
+  ensureBP61Sheet();const sheet=document.getElementById('bp61Sheet');sheet.dataset.level='';
+  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">RANK REWARD</span><div class="bp61-rank-info">${getRankIconSvg(rank)}<div><h2 id="bp61SheetTitle">${getRankDisplayName(rank)}</h2><p>${states.finished[id]?'✓ Rank unlocked':'🔒 Rank locked'}</p></div></div><div class="bp61-rank-reward"><strong>UNLOCK: ${reward.toUpperCase()} PUSH-UPS</strong><p>${requirements}</p></div>`;
+  sheet.querySelector('#bp61SheetStart').disabled=true;sheet.querySelector('#bp61SheetStart').textContent='VIEW THE JOURNEY';
+  sheet.classList.remove('hidden');document.body.style.overflow='hidden';
+}
+function startBP61Challenge(id){
+  const level=BP61_LEVELS[id],state=getBP61State();
+  if(!level||!(state.available[id]||state.finished[id]))return;
+  closeBP61Sheet();openTraining();activeJourneyLevelId=id;
+  setSelectedTrainingVariant(level.variant);showStep('quick');showPrepUI();
+  trainingTitle.textContent=`Challenge · ${level.title}`;
+  prepCameraHint.textContent=bp61ObjectiveLabel(level.core,level.variant);
+  updateBP61TrainingBanner();
+  showAppToast(`${level.title} · earn up to 3 stars!`);
+}
+function updateBP61TrainingBanner(){
+  const el=document.getElementById('bp61TrainingBanner');if(!el)return;
+  const level=BP61_LEVELS[activeJourneyLevelId];
+  el.classList.toggle('hidden',!level);
+  if(!level)return;
+  el.innerHTML=`<span>★ JOURNEY CHALLENGE · ${level.id}</span><strong>${level.title}</strong><small>${bp61ObjectiveLabel(level.core,level.variant)}</small>`;
+}
 
-  skillTree.querySelectorAll("[data-bp60-goal]").forEach(button => button.addEventListener("click", () => {
-    const node = BP60_LAYOUT.find(item => item.id === button.dataset.bp60Goal);
-    if (!node) return;
-    const path = V012_CHAPTERS[node.chapter].paths[node.path];
-    const goal = getV012PathState(path).nodes[node.step];
-    const current = Math.max(0, goal.current);
-    const kind = goal.metric === "standardMax" ? "Standard Push-Ups in one set" : "Standard Push-Ups overall";
-    const status = state.finished[node.id] ? "✓ Completed" : state.available[node.id] ? "Available now" : "Locked · complete a connected goal first";
-    alert(`${goal.label} · ${path.title}\n${goal.target} ${kind}\n\nProgress: ${formatTreeNumber(Math.min(current, goal.target))}/${formatTreeNumber(goal.target)}\n${status}`);
-  }));
-  skillTree.querySelectorAll("[data-bp60-rank]").forEach(button => button.addEventListener("click", () => {
-    const rank = button.dataset.bp60Rank;
-    const reached = state.finished[BP60_LAYOUT.find(item => item.kind === "rank" && item.rank === rank)?.id];
-    const chapter = V012_CHAPTERS.find(item => item.to === rank);
-    const conditions = chapter?.paths?.map(path => {
-      const final = getV012PathState(path).nodes.at(-1);
-      return `${path.title}: ${final?.target || 0} ${final?.metric === 'standardMax' ? 'in one set' : 'Standard total'}`;
-    }) || [];
-    alert(`${getRankDisplayName(rank)}\n${reached ? '✓ Rank unlocked' : '🔒 Rank locked'}\n\n${conditions.join('\nOR\n')}`);
-  }));
+function showBP61Result(result) {
+  if(!result||!BP61_LEVELS[result.id])return;
+  document.getElementById('bp61Result')?.remove();
+  const level=BP61_LEVELS[result.id];
+  const popup=document.createElement('div');popup.id='bp61Result';popup.className='bp61-result';
+  const gain=Math.max(0,result.stars-result.prior);
+  popup.innerHTML=`<div class="bp61-result-card" role="dialog" aria-modal="true" aria-label="Challenge results"><small class="bp61-result-eyebrow">${gain?'LEVEL PROGRESS!':result.stars?'CHALLENGE COMPLETE':'TRY AGAIN'}</small><span class="bp61-result-icon">${getVariantIconSvg(level.variant)}</span><h2>${level.title}</h2><div class="bp61-result-stars">${bp61StarsMarkup(result.stars)}</div><p>${result.stars}/3 stars earned ${gain?`· +${gain} new`:''}</p>${result.rankUp?`<div class="bp61-result-rank">✦ NEW RANK: ${getRankDisplayName(result.rankUp).toUpperCase()}</div>`:''}<button type="button" id="bp61ResultClose">CONTINUE JOURNEY →</button></div>`;
+  document.body.appendChild(popup);
+  document.body.style.overflow='hidden';
+  popup.querySelector('button').addEventListener('click',()=>{popup.remove();document.body.style.overflow='';});
 }
 
 function syncTreeCanvasHeight() {
