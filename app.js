@@ -51,6 +51,11 @@ const DEFAULT_PROGRESS = {
   journeyLevelStars65: {},
   journeyLevelTotals65: {},
   journeyPlacementRank65: "Starter",
+  journeyLevelStars66: {},
+  journeyLevelTotals66: {},
+  journeyRankMasks66: {},
+  journeyShortcuts66: {},
+  journeyShortcutLast66: "",
   pushupBestDay: 0,
   pushupBestWeek: 0,
   // Nur für saubere Migration älterer Versionen behalten; v0.8 zeigt/benutzt keine Streak mehr.
@@ -468,6 +473,8 @@ let activeChallengeId = null;
 let activeJourneyLevelId = null;
 let activePlacementTarget65 = 0;
 let lastBP61Result = null;
+let activeRankStar66 = 0;
+let activeShortcut66 = null;
 
 // ---------- DOM ----------
 const homeView = document.getElementById("homeView");
@@ -679,6 +686,33 @@ function calculateJourneyStandardTotalFromHistory(history) {
   }, 0);
 }
 
+// Transfer only intentional v0.11.65 Journey achievements whose old
+// required performance also satisfies the new level's required performance.
+// Legacy pre-v65 auto-earned stars are NEVER used for this migration.
+function bp66MigratedLevelStars(value) {
+ const old=value?.journeyLevelStars65||{};const mapped={};
+ const same={A3:'L01',K1:'L05',H1:'L06',H3:'L08',W1:'L10',W2:'L13',S3:'L14'};
+ for(const [source,dest] of Object.entries(same)) {
+   const n=Math.max(0,Math.min(3,Math.floor(Number(old[source])||0)));
+   if(n>0)mapped[dest]=n;
+ }
+ if(Number(old.A4)>=2)mapped.L02=1; // old 5 Incline bonus meets new core
+ if(Number(old.S1)>=1)mapped.L11=1; // same 5 Standard core, different bonuses
+ if(Number(old.K2)>=3)mapped.L07=2; // old 2x10 Knee meets new 2x8 bonus
+ return mapped;
+}
+function bp66MigratedRankMasks(value) {
+ const old=value?.journeyLevelStars65||{};
+ return { ...(Number(old.A5)>=1?{L04:1}:{}), ...(Number(old.S5)>=1?{L16:1}:{}) };
+}
+function bp66MigratedPlacement(value) {
+ const old=value?.journeyLevelStars65||{};
+ const current=['Starter','Holz','Stein','Bronze'].indexOf(value?.journeyPlacementRank65||'Starter');
+ let completed=Number(old.A5)>=1?1:0;
+ if(completed>=1&&(Number(old.H3)>=1||Number(old.H4)>=1))completed=2;
+ if(completed>=2&&(Number(old.S5)>=1||Number(old.S6)>=1))completed=3;
+ return ['Starter','Holz','Stein','Bronze'][Math.max(0,current,completed)];
+}
 function normalizeProgress(value) {
   const trainingHistory = Array.isArray(value?.trainingHistory) ? value.trainingHistory : [];
   const pushupMax = Math.max(0, Number(value?.pushupMax) || 0);
@@ -744,7 +778,12 @@ function normalizeProgress(value) {
       ? Object.fromEntries(Object.entries(value.journeyLevelStars65).filter(([id,n]) => /^([AHKSW]\d+)$/.test(id) && Number.isFinite(Number(n))).map(([id,n]) => [id,Math.max(0,Math.min(3,Math.floor(Number(n))))])) : {},
     journeyLevelTotals65: value?.journeyLevelTotals65 && typeof value.journeyLevelTotals65 === "object"
       ? Object.fromEntries(Object.entries(value.journeyLevelTotals65).filter(([id,n]) => /^([AHKSW]\d+)$/.test(id) && Number.isFinite(Number(n))).map(([id,n]) => [id,Math.max(0,Math.floor(Number(n)))])) : {},
-    journeyPlacementRank65: ["Starter","Holz","Stein","Bronze"].includes(value?.journeyPlacementRank65) ? value.journeyPlacementRank65 : "Starter",
+    journeyPlacementRank65: bp66MigratedPlacement(value),
+    journeyLevelStars66: value?.journeyLevelStars66 && typeof value.journeyLevelStars66 === 'object' ? Object.fromEntries(Object.entries(value.journeyLevelStars66).filter(([k,v])=>/^L\d{2}$/.test(k)&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.min(3,Math.max(0,Math.floor(Number(v))))])) : bp66MigratedLevelStars(value),
+    journeyLevelTotals66: value?.journeyLevelTotals66 && typeof value.journeyLevelTotals66 === 'object' ? Object.fromEntries(Object.entries(value.journeyLevelTotals66).filter(([k,v])=>/^L\d{2}$/.test(k)&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.floor(Number(v)))])) : {},
+    journeyRankMasks66: value?.journeyRankMasks66 && typeof value.journeyRankMasks66 === 'object' ? Object.fromEntries(Object.entries(value.journeyRankMasks66).filter(([k,v])=>/^L(04|09|16|25)$/.test(k)).map(([k,v])=>[k,Math.floor(Number(v)||0)&7])) : bp66MigratedRankMasks(value),
+    journeyShortcuts66: value?.journeyShortcuts66 && typeof value.journeyShortcuts66 === 'object' ? Object.fromEntries(Object.entries(value.journeyShortcuts66).filter(([k,v])=>/^C[1-4]$/.test(k)).map(([k,v])=>[k,!!v])) : {},
+    journeyShortcutLast66: /^C[1-4]$/.test(value?.journeyShortcutLast66||'')?value.journeyShortcutLast66:'',
     trainingHistory,
     entrySetupDone: !!value?.entrySetupDone,
     entryPath: value?.entryPath === "beginner" || value?.entryPath === "assessment" ? value.entryPath : null,
@@ -2151,17 +2190,23 @@ function renderLiveGoals() {
   let goals=[];
   if(activeJourneyLevelId && BP61_LEVELS[activeJourneyLevelId]) {
     const level=BP61_LEVELS[activeJourneyLevelId];
-    const session=getSessionVariantTotal(level.variant);
-    const max=getSessionVariantMax(level.variant);
-    const past=Number(progress.journeyLevelTotals65?.[level.id])||0;
-    const value=level.core.type==='total'?past+session:max;
-    const current=(obj)=>obj.type==='total'?past+session:obj.type==='session'?session:obj.type==='sets'
-      ? workoutSets.filter(s=>s.variant===level.variant&&Number(s.reps)>=obj.reps).length:max;
-    goals=[level.core,level.bonus2,level.bonus3].map((obj,i)=>({
-      label:`${'★'.repeat(i+1)} ${bp61ObjectiveLabel(obj,level.variant)}`,
-      current:current(obj), target:obj.type==='sets'?obj.count:obj.reps
-    }));
-    if(liveGoalText)liveGoalText.textContent=`Level ${BP65_NUMBERS[level.id]} · Three star objectives`;
+    const chosen=level.rank?BP66_RANK_CHOICES[level.id][activeRankStar66]:level.core;
+    const objectives=level.rank?[chosen,chosen,chosen]:[level.core,level.bonus2,level.bonus3];
+    goals=objectives.map((obj,i)=>{
+      const target=obj.type==='sets'?obj.count:obj.type==='combo'?obj.items.reduce((sum,k)=>sum+k.reps,0):obj.reps;
+      const matching=(workoutSets||[]).filter(s=>s.variant===(obj.variant||level.variant));
+      const count=obj.type==='combo'?obj.items.reduce((sum,k)=>sum+Math.min(k.reps,getSessionVariantTotal(k.variant)),0):
+        obj.type==='sets'?matching.filter(s=>Number(s.reps)>=obj.reps).length:
+        obj.type==='total'?(Number(progress.journeyLevelTotals66?.[level.id])||0)+getSessionVariantTotal(obj.variant||level.variant):
+        obj.type==='session'?getSessionVariantTotal(obj.variant||level.variant):getSessionVariantMax(obj.variant||level.variant);
+      return {label:`${level.rank?'★ STAR '+(activeRankStar66+1):'★'.repeat(i+1)} ${bp61ObjectiveLabel(obj)}`,current:count,target};
+    });
+    if(level.rank)goals=goals.slice(0,1);
+    if(liveGoalText)liveGoalText.textContent=`Level ${BP65_NUMBERS[level.id]} · ${level.rank?'Rank-up challenge':'Three star objectives'}`;
+  } else if (activeShortcut66) {
+    const l=BP66_SHORTCUTS.find(s=>s.id===activeShortcut66);
+    if(l){const o=l.objective;goals=[{label:`Shortcut · ${bp61ObjectiveLabel(o)}`,current:getSessionVariantMax(o.variant),target:o.reps}];}
+    if(liveGoalText)liveGoalText.textContent='Journey Shortcut · No stars for skipped levels';
   } else if (activePlacementTarget65) {
     goals=[{label:`Checkpoint · ${activePlacementTarget65} Standard in one set`,current:getSessionVariantMax('standard'),target:activePlacementTarget65}];
     if(liveGoalText)liveGoalText.textContent='Find Your Level · Placement Test';
@@ -2179,7 +2224,7 @@ function renderLiveGoals() {
     return `<div class="bp64-goal-row ${i===0?'primary':''}"><div class="bp64-goal-copy"><span>${goal.label}</span><strong>${Math.min(goal.target,goal.current)}/${goal.target}</strong></div><div class="bp64-goal-track"><span style="width:${pct}%"></span></div></div>`;
   }).join('');
   const target=document.getElementById('bp64Target');
-  if(target)target.textContent=activeJourneyLevelId?BP61_LEVELS[activeJourneyLevelId]?.core?.reps:activePlacementTarget65||'—';
+  if(target){const level=BP61_LEVELS[activeJourneyLevelId];const obj=level?.rank?BP66_RANK_CHOICES[level.id][activeRankStar66]:level?.core;target.textContent=obj?.type==='combo'?obj.items.reduce((a,b)=>a+b.reps,0):obj?.reps||activePlacementTarget65||BP66_SHORTCUTS.find(s=>s.id===activeShortcut66)?.objective.reps||'—';}
 }
 function renderPauseChallenges() {
   if(!pauseChallengesList)return;
@@ -2426,6 +2471,8 @@ function closeTraining() {
   activeChallengeId = null;
   activeJourneyLevelId = null;
   activePlacementTarget65 = 0;
+  activeShortcut66 = null;
+  activeRankStar66 = 0;
   lastBP61Result = null;
   countdownActive = false;
   autoCountdownPending = false;
@@ -3450,6 +3497,8 @@ function saveTrainingResult(options = {}) {
   const challengeWasActive = activeChallengeId;
   const journeyWasActive = activeJourneyLevelId;
   const placementWasActive65=activePlacementTarget65;
+  const shortcutWasActive66=activeShortcut66;
+  const rankStarWasActive66=activeRankStar66;
   const priorJourneyStars = journeyWasActive ? bp61EarnedStars(journeyWasActive) : 0;
   let journeyResult = null;
   let challengeResult = null;
@@ -3527,18 +3576,33 @@ function saveTrainingResult(options = {}) {
   if (journeyWasActive) {
     const level = BP61_LEVELS[journeyWasActive];
     if (level) {
-      const priorTotal=Number(progress.journeyLevelTotals65?.[level.id])||0;
-      journeyResult = evaluateBP61Level(level, sets, priorTotal);
-      if(level.core.type==='total') {
-        progress.journeyLevelTotals65=progress.journeyLevelTotals65||{};
-        progress.journeyLevelTotals65[level.id]=priorTotal+journeyResult.addedTotal;
+      const priorTotal=Number(progress.journeyLevelTotals66?.[level.id])||0;
+      journeyResult = evaluateBP61Level(level, sets, priorTotal, rankStarWasActive66);
+      if(level.core?.type==='total') {
+        progress.journeyLevelTotals66=progress.journeyLevelTotals66||{};
+        progress.journeyLevelTotals66[level.id]=priorTotal+journeyResult.addedTotal;
       }
-      if (journeyResult.stars > 0) {
-        progress.journeyLevelStars65 = progress.journeyLevelStars65 || {};
-        progress.journeyLevelStars65[level.id] = Math.max(Number(progress.journeyLevelStars65[level.id]) || 0, journeyResult.stars);
+      if(level.rank) {
+        if(journeyResult.stars>0) {
+          progress.journeyRankMasks66=progress.journeyRankMasks66||{};
+          progress.journeyRankMasks66[level.id]=(Number(progress.journeyRankMasks66[level.id])||0)|(1<<rankStarWasActive66);
+        }
+      } else if (journeyResult.stars>0) {
+        progress.journeyLevelStars66=progress.journeyLevelStars66||{};
+        progress.journeyLevelStars66[level.id]=Math.max(Number(progress.journeyLevelStars66[level.id])||0,journeyResult.stars);
       }
     }
     activeJourneyLevelId = null;
+    activeRankStar66=0;
+  }
+
+  let shortcutResult66=null;
+  if(shortcutWasActive66) {
+    const ladder=BP66_SHORTCUTS.find(x=>x.id===shortcutWasActive66);
+    const passed=ladder?bp66SessionMeets(ladder.objective,sets):false;
+    if(passed) {progress.journeyShortcuts66=progress.journeyShortcuts66||{};progress.journeyShortcuts66[ladder.id]=true;progress.journeyShortcutLast66=ladder.id;}
+    shortcutResult66={passed,ladder};
+    activeShortcut66=null;
   }
 
   let placementResult65=null;
@@ -3584,6 +3648,7 @@ function saveTrainingResult(options = {}) {
     const level = BP61_LEVELS[journeyWasActive];
     addSuccessLine(`${journeyResult?.stars ? "★".repeat(journeyResult.stars) + "☆".repeat(3 - journeyResult.stars) : "☆☆☆"} ${level.title} · ${journeyResult?.stars ? "Challenge progress saved" : "Try again to earn stars"}`, !!journeyResult?.stars);
   }
+  if(shortcutResult66) addSuccessLine(shortcutResult66.passed?`↗ Shortcut complete · Level ${shortcutResult66.ladder.to} unlocked`:`Shortcut not finished · retry when ready`,shortcutResult66.passed);
   if (assessmentWasActive) addSuccessLine('Assessment saved', true);
   if (placementResult65) addSuccessLine(placementResult65.passed
     ? `✓ ${placementResult65.rank} checkpoint passed · higher section available, old levels remain unplayed`
@@ -4861,319 +4926,279 @@ function bindV1150TreeEvents() {
 // BodyPath v0.11.61 — 19 real, replayable Journey levels.
 // Each level has one lifetime core goal and two optional single-session bonuses.
 // Existing v0.11.60 rank logic remains the authority for the three ranks.
-function bp61(id,title,variant,kind,core,bonus2,bonus3) {
-  return {id,title,variant,kind,core,bonus2,bonus3};
-}
-const BP61_LEVELS = Object.fromEntries([
-  bp61('A3','First Incline','incline','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
-  bp61('A4','Incline Builder','incline','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5}),
-  bp61('A5','First Push-Up','standard','power',{type:'max',reps:1},{type:'max',reps:2},{type:'max',reps:3}),
-  bp61('H1','Double Up','standard','power',{type:'max',reps:2},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
-  bp61('H2','First Five','standard','volume',{type:'total',reps:5},{type:'session',reps:5},{type:'sets',count:2,reps:3}),
-  bp61('H3','Triple Up','standard','power',{type:'max',reps:3},{type:'max',reps:4},{type:'sets',count:2,reps:4}),
-  bp61('H4','First Fifteen','standard','volume',{type:'total',reps:15},{type:'session',reps:8},{type:'sets',count:2,reps:5}),
-  bp61('K1','First Knee','knee','variant',{type:'max',reps:1},{type:'max',reps:5},{type:'sets',count:2,reps:5}),
-  bp61('K2','Knee Builder','knee','variant',{type:'max',reps:5},{type:'max',reps:10},{type:'sets',count:2,reps:10}),
-  bp61('S1','Five Strong','standard','power',{type:'max',reps:5},{type:'max',reps:6},{type:'sets',count:2,reps:6}),
-  bp61('S2','Thirty Total','standard','volume',{type:'total',reps:30},{type:'session',reps:10},{type:'sets',count:2,reps:8}),
-  bp61('S3','Seven Strong','standard','power',{type:'max',reps:7},{type:'max',reps:9},{type:'sets',count:2,reps:9}),
-  bp61('S4','Sixty Total','standard','volume',{type:'total',reps:60},{type:'session',reps:15},{type:'sets',count:3,reps:6}),
-  bp61('S5','Double Digits','standard','power',{type:'max',reps:10},{type:'max',reps:12},{type:'sets',count:2,reps:10}),
-  bp61('S6','Century Club','standard','volume',{type:'total',reps:100},{type:'session',reps:25},{type:'sets',count:3,reps:10}),
-  bp61('W1','First Wide','wide','variant',{type:'max',reps:1},{type:'max',reps:3},{type:'sets',count:2,reps:3}),
-  bp61('W2','Wide Builder','wide','variant',{type:'max',reps:3},{type:'max',reps:5},{type:'sets',count:2,reps:5})
-].map(level => [level.id,level]));
-
-// v0.11.64: 17 challenges; Wall retired from the active Journey.
-// Only Incline remains on the optional starter route; old history is untouched.
-// Knee/Wide rejoin the main routes rather than ending as dead ends.
-const BP61_TREE_HEIGHT = 2030;
-const BP61_LAYOUT = [
-  {id:'start',kind:'start',x:178,y:1950},
-  {id:'A3',x:257,y:1870},
-  {id:'A4',x:240,y:1764},
-  {id:'A5',x:118,y:1715},
-  {id:'wood',kind:'rank',rank:'Holz',x:178,y:1595},
-  {id:'H1',x:78,y:1440},{id:'K1',x:178,y:1440},{id:'H2',x:278,y:1440},
-  {id:'K2',x:178,y:1315},
-  {id:'H3',x:78,y:1190},{id:'H4',x:278,y:1190},
-  {id:'stone',kind:'rank',rank:'Stein',x:178,y:1055},
-  {id:'S1',x:78,y:915},{id:'W1',x:178,y:915},{id:'S2',x:278,y:915},
-  {id:'S3',x:78,y:755},{id:'W2',x:178,y:755},{id:'S4',x:278,y:755},
-  {id:'S5',x:78,y:580},{id:'S6',x:278,y:580},
-  {id:'bronze',kind:'rank',rank:'Bronze',x:178,y:420},
-  {id:'pike',kind:'reward',variant:'pike',x:178,y:255}
+// v0.11.66: one linear journey with optional, explicit shortcut challenges.
+// Only attempts started from a given Journey level may award stars for that level.
+function bp61(id,title,variant,kind,core,bonus2,bonus3,rank=null) {return {id,title,variant,kind,core,bonus2,bonus3,rank};}
+const bp66Max=(variant,reps)=>({type:'max',variant,reps});
+const bp66Sets=(variant,count,reps)=>({type:'sets',variant,count,reps});
+const bp66Total=(variant,reps)=>({type:'total',variant,reps});
+const bp66Session=(variant,reps)=>({type:'session',variant,reps});
+const bp66Combo=(items)=>({type:'combo',items:items.map(([variant,reps])=>({variant,reps}))});
+const BP61_LEVELS=Object.fromEntries([
+  bp61('L01','First Incline','incline','variant',bp66Max('incline',1),bp66Max('incline',3),bp66Sets('incline',2,3)),
+  bp61('L02','Incline Builder','incline','variant',bp66Max('incline',5),bp66Max('incline',7),bp66Sets('incline',2,6)),
+  bp61('L03','Incline Control','incline','endurance',bp66Sets('incline',2,5),bp66Sets('incline',2,7),bp66Sets('incline',3,7)),
+  bp61('L04','Unlock Wood','standard','rank',bp66Max('standard',1),null,null,'Holz'),
+  bp61('L05','First Knee','knee','variant',bp66Max('knee',1),bp66Max('knee',5),bp66Sets('knee',2,5)),
+  bp61('L06','Double Up','standard','power',bp66Max('standard',2),bp66Max('standard',3),bp66Sets('standard',2,3)),
+  bp61('L07','Knee Builder','knee','endurance',bp66Sets('knee',2,6),bp66Sets('knee',2,8),bp66Sets('knee',3,8)),
+  bp61('L08','Triple Up','standard','power',bp66Max('standard',3),bp66Max('standard',4),bp66Sets('standard',2,4)),
+  bp61('L09','Unlock Stone','standard','rank',bp66Max('standard',5),null,null,'Stein'),
+  bp61('L10','First Wide','wide','variant',bp66Max('wide',1),bp66Max('wide',3),bp66Sets('wide',2,3)),
+  bp61('L11','Five Strong','standard','power',bp66Max('standard',5),bp66Max('standard',7),bp66Sets('standard',2,6)),
+  bp61('L12','Twenty Total','standard','volume',bp66Total('standard',20),bp66Session('standard',12),bp66Sets('standard',2,8)),
+  bp61('L13','Wide Builder','wide','variant',bp66Max('wide',3),bp66Max('wide',5),bp66Sets('wide',2,5)),
+  bp61('L14','Seven Strong','standard','power',bp66Max('standard',7),bp66Max('standard',9),bp66Sets('standard',2,8)),
+  bp61('L15','Volume Boost','standard','volume',bp66Total('standard',40),bp66Session('standard',20),bp66Sets('standard',3,8)),
+  bp61('L16','Unlock Bronze','standard','rank',bp66Max('standard',10),null,null,'Bronze'),
+  bp61('L17','First Pike','pike','variant',bp66Max('pike',1),bp66Max('pike',3),bp66Sets('pike',2,3)),
+  bp61('L18','Twelve Strong','standard','power',bp66Max('standard',12),bp66Max('standard',14),bp66Sets('standard',2,12)),
+  bp61('L19','Set Builder','standard','endurance',bp66Sets('standard',2,8),bp66Sets('standard',2,10),bp66Sets('standard',3,10)),
+  bp61('L20','Pike Builder','pike','variant',bp66Max('pike',3),bp66Max('pike',5),bp66Sets('pike',2,5)),
+  bp61('L21','Mixed Strength','standard','combo',bp66Combo([['standard',6],['wide',4]]),bp66Combo([['standard',8],['wide',5]]),bp66Combo([['standard',10],['wide',6]])),
+  bp61('L22','Volume Challenge','standard','endurance',bp66Sets('standard',3,10),bp66Sets('standard',3,12),bp66Sets('standard',4,12)),
+  bp61('L23','Wide Control','wide','variant',bp66Max('wide',7),bp66Max('wide',9),bp66Sets('wide',2,9)),
+  bp61('L24','Variety Mix','standard','combo',bp66Combo([['standard',8],['wide',5],['pike',3]]),bp66Combo([['standard',10],['wide',6],['pike',4]]),bp66Combo([['standard',12],['wide',8],['pike',5]])),
+  bp61('L25','Unlock Silver','standard','rank',bp66Max('standard',18),null,null,'Silber')
+].map(l=>[l.id,l]));
+const BP66_ORDER=Array.from({length:25},(_,i)=>`L${String(i+1).padStart(2,'0')}`);
+const BP65_NUMBERS=Object.fromEntries(BP66_ORDER.map((id,i)=>[id,i+1]));
+const BP66_RANK_CHOICES={
+  L04:[bp66Max('standard',1),bp66Max('incline',10),bp66Sets('incline',2,8)],
+  L09:[bp66Max('standard',5),bp66Sets('knee',2,10),bp66Combo([['standard',3],['knee',8]])],
+  L16:[bp66Max('standard',10),bp66Sets('wide',2,6),bp66Sets('standard',3,8)],
+  L25:[bp66Max('standard',18),bp66Sets('pike',2,5),bp66Combo([['wide',10],['pike',5]])]
+};
+const BP66_SHORTCUTS=[
+ {id:'C1',from:0,to:4,label:'Direct Start',variant:'standard',objective:bp66Max('standard',1),side:'left'},
+ {id:'C2',from:5,to:9,label:'Knee Shortcut',variant:'knee',objective:bp66Max('knee',10),side:'right'},
+ {id:'C3',from:12,to:16,label:'Wide Shortcut',variant:'wide',objective:bp66Max('wide',5),side:'right'},
+ {id:'C4',from:20,to:24,label:'Pike Shortcut',variant:'pike',objective:bp66Max('pike',5),side:'left'}
 ];
-// Each connector reflects a real prerequisite. The bypass is the immediately
-// accessible A5 node; its dashed visual link is deliberately subdued.
-const BP61_EDGES = [
-  ['start','A3'],['start','A5',false,'direct'],
-  ['A3','A4'],['A4','A5'],['A5','wood'],
-  ['wood','H1'],['wood','K1'],['wood','H2'],
-  ['H1','H3'],['H2','H4'],['K1','K2'],
-  ['K2','H3'],['K2','H4'],
-  ['H3','stone'],['H4','stone'],
-  ['stone','S1'],['stone','W1'],['stone','S2'],
-  ['S1','S3'],['S2','S4'],['W1','W2'],
-  ['S3','S5'],['S4','S6'],['W2','S5'],['W2','S6'],
-  ['S5','bronze'],['S6','bronze'],['bronze','pike']
-];
-// Ordered along the on-screen route from Start (bottom) to Bronze (top).
-const BP65_NUMBER_ORDER=['A3','A4','A5','H1','K1','H2','K2','H3','H4','S1','W1','S2','S3','W2','S4','S5','S6'];
-const BP65_NUMBERS=Object.fromEntries(BP65_NUMBER_ORDER.map((id,i)=>[id,i+1]));
-function bp65RankFromJourney() {
-  const stars=progress.journeyLevelStars65 || {};
-  const placement=progress.journeyPlacementRank65 || 'Starter';
-  const above=r=>isV012RankAtLeast(placement,r);
-  const wood=above('Holz') || Number(stars.A5)>=1;
-  const stone=above('Stein') || (wood && (Number(stars.H3)>=1 || Number(stars.H4)>=1));
-  const bronze=above('Bronze') || (stone && (Number(stars.S5)>=1 || Number(stars.S6)>=1));
-  return bronze?'Bronze':stone?'Stein':wood?'Holz':'Starter';
+const BP61_TREE_HEIGHT=3130;
+const BP61_LAYOUT=[{id:'start',kind:'start',x:172,y:3050},...BP66_ORDER.map((id,index)=>({id,x:[102,230,123,171,109,245,198,103,173,234,102,208,105,233,104,174,236,107,210,124,238,102,214,119,172][index],y:3000-(index+1)*111,kind:BP61_LEVELS[id].rank?'rank':''}))];
+function bp66RankIndex(rank){return ['Starter','Holz','Stein','Bronze','Silber'].indexOf(rank);}
+function bp66RankMask(id){return Number(progress.journeyRankMasks66?.[id]||0)&7;}
+function bp66BitCount(mask){return [0,1,2].filter(i=>!!(mask&(1<<i))).length;}
+function bp65RankFromJourney(){
+ let highest=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
+ for(const [id,rank] of [['L04','Holz'],['L09','Stein'],['L16','Bronze'],['L25','Silber']]) if(bp66RankMask(id))highest=Math.max(highest,bp66RankIndex(rank));
+ return ['Starter','Holz','Stein','Bronze','Silber'][highest]||'Starter';
 }
-function bp61LifetimeValue(level) {
-  // Intentionally tracked per level, not per user's overall exercise history.
-  if(!level)return 0;
-  return level.core.type==='total' ? (Number(progress.journeyLevelTotals65?.[level.id])||0) : 0;
+function bp61LifetimeValue(level){return level?.core?.type==='total'?Math.max(0,Number(progress.journeyLevelTotals66?.[level.id])||0):0;}
+function bp61EarnedStars(id){const level=BP61_LEVELS[id];if(!level)return 0;return level.rank?bp66BitCount(bp66RankMask(id)):Math.min(3,Math.max(0,Number(progress.journeyLevelStars66?.[id])||0));}
+function bp61CoreDone(id){return bp61EarnedStars(id)>0;}
+function bp61ObjectiveLabel(obj,variant='standard'){
+ if(!obj)return 'Challenge';
+ const name=VARIANT_META[obj.variant||variant]?.label||'Standard';
+ const n=obj.reps;
+ if(obj.type==='max')return `${n} ${name} Push-Up${n===1?'':'s'} in one set`;
+ if(obj.type==='total')return `${n} ${name} Push-Ups during attempts on this level`;
+ if(obj.type==='session')return `${n} ${name} Push-Ups in one challenge`;
+ if(obj.type==='sets')return `${obj.count} sets of ${n} ${name} Push-Ups`;
+ if(obj.type==='combo')return obj.items.map(i=>`${i.reps} ${VARIANT_META[i.variant]?.label||i.variant}`).join(' + ')+' Push-Ups in one challenge';
+ return 'Challenge';
 }
-function bp61CoreDone(id) {
-  return !!BP61_LEVELS[id] && Number(progress.journeyLevelStars65?.[id])>=1;
+function bp66SessionMeets(obj,sets){
+ if(!obj)return false;
+ const matched=(sets||[]).filter(s=>s.variant===(obj.variant||'standard'));
+ const nums=matched.map(s=>Math.max(0,Number(s.reps)||0));
+ if(obj.type==='max')return nums.some(n=>n>=obj.reps);
+ if(obj.type==='session'||obj.type==='total')return nums.reduce((a,b)=>a+b,0)>=obj.reps;
+ if(obj.type==='sets')return nums.filter(n=>n>=obj.reps).length>=obj.count;
+ if(obj.type==='combo')return obj.items.every(part=>(sets||[]).filter(s=>s.variant===part.variant).reduce((sum,s)=>sum+Math.max(0,Number(s.reps)||0),0)>=part.reps);
+ return false;
 }
-function bp61EarnedStars(id) {
-  return bp61CoreDone(id) ? Math.max(1,Math.min(3,Math.floor(Number(progress.journeyLevelStars65?.[id])||0))) : 0;
+function bp61SessionMeets(obj,variant,sets){return bp66SessionMeets(obj,sets);}
+function evaluateBP61Level(level,sets,previousTotal=0,rankStarIndex=0){
+ if(!level)return {stars:0,addedTotal:0};
+ if(level.rank)return {stars:bp66SessionMeets(BP66_RANK_CHOICES[level.id][rankStarIndex]||BP66_RANK_CHOICES[level.id][0],sets)?1:0,addedTotal:0};
+ const addedTotal=(sets||[]).filter(s=>s.variant===level.variant).reduce((a,s)=>a+Math.max(0,Math.floor(Number(s.reps)||0)),0);
+ const core=level.core.type==='total'?previousTotal+addedTotal>=level.core.reps:bp66SessionMeets(level.core,sets);
+ if(!core)return {stars:0,addedTotal};
+ let stars=1;
+ if(bp66SessionMeets(level.bonus2,sets))stars=2;
+ if(bp66SessionMeets(level.bonus3,sets))stars=3;
+ return {stars,addedTotal};
 }
-function bp61ObjectiveLabel(objective,variant,first=false) {
-  const name = VARIANT_META[variant]?.label || 'Standard';
-  const n = objective.reps;
-  if (objective.type === 'max') return `${n} ${name} Push-Up${n===1?'':'s'} in one set`;
-  if (objective.type === 'total') return `${n} ${name} Push-Ups in this level (across its attempts)`;
-  if (objective.type === 'session') return `${n} ${name} Push-Ups in one challenge`;
-  if (objective.type === 'sets') return `${objective.count} sets of ${n} ${name} Push-Ups`;
-  return 'Challenge';
+function getBP61State(){
+ const finished={start:true},available={start:true},skipped={};
+ for(const id of BP66_ORDER)finished[id]=bp61CoreDone(id);
+ const floor=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
+ const sections=[0,4,9,16,25];
+ for(let i=1;i<=25;i++){
+  const id=BP66_ORDER[i-1];
+  const prev=i===1?'start':BP66_ORDER[i-2];
+  const abovePlacement=(floor>=1&&i<=5)||(floor>=2&&i<=10)||(floor>=3&&i<=17)||(floor>=4);
+  const ladder=BP66_SHORTCUTS.some(s=>s.to===i&&progress.journeyShortcuts66?.[s.id]);
+  available[id]=!!(finished[prev]||finished[id]||ladder||abovePlacement);
+  // Player can replay rank level if they reached this rank through placement
+  if(abovePlacement&&!finished[id])skipped[id]=true;
+  if(ladder&&!finished[id])skipped[id]=true;
+ }
+ return {finished,available,skipped,rank:bp65RankFromJourney()};
 }
-function bp61SessionMeets(objective,variant,sets) {
-  const matched = (sets||[]).filter(set=>set.variant===variant);
-  const counts = matched.map(set=>Math.max(0,Number(set.reps)||0));
-  if (objective.type==='max') return counts.some(n=>n>=objective.reps);
-  if (objective.type==='session') return counts.reduce((a,b)=>a+b,0)>=objective.reps;
-  if (objective.type==='sets') return counts.filter(n=>n>=objective.reps).length>=objective.count;
-  if (objective.type==='total') return counts.reduce((a,b)=>a+b,0)>=objective.reps;
-  return false;
+function bp61StarsMarkup(earned,id=''){
+ const mask=BP61_LEVELS[id]?.rank?bp66RankMask(id):0;
+ return `<span class="bp61-stars" aria-label="${earned} of 3 stars">${[1,2,3].map(n=>`<span class="${(mask?!!(mask&(1<<(n-1))):n<=earned)?'earned':''}">★</span>`).join('')}</span>`;
 }
-function evaluateBP61Level(level,sets,previousTotal=0) {
-  if (!level) return {stars:0,addedTotal:0};
-  const matched=(sets||[]).filter(set=>set.variant===level.variant);
-  const addedTotal=matched.reduce((sum,s)=>sum+Math.max(0,Math.floor(Number(s.reps)||0)),0);
-  // Volume goals accumulate ONLY attempts specifically launched for this level.
-  const core=level.core.type==='total' ? previousTotal+addedTotal>=level.core.reps : bp61SessionMeets(level.core,level.variant,sets);
-  if (!core) return {stars:0,addedTotal};
-  let stars=1;
-  if (bp61SessionMeets(level.bonus2,level.variant,sets)) stars=2;
-  if (bp61SessionMeets(level.bonus3,level.variant,sets)) stars=3;
-  return {stars,addedTotal};
+function bp61FocusId(state){
+ const ladder=BP66_SHORTCUTS.find(s=>s.id===progress.journeyShortcutLast66);
+ if(ladder){for(let i=ladder.to;i<=25;i++){const id=BP66_ORDER[i-1];if(state.available[id]&&!state.finished[id])return id;}}
+ const floor=Math.max(0,bp66RankIndex(progress.journeyPlacementRank65||'Starter'));
+ const start=[0,4,9,16,25][floor]||0;
+ for(let i=start;i<25;i++){const id=BP66_ORDER[i];if(state.available[id]&&!state.finished[id])return id;}
+ return BP66_ORDER.find(id=>state.available[id]&&!state.finished[id])||'L25';
 }
-function getBP61State() {
-  const finished={start:true};
-  const available={start:true};
-  const rank=bp65RankFromJourney();
-  finished.wood=isV012RankAtLeast(rank,'Holz');
-  finished.stone=isV012RankAtLeast(rank,'Stein');
-  finished.bronze=isV012RankAtLeast(rank,'Bronze');
-  finished.pike=finished.bronze;
-  for(const id of Object.keys(BP61_LEVELS))finished[id]=bp61CoreDone(id);
-  // Direct starter entry, or take the two-step Incline beginner path.
-  available.A3=true; available.A4=finished.A3; available.A5=true;
-  available.H1=available.H2=available.K1=finished.wood;
-  available.K2=finished.wood && finished.K1;
-  available.H3=finished.wood && (finished.H1 || finished.K2);
-  available.H4=finished.wood && (finished.H2 || finished.K2);
-  available.S1=available.S2=available.W1=finished.stone;
-  available.S3=finished.stone && finished.S1;
-  available.S4=finished.stone && finished.S2;
-  available.W2=finished.stone && finished.W1;
-  available.S5=finished.stone && (finished.S3 || finished.W2);
-  available.S6=finished.stone && (finished.S4 || finished.W2);
-  // Placement opens sections for replay, but does not mark a single level done.
-  const placed=progress.journeyPlacementRank65 || 'Starter';
-  const skipped={};
-  for (const id of Object.keys(BP61_LEVELS)) {
-    const section=id.startsWith('A')?'Starter':id.startsWith('H')||id.startsWith('K')?'Holz':'Stein';
-    const placementAccess=section==='Starter' || (section==='Holz' && isV012RankAtLeast(placed,'Holz')) || (section==='Stein' && isV012RankAtLeast(placed,'Stein'));
-    if(placementAccess && !available[id]) {available[id]=true;skipped[id]=true;}
-    if(finished[id])available[id]=true; // replay old levels any time
-  }
-  available.wood=finished.wood; available.stone=finished.stone;
-  available.bronze=finished.bronze; available.pike=finished.pike;
-  return {finished,available,skipped,rank};
+function bp61NodeMarkup(item,state,focusId){
+ const focused=item.id===focusId;
+ if(item.kind==='start')return `<div class="bp61-start" style="left:${item.x/360*100}%;top:${item.y}px"><span>⚑</span><small>START</small></div>`;
+ const level=BP61_LEVELS[item.id],earned=bp61EarnedStars(item.id),done=state.finished[item.id],active=state.available[item.id];
+ const status=done?'done':active?(state.skipped[item.id]?'skipped':'active'):'locked';
+ return `<button type="button" class="bp61-goal bp66-goal ${level.rank?'bp66-rank':''} ${status} ${focused?'bp66-focused':''}" data-bp61-level="${level.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px" aria-label="Level ${BP65_NUMBERS[level.id]} ${level.title}, ${earned} of 3 stars, ${status}"><span class="bp61-orb"><span class="bp65-level-number">${BP65_NUMBERS[level.id]}</span></span>${bp61StarsMarkup(earned,level.id)}<span class="bp61-node-caption">${level.rank?getRankDisplayName(level.rank)+' · RANK':level.title}</span></button>`;
 }
-function bp61StarsMarkup(earned) {
-  return `<span class="bp61-stars" aria-label="${earned} of 3 stars">${[1,2,3].map(n=>`<span class="${n<=earned?'earned':''}">★</span>`).join('')}</span>`;
+function bp66ShortcutUsable(ladder,state){
+ return !!(progress.journeyShortcuts66?.[ladder.id]||ladder.from===0||state.finished[BP66_ORDER[ladder.from-1]]);
 }
-function bp61FocusId(state) {
-  if (!state.finished.wood) {
-    if (state.finished.A4) return 'A5';
-    const next=['A3','A4'].find(id=>state.available[id]&&!state.finished[id]);
-    return next || 'A5';
-  }
-  if (!state.finished.stone) return ['H1','H2','K1','K2','H3','H4'].find(id=>state.available[id]&&!state.finished[id])||'stone';
-  if (!state.finished.bronze) return ['S1','S2','W1','W2','S3','S4','S5','S6'].find(id=>state.available[id]&&!state.finished[id])||'bronze';
-  return 'bronze';
+function bp61EdgeMarkup(state){
+ const layout=Object.fromEntries(BP61_LAYOUT.map(n=>[n.id,n]));
+ const links=BP66_ORDER.map((id,i)=>{
+  const a=layout[i===0?'start':BP66_ORDER[i-1]],b=layout[id];
+  const ym=(a.y+b.y)/2;
+  const d=`M${a.x} ${a.y} C${a.x} ${ym} ${b.x} ${ym} ${b.x} ${b.y}`;
+  return `<path class="bp61-line ${state.finished[a.id]?'done':''}" d="${d}"/>`;
+ });
+ const shortcutLines=BP66_SHORTCUTS.map(s=>{
+  const a=layout[s.from===0?'start':BP66_ORDER[s.from-1]],b=layout[BP66_ORDER[s.to-1]];
+  const lane=s.side==='left'?21:338;
+  const d=`M${a.x} ${a.y} C${lane} ${a.y-40},${lane} ${a.y-70},${lane} ${a.y-120} L${lane} ${b.y+90} Q${lane} ${b.y+10} ${b.x} ${b.y}`;
+  const active=bp66ShortcutUsable(s,state);
+  return `<path class="bp66-shortcut-line ${progress.journeyShortcuts66?.[s.id]?'done':active?'ready':'locked'}" d="${d}"/>`;
+ });
+ return `<svg class="bp61-lines" viewBox="0 0 360 ${BP61_TREE_HEIGHT}" preserveAspectRatio="none" aria-hidden="true">${links.join('')}${shortcutLines.join('')}</svg>`;
 }
-function bp61NodeMarkup(item,state,focusId) {
-  const focused=item.id===focusId;
-  const done=state.finished[item.id], active=state.available[item.id];
-  const status=done?'done':active?'active':'locked';
-  if (item.kind==='start') return `<div class="bp61-start" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px"><span>⚑</span><small>START</small></div>`;
-  if (item.kind==='rank') {
-    const icons={Holz:'✦',Stein:'◆',Bronze:'⬡'};
-    const unlocked={Holz:'Knee',Stein:'Wide',Bronze:'Pike'};
-    return `<button type="button" class="bp61-rank bp61-rank-${item.id} ${status}" ${focused?'data-tree-current="true"':''} data-bp61-rank="${item.rank}" style="left:${item.x/360*100}%;top:${item.y}px" aria-label="${item.rank} ${done?'unlocked':'locked'}"><span class="bp61-rank-symbol">${icons[item.rank]}</span><strong>${getRankDisplayName(item.rank).toUpperCase()}</strong><small>+ ${unlocked[item.rank]} ↗</small></button>`;
-  }
-  if(item.kind==='reward') return `<button type="button" class="bp61-reward ${status}" data-bp61-reward="pike" style="left:${item.x/360*100}%;top:${item.y}px"><span class="bp61-reward-icon">${getVariantIconSvg('pike')}</span><span class="bp61-reward-text"><b>PIKE UNLOCK</b><small>${done?'New variant available':'Reach Bronze to unlock'}</small></span></button>`;
-  const level=BP61_LEVELS[item.id];const earned=bp61EarnedStars(item.id);
-  const isSkipped=state.skipped?.[item.id] && !done;
-  const levelStatus=isSkipped?'skipped':status;
-  const kindColor=level.kind==='power'?'#F0808B':level.kind==='volume'?'#7CB6FF':'#B49BFF';
-  return `<button type="button" class="bp61-goal ${levelStatus} kind-${level.kind}" data-bp61-level="${item.id}" ${focused?'data-tree-current="true"':''} style="left:${item.x/360*100}%;top:${item.y}px;--bp61-kind:${kindColor}" aria-label="Level ${BP65_NUMBERS[item.id]}: ${level.title}. ${earned} of 3 stars. ${levelStatus}"><span class="bp61-orb"><span class="bp65-level-number">${BP65_NUMBERS[item.id]}</span></span>${bp61StarsMarkup(earned)}<span class="bp61-node-caption">${level.title}</span>${item.id==='A5'?'<span class="bp63-direct-label">DIRECT ACCESS</span>':''}</button>`;
+function bp66ShortcutMarkup(s,state){
+ const a=BP61_LAYOUT.find(n=>n.id===(s.from===0?'start':BP66_ORDER[s.from-1]));
+ const b=BP61_LAYOUT.find(n=>n.id===BP66_ORDER[s.to-1]);
+ const y=(a.y+b.y)/2; const active=bp66ShortcutUsable(s,state);
+ const done=!!progress.journeyShortcuts66?.[s.id];
+ return `<button type="button" data-bp66-shortcut="${s.id}" class="bp66-shortcut-btn ${done?'done':active?'active':'locked'} ${s.side}" style="left:${s.side==='left'?'9%':'91%'};top:${y}px" aria-label="${s.label}, optional shortcut to level ${s.to}"><span>↗</span><small>${s.label}</small></button>`;
 }
-function bp61EdgeMarkup(state) {
-  const lookup=Object.fromEntries(BP61_LAYOUT.map(x=>[x.id,x]));
-  const curves = (a,b,kind) => {
-    if (kind==='direct') {
-      // Shortest practical left-side lane, no oversized detour/rotated label.
-      return `M${a.x} ${a.y} C85 ${a.y-55} 101 ${b.y+80} ${b.x} ${b.y}`;
-    }
-    if(a.id==='A4' && b.id==='A5')return `M${a.x} ${a.y} Q150 ${a.y-20} ${b.x} ${b.y}`;
-    if(a.id==='K2' || a.id==='W2') {
-      const half=(a.y+b.y)/2;
-      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
-    }
-    if(a.id==='start' || a.id==='wood' || a.id==='stone') {
-      const half=(a.y+b.y)/2;
-      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
-    }
-    if(b.kind==='rank') {
-      const half=(a.y+b.y)/2;
-      return `M${a.x} ${a.y} C${a.x} ${half} ${b.x} ${half} ${b.x} ${b.y}`;
-    }
-    return `M${a.x} ${a.y} L${b.x} ${b.y}`;
-  };
-  return `<svg class="bp61-lines" viewBox="0 0 360 ${BP61_TREE_HEIGHT}" preserveAspectRatio="none" aria-hidden="true">${BP61_EDGES.map(([src,dest,cross,kind])=>{
-    const a=lookup[src],b=lookup[dest];
-    if(!a||!b)return '';
-    const complete=state.finished[src] && (state.available[dest]||state.finished[dest]);
-    return `<path class="bp61-line ${complete?'done':''} ${kind==='direct'?'direct':''} ${['K2','W2'].includes(src)?'variant-link':''}" d="${curves(a,b,kind)}" />`;
-  }).join('')}</svg>`;
-}
-function renderTree() {
-  if(!skillTree)return;
-  const state=getBP61State();
-  const focusId=bp61FocusId(state);
-  const earned=Object.keys(BP61_LEVELS).reduce((sum,id)=>sum+bp61EarnedStars(id),0);
-  const completed=Object.keys(BP61_LEVELS).filter(id=>state.finished[id]).length;
-  skillTree.className='skill-tree-v1161 bp63-tree';
-  skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>17 replayable levels · Free Workout is separate</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 51</small></strong><span>STARS</span></div></div>
-    <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} rank · ${completed}/17 levels</span></div>
-    <div class="bp61-progress"><span style="width:${(earned/51*100).toFixed(1)}%"></span></div>
-    <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
-    <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
-      <div class="bp61-zone" style="top:335px"><b>STONE → BRONZE</b><span>WIDE PATH</span></div>
-      <div class="bp61-zone" style="top:1110px"><b>WOOD → STONE</b><span>KNEE PATH</span></div>
-      <div class="bp61-zone bp63-starter-zone" style="top:1645px"><b>START → WOOD</b><span>CHOOSE YOUR ROUTE</span></div>
-      ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
-    </div>
-    <div class="bp61-footer">${state.finished.bronze?'Bronze checkpoint reached. Replay earlier levels for stars.':'Complete a Journey level or take an optional checkpoint to find your rank.'}<br>Free Workout cannot complete Journey levels · ${completed}/17 levels · ${earned}/51 stars</div>`;
-  skillTree.querySelectorAll('[data-bp61-level]').forEach(btn=>btn.addEventListener('click',()=>openBP61Level(btn.dataset.bp61Level)));
-  skillTree.querySelectorAll('[data-bp61-rank]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank(btn.dataset.bp61Rank)));
-  skillTree.querySelectorAll('[data-bp61-reward]').forEach(btn=>btn.addEventListener('click',()=>openBP61Rank('Bronze')));
-  document.getElementById('bp65FindLevel')?.addEventListener('click',openBP65Placement);
+function renderTree(){
+ if(!skillTree)return;
+ const state=getBP61State(),focusId=bp61FocusId(state);
+ const earned=BP66_ORDER.reduce((a,id)=>a+bp61EarnedStars(id),0);
+ const completed=BP66_ORDER.filter(id=>state.finished[id]).length;
+ skillTree.className='skill-tree-v1161 bp63-tree bp66-tree';
+ skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>25 levels · Main Path + Shortcuts</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / 75</small></strong><span>STARS</span></div></div>
+ <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} · ${completed}/25 complete</span></div>
+ <div class="bp61-progress"><span style="width:${(earned/75*100).toFixed(1)}%"></span></div>
+ <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
+ <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
+ ${[['BRONZE → SILVER',178],['STONE → BRONZE',1170],['WOOD → STONE',1950],['START → WOOD',2680]].map(([label,y])=>`<div class="bp61-zone" style="top:${y}px"><b>${label}</b></div>`).join('')}
+ ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
+ ${BP66_SHORTCUTS.map(s=>bp66ShortcutMarkup(s,state)).join('')}
+ </div><div class="bp61-footer">Follow the numbered path, or take a shortcut if you know the exercise.<br>Skipped levels stay replayable and earn no free stars. · ${completed}/25 levels · ${earned}/75 stars</div>`;
+ skillTree.querySelectorAll('[data-bp61-level]').forEach(b=>b.addEventListener('click',()=>openBP61Level(b.dataset.bp61Level)));
+ skillTree.querySelectorAll('[data-bp66-shortcut]').forEach(b=>b.addEventListener('click',()=>openBP66Shortcut(b.dataset.bp66Shortcut)));
+ document.getElementById('bp65FindLevel')?.addEventListener('click',openBP65Placement);
 }
 function ensureBP61Sheet(){
-  if(document.getElementById('bp61Sheet'))return;
-  const el=document.createElement('div');el.id='bp61Sheet';el.className='bp61-sheet hidden';
-  el.innerHTML=`<div class="bp61-sheet-card" role="dialog" aria-modal="true" aria-labelledby="bp61SheetTitle"><button type="button" class="bp61-sheet-close" aria-label="Close">×</button><div id="bp61SheetBody"></div><button type="button" id="bp61SheetStart" class="bp61-sheet-primary">START CHALLENGE →</button></div>`;
-  document.body.appendChild(el);
-  el.addEventListener('click',e=>{if(e.target===el)closeBP61Sheet();});
-  el.querySelector('.bp61-sheet-close').addEventListener('click',closeBP61Sheet);
-  el.querySelector('#bp61SheetStart').addEventListener('click',()=>{if(el.dataset.level)startBP61Challenge(el.dataset.level);});
+ if(document.getElementById('bp61Sheet'))return;
+ const el=document.createElement('div');el.id='bp61Sheet';el.className='bp61-sheet hidden';
+ el.innerHTML=`<div class="bp61-sheet-card" role="dialog" aria-modal="true" aria-labelledby="bp61SheetTitle"><button type="button" class="bp61-sheet-close" aria-label="Close">×</button><div id="bp61SheetBody"></div><button type="button" id="bp61SheetStart" class="bp61-sheet-primary">START CHALLENGE →</button></div>`;
+ document.body.appendChild(el);
+ el.addEventListener('click',e=>{if(e.target===el)closeBP61Sheet();});
+ el.querySelector('.bp61-sheet-close').addEventListener('click',closeBP61Sheet);
+ el.querySelector('#bp61SheetStart').addEventListener('click',()=>{
+  if(el.dataset.shortcut)startBP66Shortcut(el.dataset.shortcut);
+  else if(el.dataset.level)startBP61Challenge(el.dataset.level);
+ });
 }
 function openBP61Level(id){
-  const level=BP61_LEVELS[id];if(!level)return;
-  ensureBP61Sheet();const state=getBP61State();const done=state.finished[id];const active=state.available[id];
-  const stars=bp61EarnedStars(id);const sheet=document.getElementById('bp61Sheet');sheet.dataset.level=id;
-  const cat=level.kind==='power'?'POWER':level.kind==='volume'?'VOLUME':'NEW VARIANT';
-  const value=bp61LifetimeValue(level);const max=level.core.reps;
+ const level=BP61_LEVELS[id];if(!level)return;
+ const state=getBP61State(),active=state.available[id]||state.finished[id];
+ const stars=bp61EarnedStars(id),sheet=(ensureBP61Sheet(),document.getElementById('bp61Sheet'));
+ sheet.dataset.level=id;sheet.dataset.shortcut='';
+ const heading=`<span class="bp61-sheet-eyebrow">LEVEL ${BP65_NUMBERS[id]} · ${level.rank?'RANK-UP':level.kind.toUpperCase()}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon"><strong class="bp65-sheet-number">${BP65_NUMBERS[id]}</strong></span><div><h2 id="bp61SheetTitle">${level.title}</h2><p>${level.rank?'Choose any one star to unlock '+getRankDisplayName(level.rank):'Earn 1 star to unlock the next level'}</p></div></div><div class="bp61-sheet-starshow">${bp61StarsMarkup(stars,id)}<strong>${stars}/3 STARS</strong></div>`;
+ if(level.rank){
+  const mask=bp66RankMask(id),choices=BP66_RANK_CHOICES[id];
+  activeRankStar66=Math.max(0,choices.findIndex((_,i)=>!(mask&(1<<i))));
+  const update=()=>{
+   const target=choices[activeRankStar66];
+   sheet.querySelectorAll('[data-bp66-rank-choice]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.bp66RankChoice)===activeRankStar66));
+   const btn=sheet.querySelector('#bp61SheetStart');btn.textContent=active?`START STAR ${activeRankStar66+1} →`:'LOCKED';btn.disabled=!active;
+  };
+  document.getElementById('bp61SheetBody').innerHTML=heading+`<p class="bp66-rank-hint">Each star is a different challenge. Any ONE completed star earns the rank. Replay for the others.</p><div class="bp66-rank-choices">${choices.map((obj,i)=>`<button type="button" class="bp66-rank-choice" data-bp66-rank-choice="${i}"><span class="${mask&(1<<i)?'earned':''}">★</span><div><b>STAR ${i+1}${mask&(1<<i)?' · COMPLETED':''}</b><small>${bp61ObjectiveLabel(obj)}</small></div></button>`).join('')}</div><p class="bp61-sheet-tip">${active?'Rank challenges are separate from Free Workout.':'Play the previous level or a connected shortcut to unlock this rank level.'}</p>`;
+  sheet.querySelectorAll('[data-bp66-rank-choice]').forEach(b=>b.addEventListener('click',()=>{activeRankStar66=Number(b.dataset.bp66RankChoice);update();}));
+  update();
+ }else{
   const descriptions=[level.core,level.bonus2,level.bonus3];
-  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">LEVEL ${BP65_NUMBERS[id]} · ${cat}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon"><strong class="bp65-sheet-number">${BP65_NUMBERS[id]}</strong></span><div><h2 id="bp61SheetTitle">${level.title}</h2><p>${VARIANT_META[level.variant].label} Push-Ups</p></div></div><div class="bp61-sheet-starshow">${bp61StarsMarkup(stars)}<strong>${stars}/3 STARS</strong></div>
-   <div class="bp61-sheet-objectives">${descriptions.map((desc,i)=>`<div class="bp61-objective ${i<stars?'achieved':''}"><span class="bp61-objective-star">★</span><div><small>${i===0?'COMPLETE LEVEL':i===1?'BONUS CHALLENGE':'MASTER CHALLENGE'}</small><strong>${bp61ObjectiveLabel(desc,level.variant,i===0)}</strong></div><span class="bp61-objective-check">${i<stars?'✓':i===0&&level.core.type==='total'?`${Math.min(max,value)}/${max}`:'○'}</span></div>`).join('')}</div><p class="bp61-sheet-tip">${active||done?'Only attempts started from this level count toward its stars. Free Workout still counts toward Daily and Weekly.':'🔒 Play connected levels, or use Find Your Level to unlock a higher starting point.'}</p>`;
-  const start=sheet.querySelector('#bp61SheetStart');start.disabled=!(active||done);start.textContent=!(active||done)?'LOCKED':done?'REPLAY CHALLENGE →':'START CHALLENGE →';
-  sheet.classList.remove('hidden');document.body.style.overflow='hidden';
+  document.getElementById('bp61SheetBody').innerHTML=heading+`<div class="bp61-sheet-objectives">${descriptions.map((o,i)=>`<div class="bp61-objective ${i<stars?'achieved':''}"><span class="bp61-objective-star">★</span><div><small>${i===0?'COMPLETE LEVEL':i===1?'BONUS CHALLENGE':'MASTER CHALLENGE'}</small><strong>${bp61ObjectiveLabel(o,level.variant)}</strong></div><span class="bp61-objective-check">${i<stars?'✓':i===0&&level.core.type==='total'?`${Math.min(level.core.reps,bp61LifetimeValue(level))}/${level.core.reps}`:'○'}</span></div>`).join('')}</div><p class="bp61-sheet-tip">${active?'Only attempts started here count for this level. Free Workout still counts for Daily/Weekly.':'🔒 Complete the previous level or use an optional shortcut.'}</p>`;
+  const btn=sheet.querySelector('#bp61SheetStart');btn.disabled=!active;btn.textContent=active?(stars?'REPLAY LEVEL →':'START LEVEL →'):'LOCKED';
+ }
+ sheet.classList.remove('hidden');document.body.style.overflow='hidden';
 }
-function closeBP61Sheet(){const sheet=document.getElementById('bp61Sheet');if(sheet)sheet.classList.add('hidden');document.body.style.overflow='';}
-function openBP61Rank(rank){
-  const states=getBP61State();const id={Holz:'wood',Stein:'stone',Bronze:'bronze'}[rank];
-  const reward={Holz:'Knee',Stein:'Wide',Bronze:'Pike'}[rank];
-  const requirements={Holz:'1 Standard Push-Up in one set',Stein:'3 Standard in one set OR 15 Standard total',Bronze:'10 Standard in one set OR 100 Standard total'}[rank];
-  ensureBP61Sheet();const sheet=document.getElementById('bp61Sheet');sheet.dataset.level='';
-  document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">RANK REWARD</span><div class="bp61-rank-info">${getRankIconSvg(rank)}<div><h2 id="bp61SheetTitle">${getRankDisplayName(rank)}</h2><p>${states.finished[id]?'✓ Rank unlocked':'🔒 Rank locked'}</p></div></div><div class="bp61-rank-reward"><strong>UNLOCK: ${reward.toUpperCase()} PUSH-UPS</strong><p>${requirements}</p></div>`;
-  sheet.querySelector('#bp61SheetStart').disabled=true;sheet.querySelector('#bp61SheetStart').textContent='VIEW THE JOURNEY';
-  sheet.classList.remove('hidden');document.body.style.overflow='hidden';
+function closeBP61Sheet(){const el=document.getElementById('bp61Sheet');if(el)el.classList.add('hidden');document.body.style.overflow='';}
+function openBP66Shortcut(id){
+ const ladder=BP66_SHORTCUTS.find(x=>x.id===id);if(!ladder)return;
+ ensureBP61Sheet();const state=getBP61State(),active=bp66ShortcutUsable(ladder,state),done=!!progress.journeyShortcuts66?.[id];
+ const el=document.getElementById('bp61Sheet');el.dataset.level='';el.dataset.shortcut=id;
+ document.getElementById('bp61SheetBody').innerHTML=`<span class="bp61-sheet-eyebrow">OPTIONAL SHORTCUT · ${ladder.label.toUpperCase()}</span><div class="bp61-sheet-hero"><span class="bp61-sheet-icon bp66-shortcut-emblem">↗</span><div><h2 id="bp61SheetTitle">${ladder.label}</h2><p>${ladder.from?'Level '+ladder.from:'Start'} → Level ${ladder.to}</p></div></div><div class="bp61-rank-reward"><strong>${bp61ObjectiveLabel(ladder.objective)}</strong><p>Pass this standalone challenge to unlock Level ${ladder.to}. Skipped levels remain available to replay and do not gain stars.</p></div><p class="bp61-sheet-tip">${done?'✓ Shortcut already unlocked. Replay it whenever you like.':active?'Optional route. The normal Main Path is always available.':'Complete Level '+ladder.from+' first.'}</p>`;
+ const button=el.querySelector('#bp61SheetStart');button.disabled=!active;button.textContent=active?(done?'REPLAY SHORTCUT →':'TRY SHORTCUT →'):'LOCKED';
+ el.classList.remove('hidden');document.body.style.overflow='hidden';
+}
+function startBP66Shortcut(id){
+ const ladder=BP66_SHORTCUTS.find(x=>x.id===id);if(!ladder||!bp66ShortcutUsable(ladder,getBP61State()))return;
+ closeBP61Sheet();openTraining();activeShortcut66=id;
+ setSelectedTrainingVariant(ladder.variant);showStep('quick');showPrepUI();
+ trainingTitle.textContent=`Shortcut · ${ladder.label}`;
+ prepCameraHint.textContent=bp61ObjectiveLabel(ladder.objective);
+ updateBP61TrainingBanner();renderLiveGoals();
 }
 function startBP61Challenge(id){
-  const level=BP61_LEVELS[id],state=getBP61State();
-  if(!level||!(state.available[id]||state.finished[id]))return;
-  closeBP61Sheet();openTraining();activeJourneyLevelId=id;
-  setSelectedTrainingVariant(level.variant);showStep('quick');showPrepUI();
-  trainingTitle.textContent=`Challenge · ${level.title}`;
-  prepCameraHint.textContent=bp61ObjectiveLabel(level.core,level.variant);
-  updateBP61TrainingBanner();
-  showAppToast(`${level.title} · earn up to 3 stars!`);
+ const level=BP61_LEVELS[id],state=getBP61State();
+ if(!level||!(state.available[id]||state.finished[id]))return;
+ const choice=activeRankStar66;
+ closeBP61Sheet();openTraining();activeJourneyLevelId=id;activeRankStar66=level.rank?choice:0;
+ const objective=level.rank?BP66_RANK_CHOICES[id][activeRankStar66]:level.core;
+ const variant=objective.variant||objective.items?.[0]?.variant||level.variant;
+ setSelectedTrainingVariant(variant);showStep('quick');showPrepUI();
+ trainingTitle.textContent=`Journey · Level ${BP65_NUMBERS[id]}`;
+ prepCameraHint.textContent=bp61ObjectiveLabel(objective,variant);
+ updateBP61TrainingBanner();renderLiveGoals();
 }
 function updateBP61TrainingBanner(){
-  const el=document.getElementById('bp61TrainingBanner');if(!el)return;
-  const level=BP61_LEVELS[activeJourneyLevelId];
-  el.classList.toggle('hidden',!level);
-  if(!level)return;
-  el.innerHTML=`<span>★ JOURNEY LEVEL ${BP65_NUMBERS[level.id]}</span><strong>${level.title}</strong><small>${bp61ObjectiveLabel(level.core,level.variant)}</small>`;
+ const el=document.getElementById('bp61TrainingBanner');if(!el)return;
+ const level=BP61_LEVELS[activeJourneyLevelId];const ladder=BP66_SHORTCUTS.find(s=>s.id===activeShortcut66);
+ el.classList.toggle('hidden',!(level||ladder));if(!(level||ladder))return;
+ const goal=ladder?.objective|| (level.rank?BP66_RANK_CHOICES[level.id][activeRankStar66]:level.core);
+ el.innerHTML=`<span>★ ${ladder?'SHORTCUT':'JOURNEY LEVEL '+BP65_NUMBERS[level.id]}</span><strong>${ladder?.label||level.title}</strong><small>${bp61ObjectiveLabel(goal)}</small>`;
 }
-
-function showBP61Result(result) {
-  if(!result||!BP61_LEVELS[result.id])return;
-  document.getElementById('bp61Result')?.remove();
-  const level=BP61_LEVELS[result.id];
-  const popup=document.createElement('div');popup.id='bp61Result';popup.className='bp61-result';
-  const gain=Math.max(0,result.stars-result.prior);
-  popup.innerHTML=`<div class="bp61-result-card" role="dialog" aria-modal="true" aria-label="Challenge results"><small class="bp61-result-eyebrow">${gain?'LEVEL PROGRESS!':result.stars?'CHALLENGE COMPLETE':'TRY AGAIN'}</small><span class="bp61-result-icon"><strong class="bp65-result-number">${BP65_NUMBERS[level.id]}</strong></span><h2>${level.title}</h2><div class="bp61-result-stars">${bp61StarsMarkup(result.stars)}</div><p>${result.stars}/3 stars earned ${gain?`· +${gain} new`:''}</p>${result.rankUp?`<div class="bp61-result-rank">✦ NEW RANK: ${getRankDisplayName(result.rankUp).toUpperCase()}</div>`:''}<button type="button" id="bp61ResultClose">CONTINUE JOURNEY →</button></div>`;
-  document.body.appendChild(popup);
-  document.body.style.overflow='hidden';
-  popup.querySelector('button').addEventListener('click',()=>{popup.remove();document.body.style.overflow='';});
+function showBP61Result(result){
+ if(!result||!BP61_LEVELS[result.id])return;
+ document.getElementById('bp61Result')?.remove();const level=BP61_LEVELS[result.id];
+ const gain=Math.max(0,result.stars-result.prior);
+ const pop=document.createElement('div');pop.id='bp61Result';pop.className='bp61-result';
+ pop.innerHTML=`<div class="bp61-result-card" role="dialog" aria-modal="true" aria-label="Challenge results"><small class="bp61-result-eyebrow">${gain?'NEW STAR EARNED':result.stars?'LEVEL PROGRESS':'TRY AGAIN'}</small><span class="bp61-result-icon"><strong class="bp65-result-number">${BP65_NUMBERS[level.id]}</strong></span><h2>${level.title}</h2><div class="bp61-result-stars">${bp61StarsMarkup(result.stars,level.id)}</div><p>${result.stars}/3 stars earned ${gain?`· +${gain} new`:''}</p>${result.rankUp?`<div class="bp61-result-rank">✦ NEW RANK: ${getRankDisplayName(result.rankUp).toUpperCase()}</div>`:''}<button type="button" id="bp61ResultClose">CONTINUE JOURNEY →</button></div>`;
+ document.body.appendChild(pop);document.body.style.overflow='hidden';
+ pop.querySelector('button').addEventListener('click',()=>{pop.remove();document.body.style.overflow='';});
 }
-
-function openBP65Placement() {
-  document.getElementById('bp65Placement')?.remove();
-  const current=bp65RankFromJourney();
-  const overlay=document.createElement('div');overlay.id='bp65Placement';overlay.className='bp61-sheet';
-  overlay.innerHTML=`<div class="bp61-sheet-card bp65-placement-sheet" role="dialog" aria-modal="true" aria-label="Find Your Level">
-    <button class="bp61-sheet-close" id="bp65PlacementClose" aria-label="Close">×</button>
-    <span class="bp61-sheet-eyebrow">OPTIONAL SHORTCUT</span><h2>Find Your Level</h2>
-    <p>Skip beginner levels with a dedicated checkpoint test. Skipped levels stay playable and earn no stars until completed separately.</p>
-    <div class="bp65-placement-choices">
-      <button type="button" data-bp65-target="1"><b>WOOD CHECKPOINT</b><small>1 Standard Push-Up in one set</small></button>
-      <button type="button" data-bp65-target="3"><b>STONE CHECKPOINT</b><small>3 Standard Push-Ups in one set</small></button>
-      <button type="button" data-bp65-target="10"><b>BRONZE CHECKPOINT</b><small>10 Standard Push-Ups in one set</small></button>
-    </div><p class="bp65-placement-note">Current Journey rank: ${getRankDisplayName(current)}. A checkpoint does not complete levels or award stars. Your workout still counts for Daily and Weekly.</p>
-  </div>`;
-  document.body.appendChild(overlay);document.body.style.overflow='hidden';
-  const close=()=>{overlay.remove();document.body.style.overflow='';};
-  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
-  overlay.querySelector('#bp65PlacementClose').addEventListener('click',close);
-  overlay.querySelectorAll('[data-bp65-target]').forEach(btn=>btn.addEventListener('click',()=>{
-    const target=Number(btn.dataset.bp65Target);close();
-    openTraining();activePlacementTarget65=target;activeJourneyLevelId=null;
-    setSelectedTrainingVariant('standard');showStep('quick');showPrepUI();
-    trainingTitle.textContent=`${target} Reps · Checkpoint`;
-    prepCameraHint.textContent=`${target} Standard Push-Up${target>1?'s':''} in one set. No Journey stars are awarded by this test.`;
-    renderLiveGoals();showAppToast(`Checkpoint: ${target} Standard in one set`);
-  }));
+function openBP65Placement(){
+ document.getElementById('bp65Placement')?.remove();
+ const overlay=document.createElement('div');overlay.id='bp65Placement';overlay.className='bp61-sheet';
+ overlay.innerHTML=`<div class="bp61-sheet-card bp65-placement-sheet" role="dialog" aria-modal="true" aria-label="Find Your Level"><button class="bp61-sheet-close" id="bp65PlacementClose" aria-label="Close">×</button><span class="bp61-sheet-eyebrow">EXPERIENCED PLAYER</span><h2>Find Your Level</h2><p>Already training? Choose a checkpoint to unlock a higher section without automatically earning Journey stars. Or follow the main path and its four optional shortcuts.</p><div class="bp65-placement-choices"><button type="button" data-bp65-target="1"><b>WOOD CHECKPOINT</b><small>1 Standard Push-Up in one set</small></button><button type="button" data-bp65-target="3"><b>STONE CHECKPOINT</b><small>3 Standard in one set</small></button><button type="button" data-bp65-target="10"><b>BRONZE CHECKPOINT</b><small>10 Standard in one set</small></button></div><p class="bp65-placement-note">Checkpoint access does not earn stars. The rank-up levels remain replayable with three separate star challenges.</p></div>`;
+ document.body.appendChild(overlay);document.body.style.overflow='hidden';
+ const close=()=>{overlay.remove();document.body.style.overflow='';};
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+ overlay.querySelector('#bp65PlacementClose').addEventListener('click',close);
+ overlay.querySelectorAll('[data-bp65-target]').forEach(btn=>btn.addEventListener('click',()=>{
+  const target=Number(btn.dataset.bp65Target);close();openTraining();activePlacementTarget65=target;activeJourneyLevelId=null;
+  setSelectedTrainingVariant('standard');showStep('quick');showPrepUI();
+  trainingTitle.textContent=`${target} Reps · Checkpoint`;
+  prepCameraHint.textContent=`${target} Standard Push-Ups in one set. No stars for skipped levels.`;
+  renderLiveGoals();
+ }));
 }
 
 function syncTreeCanvasHeight() {
@@ -5209,12 +5234,9 @@ function getHomePathProgressState(path) {
 }
 
 function renderHomeRankPaths(chapter) {
-  if(!homeRankPaths)return;
-  const state=getBP61State();
-  const section=!state.finished.wood?'Start → Wood':!state.finished.stone?'Wood → Stone':!state.finished.bronze?'Stone → Bronze':'Bronze reached';
-  const relevant=Object.keys(BP61_LEVELS).filter(id=>state.available[id]&&!state.finished[id]).slice(0,3);
-  homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${section}</strong><small>Journey levels are played separately from Free Workout.</small>
-    <div>${relevant.map(id=>`<span>Level ${BP65_NUMBERS[id]} · ${BP61_LEVELS[id].title}</span>`).join('')||'<span>Replay old levels for more stars!</span>'}</div></div>`;
+ if(!homeRankPaths)return;
+ const state=getBP61State();const focus=bp61FocusId(state);const level=BP61_LEVELS[focus];
+ homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${getRankDisplayName(state.rank)} · Journey</strong><small>Free Workout is separate from the 25 Journey levels.</small><div>${level?`<span>Next: Level ${BP65_NUMBERS[focus]} · ${level.title}</span>`:'<span>Silver reached · replay for stars!</span>'}</div></div>`;
 }
 function buildProgressOrb(label, current, target, type = "side") {
   const safeTarget = Math.max(1, Number(target) || 1);
