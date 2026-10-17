@@ -17,29 +17,31 @@ const MEDIAPIPE_WASM =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 const FACE_MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
+const POSE_MODEL =
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 
 // Die Quick-Mode-Erkennung ist absichtlich aus v0.6 übernommen.
 // Der UI-/Skill-Tree-Umbau soll die funktionierende Zählung nicht verändern.
 const QUICK_CONFIG = {
   detectIntervalMs: 34,
   minDetectionConfidence: 0.46,
-  readyMinMetric: 0.065, // More forgiving when phone is propped up in front
-  readyMaxMetric: 0.52,
-  readyMinCenterX: 0.12,
-  readyMaxCenterX: 0.88,
-  readyMinCenterY: 0.08,
-  readyMaxCenterY: 0.92,
-  downRatio: 1.18,
-  upRatio: 1.09,
-  minDownDelta: 0.024,
-  stableFrames: 1,
-  minRepIntervalMs: 330,
-  faceLossGraceMs: 950,
-  hardResetLossMs: 2200,
+  readyMinMetric: 0.28,
+  readyMaxMetric: 0.82,
+  readyMinCenterX: 0.18,
+  readyMaxCenterX: 0.82,
+  readyMinCenterY: 0.14,
+  readyMaxCenterY: 0.82,
+  downRatio: 1.8,
+  upRatio: 1.28,
+  minDownDelta: 0.09,
+  stableFrames: 2,
+  minRepIntervalMs: 380,
+  faceLossGraceMs: 1100,
+  hardResetLossMs: 2400,
   inferDownAfterLossMs: 90,
-  inferDownMinRatio: 1.055,
-  metricSmoothing: 0.58,
-  baselineAdaptation: 0.01,
+  inferDownMinRatio: 1.18,
+  metricSmoothing: 0.42,
+  baselineAdaptation: 0.015,
   autoSetEndLossMs: 1700
 };
 
@@ -419,15 +421,19 @@ let progress = loadProgress();
 
 let cameraStream = null;
 let FaceDetector = null;
+let PoseLandmarker = null;
 let FilesetResolver = null;
 let mediaPipeModuleLoading = null;
 let faceDetector = null;
+let poseLandmarker = null;
 let faceDetectorLoading = null;
+let poseLandmarkerLoading = null;
 let detectionFrameId = null;
 let lastDetectionAt = 0;
 let lastVideoTime = -1;
 
 let currentFace = null;
+let currentPose = null;
 let smoothedMetric = null;
 let lastFaceSeenAt = 0;
 let goodPositionSince = 0;
@@ -557,6 +563,7 @@ const variantCards = Array.from(document.querySelectorAll(".variant-card[data-va
 const workoutVariantButtons = Array.from(document.querySelectorAll(".workout-variant-btn[data-workout-variant]"));
 
 const cameraVideo = document.getElementById("cameraVideo");
+const bp64PoseCanvas = document.getElementById("bp64PoseCanvas");
 const liveRepCount = document.getElementById("liveRepCount");
 const setNumberLabel = document.getElementById("setNumberLabel");
 const setPrepPanel = document.getElementById("setPrepPanel");
@@ -2716,6 +2723,7 @@ async function ensureMediaPipeModule() {
   mediaPipeModuleLoading = import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm")
     .then(module => {
       FaceDetector = module.FaceDetector;
+      PoseLandmarker = module.PoseLandmarker;
       FilesetResolver = module.FilesetResolver;
     })
     .catch(error => {
@@ -2772,8 +2780,46 @@ async function initFaceDetector() {
   }
 }
 
+async function initPoseLandmarker() {
+  await ensureMediaPipeModule();
+  if (poseLandmarker) return poseLandmarker;
+  if (poseLandmarkerLoading) return poseLandmarkerLoading;
+
+  poseLandmarkerLoading = (async () => {
+    const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
+    const commonOptions = {
+      runningMode: "VIDEO",
+      numPoses: 1,
+      minPoseDetectionConfidence: QUICK_CONFIG.minDetectionConfidence,
+      minPosePresenceConfidence: QUICK_CONFIG.minDetectionConfidence,
+      minTrackingConfidence: 0.4,
+      outputSegmentationMasks: false
+    };
+
+    try {
+      poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        ...commonOptions,
+        baseOptions: { modelAssetPath: POSE_MODEL, delegate: "GPU" }
+      });
+    } catch (gpuError) {
+      console.warn("Pose GPU nicht verfügbar, nutze CPU:", gpuError);
+      poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        ...commonOptions,
+        baseOptions: { modelAssetPath: POSE_MODEL, delegate: "CPU" }
+      });
+    }
+
+    return poseLandmarker;
+  })();
+
+  try {
+    return await poseLandmarkerLoading;
+  } finally {
+    poseLandmarkerLoading = null;
+  }
+}
+
 async function startCamera() {
-  autoCountdownPending = true;
   startCameraBtn.classList.add("hidden");
   bp64SetFraming("neutral");
 
@@ -2786,8 +2832,8 @@ async function startCamera() {
     return;
   }
 
-  cameraStatus.textContent = "Frontkamera und Gesichtserkennung werden gestartet …";
-  setPositionStatus("neutral", "⬜", "Kamera wird vorbereitet", "Lehn das Handy vor dir an und bleib mit dem Gesicht im Bild. Kein fester Winkel nötig.");
+  cameraStatus.textContent = "Frontkamera und Pose-Erkennung werden gestartet …";
+  setPositionStatus("neutral", "●", "Kamera wird vorbereitet", "Lehn das Handy vor dir an und bleib mit deinem Oberkörper im Bild.");
   motionCue.textContent = "Position einnehmen";
 
   try {
@@ -2815,32 +2861,33 @@ async function startCamera() {
     await cameraVideo.play();
     bp64ShowPreview(true);
 
-    if (!autoCountdownPending || manualMode || quickStep.classList.contains("hidden")) {
+    if (manualMode || quickStep.classList.contains("hidden")) {
       stopCamera();
       return;
     }
 
     cameraWasStarted = true;
-    setPositionStatus("warn", "🟨", "Erkennung wird geladen", "Bleib kurz in der oberen Push-up-Position.");
-    await initFaceDetector();
+    setPositionStatus("warn", "●", "Erkennung wird geladen", "Bleib kurz in der oberen Push-up-Position.");
+    try { await initPoseLandmarker(); } catch (poseError) { console.warn("Pose-Erkennung fehlgeschlagen, versuche Gesichtserkennung:", poseError); await initFaceDetector(); }
 
-    if (!autoCountdownPending || manualMode || quickStep.classList.contains("hidden")) {
+    if (manualMode || quickStep.classList.contains("hidden")) {
       stopCamera();
       return;
     }
 
     startCameraBtn.classList.add("hidden");
-    startWorkoutBtn.classList.add("hidden");
-    cameraStatus.textContent = "Sobald deine obere Position erkannt ist, startet automatisch der 3‑Sekunden-Countdown.";
+    startWorkoutBtn.classList.remove("hidden");
+    startWorkoutBtn.disabled = true;
+    cameraStatus.textContent = "Sobald deine obere Position erkannt ist, kannst du direkt auf Start Workout tippen.";
     motionCue.textContent = "Obere Position finden";
 
     startDetectionLoop();
   } catch (error) {
-    console.error("Kamera/FaceDetector konnte nicht gestartet werden:", error);
+    console.error("Kamera/Pose-Erkennung konnte nicht gestartet werden:", error);
     stopCamera();
     autoCountdownPending = false;
-    setPositionStatus("bad", "🟥", "Kamera konnte nicht gestartet werden", "Berechtigung prüfen oder manuellen Modus verwenden.");
-    cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder die Gesichtserkennung konnte nicht geladen werden.";
+    setPositionStatus("bad", "●", "Camera failed", "Check permission or switch to manual mode.");
+    cameraStatus.textContent = "Kamerazugriff wurde nicht erlaubt oder die Pose-Erkennung konnte nicht geladen werden.";
     startCameraBtn.disabled = false;
     startCameraBtn.classList.remove("hidden");
     startCameraBtn.textContent = "Kamera erneut versuchen";
@@ -2854,8 +2901,10 @@ function stopCamera() {
   cameraVideo.srcObject = null;
   bp64SetFraming('neutral');
   bp64UpdateBox(null);
+  bp64RenderPose(null);
   bp64ShowPreview(false);
 }
+
 function bp64ShowPreview(visible) {
   const el=document.getElementById('bp64CameraPlaceholder');
   if(el) el.classList.toggle('hidden',visible);
@@ -2864,7 +2913,7 @@ function bp64SetFraming(state) {
   const el=document.getElementById('bp64CameraCard');
   if(el) el.dataset.frameState=state;
   const title=document.getElementById('bp64FramingTitle');
-  if(title) title.textContent=state==='good'?'✓ GOOD POSITION':state==='warn'?'! ADJUST POSITION':state==='bad'?'× NOT DETECTED':'○ CAMERA SETUP';
+  if(title) title.textContent=state==='good'?'GOOD POSITION':state==='warn'?'ADJUST POSITION':state==='bad'?'NOT DETECTED':'CAMERA SETUP';
 }
 function bp64UpdateBox(box) {
   const el=document.getElementById('bp64FaceBox');
@@ -2887,7 +2936,11 @@ function startDetectionLoop() {
   stopDetectionLoop();
 
   const loop = now => {
-    detectFaceFrame(now);
+    if (poseLandmarker) {
+      detectPoseFrame(now);
+    } else {
+      detectFaceFrame(now);
+    }
     detectionFrameId = requestAnimationFrame(loop);
   };
 
@@ -2897,6 +2950,211 @@ function startDetectionLoop() {
 function stopDetectionLoop() {
   if (detectionFrameId) cancelAnimationFrame(detectionFrameId);
   detectionFrameId = null;
+}
+
+const BP64_POSE_IDS = {
+  nose: 0,
+  leftShoulder: 11,
+  rightShoulder: 12,
+  leftElbow: 13,
+  rightElbow: 14,
+  leftWrist: 15,
+  rightWrist: 16,
+  leftHip: 23,
+  rightHip: 24,
+  leftKnee: 25,
+  rightKnee: 26,
+  leftAnkle: 27,
+  rightAnkle: 28
+};
+const BP64_POSE_CONNECTIONS = [
+  [11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]
+];
+function bp64GetPoseCanvasContext() {
+  if (!bp64PoseCanvas) return null;
+  const rect = bp64PoseCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.round(rect.width * dpr);
+  const h = Math.round(rect.height * dpr);
+  if (bp64PoseCanvas.width !== w || bp64PoseCanvas.height !== h) {
+    bp64PoseCanvas.width = w;
+    bp64PoseCanvas.height = h;
+  }
+  const ctx = bp64PoseCanvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  return { ctx, width: rect.width, height: rect.height };
+}
+function bp64MapPosePoint(point, width, height) {
+  if (!cameraVideo?.videoWidth || !cameraVideo?.videoHeight || !point) return null;
+  const vw = cameraVideo.videoWidth;
+  const vh = cameraVideo.videoHeight;
+  const scale = Math.max(width / vw, height / vh);
+  const offX = (width - vw * scale) / 2;
+  const offY = (height - vh * scale) / 2;
+  const x = width - (offX + point.x * vw * scale);
+  const y = offY + point.y * vh * scale;
+  return { x, y };
+}
+function bp64RenderPose(landmarks) {
+  const bag = bp64GetPoseCanvasContext();
+  if (!bag) return;
+  const { ctx, width, height } = bag;
+  if (!Array.isArray(landmarks) || !landmarks.length) return;
+
+  const mapped = landmarks.map(lm => bp64MapPosePoint(lm, width, height));
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (const [a, b] of BP64_POSE_CONNECTIONS) {
+    const p1 = mapped[a], p2 = mapped[b];
+    const v1 = landmarks[a]?.visibility ?? 0, v2 = landmarks[b]?.visibility ?? 0;
+    if (!p1 || !p2 || v1 < 0.25 || v2 < 0.25) continue;
+    ctx.strokeStyle = 'rgba(245,250,255,0.9)';
+    ctx.lineWidth = 3.2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(44,240,180,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < landmarks.length; i += 1) {
+    const p = mapped[i];
+    const v = landmarks[i]?.visibility ?? 0;
+    if (!p || v < 0.3) continue;
+    ctx.fillStyle = '#2cf0b4';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(44,240,180,0.65)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, i === 0 ? 7 : 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#efffff';
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, i === 0 ? 3.2 : 2.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+function bp64Angle(a, b, c) {
+  if (!a || !b || !c) return null;
+  const abx = a.x - b.x, aby = a.y - b.y;
+  const cbx = c.x - b.x, cby = c.y - b.y;
+  const dot = abx * cbx + aby * cby;
+  const mag1 = Math.hypot(abx, aby);
+  const mag2 = Math.hypot(cbx, cby);
+  if (!mag1 || !mag2) return null;
+  const cosine = clamp(dot / (mag1 * mag2), -1, 1);
+  return Math.acos(cosine) * 180 / Math.PI;
+}
+function bp64Avg(values) {
+  const valid = values.filter(v => Number.isFinite(v));
+  return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+}
+function bp64PosePayload(landmarks) {
+  if (!Array.isArray(landmarks) || !landmarks.length) return null;
+  const need = [0,11,12,13,14,15,16,23,24];
+  const visible = need.filter(i => (landmarks[i]?.visibility ?? 0) >= 0.25);
+  if (visible.length < 7) return null;
+
+  const points = need.map(i => landmarks[i]).filter(Boolean);
+  const minX = Math.max(0, Math.min(...points.map(p => p.x)));
+  const maxX = Math.min(1, Math.max(...points.map(p => p.x)));
+  const minY = Math.max(0, Math.min(...points.map(p => p.y)));
+  const maxY = Math.min(1, Math.max(...points.map(p => p.y)));
+  const readyMetric = Math.sqrt(Math.max(0.0001, (maxX - minX) * (maxY - minY)));
+  const centerX = bp64Avg([landmarks[11]?.x, landmarks[12]?.x, landmarks[23]?.x, landmarks[24]?.x]);
+  const centerY = bp64Avg([landmarks[11]?.y, landmarks[12]?.y, landmarks[23]?.y, landmarks[24]?.y]);
+  const leftAngle = bp64Angle(landmarks[11], landmarks[13], landmarks[15]);
+  const rightAngle = bp64Angle(landmarks[12], landmarks[14], landmarks[16]);
+  const avgAngle = bp64Avg([leftAngle, rightAngle]);
+  if (!Number.isFinite(avgAngle)) return null;
+  const bendMetricRaw = clamp((170 - avgAngle) / 95, 0.02, 1.25);
+  const confidence = bp64Avg(need.map(i => landmarks[i]?.visibility ?? 0)) ?? 0;
+  return {
+    metric: bendMetricRaw,
+    readyMetric,
+    centerX,
+    centerY,
+    confidence,
+    landmarks
+  };
+}
+function detectPoseFrame(now) {
+  if (!poseLandmarker || !cameraStream || cameraVideo.readyState < 2) return;
+  if (now - lastDetectionAt < QUICK_CONFIG.detectIntervalMs) return;
+  if (cameraVideo.currentTime === lastVideoTime) return;
+
+  lastDetectionAt = now;
+  lastVideoTime = cameraVideo.currentTime;
+
+  try {
+    const result = poseLandmarker.detectForVideo(cameraVideo, now);
+    processPoseResult(result, now);
+  } catch (error) {
+    console.error('Pose detection error:', error);
+  }
+}
+function processPoseResult(result, now) {
+  const landmarks = Array.isArray(result?.landmarks?.[0]) ? result.landmarks[0] : null;
+  if (!landmarks?.length) {
+    currentPose = null;
+    bp64RenderPose(null);
+    handleFaceLoss(now);
+    return;
+  }
+
+  const payload = bp64PosePayload(landmarks);
+  if (!payload) {
+    currentPose = null;
+    bp64RenderPose(null);
+    handleFaceLoss(now);
+    return;
+  }
+
+  currentPose = payload;
+  smoothedMetric = smoothedMetric === null
+    ? payload.metric
+    : smoothedMetric * (1 - QUICK_CONFIG.metricSmoothing) + payload.metric * QUICK_CONFIG.metricSmoothing;
+
+  currentFace = {
+    metric: smoothedMetric,
+    readyMetric: payload.readyMetric,
+    centerX: payload.centerX,
+    centerY: payload.centerY,
+    confidence: payload.confidence,
+    landmarks
+  };
+
+  lastMetric = currentFace.metric;
+  if (workoutActive && phase === 'up') {
+    maxMetricSinceTop = maxMetricSinceTop === null ? currentFace.metric : Math.max(maxMetricSinceTop, currentFace.metric);
+  }
+
+  lastFaceSeenAt = now;
+  bp64RenderPose(landmarks);
+  bp64UpdateBox(null);
+
+  if (countdownActive) {
+    if (isFaceReady(currentFace)) calibrationSamples.push(currentFace.metric);
+    return;
+  }
+
+  if (!workoutActive) {
+    if (trainingPhase === 'prep' || trainingPhase === 'pause' || trainingPhase === 'countdown') {
+      updateSetupGuidance(currentFace, now);
+    }
+    return;
+  }
+
+  updateRepState(currentFace.metric, now);
+  bp64SetFraming(isFaceReady(currentFace) ? 'good' : 'warn');
 }
 
 function detectFaceFrame(now) {
@@ -2989,11 +3247,11 @@ function handleFaceLoss(now) {
 
   if (countdownActive) {
     if (lostFor <= 450) {
-      setPositionStatus("warn", "🟨", "Kurz verloren", "Oben bleiben – ich suche dein Gesicht wieder.");
+      setPositionStatus("warn", "●", "Tracking lost briefly", "Hold the top position – I am reacquiring you.");
       return;
     }
 
-    setPositionStatus("bad", "🟥", "Gesicht verloren", "Bleib während des Countdowns oben über dem Handy.");
+    setPositionStatus("bad", "●", "Body lost", "Stay in the top position during the countdown.");
     return;
   }
 
@@ -3002,11 +3260,11 @@ function handleFaceLoss(now) {
     if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = true;
     goodPositionSince = 0;
     if (trainingPhase === "prep" || trainingPhase === "countdown") {
-      setPositionStatus("bad", "🟥", "Gesicht nicht erkannt", "Stell dich etwas mittiger vor die Frontkamera.");
-      motionCue.textContent = "Gesicht ins Blickfeld bringen";
+      setPositionStatus("bad", "●", "Body not detected", "Keep your shoulders, hips and hands in the camera view.");
+      motionCue.textContent = "Find body";
     } else if (trainingPhase === "pause" && autoCountdownPending) {
-      setPositionStatus("neutral", "⬜", "Warte auf deine Position", "Geh in die obere Push-up-Position, wenn du bereit bist.");
-      motionCue.textContent = "Position einnehmen";
+      setPositionStatus("neutral", "●", "Waiting for position", "Get into the top push-up position when you are ready.");
+      motionCue.textContent = "Get ready";
     }
     return;
   }
@@ -3029,23 +3287,23 @@ function handleFaceLoss(now) {
       downFrames = 0;
       upFrames = 0;
       motionCue.textContent = "HOCH";
-      setPositionStatus("good", "🟩", "Tief erkannt", "Gesicht darf unten kurz aus dem Bild verschwinden. Jetzt wieder hoch.");
+      setPositionStatus("good", "●", "Bottom detected", "Drive back up.");
       return;
     }
   }
 
   if (phase === "down" && lostFor <= QUICK_CONFIG.faceLossGraceMs) {
     motionCue.textContent = "HOCH";
-    setPositionStatus("good", "🟩", "Tief erkannt", "Jetzt wieder hoch – sobald du auftauchst, zählt die Wiederholung.");
+    setPositionStatus("good", "●", "Bottom detected", "Come back up to count the rep.");
     return;
   }
 
   if (lostFor <= QUICK_CONFIG.faceLossGraceMs) {
-    setPositionStatus("warn", "🟨", "Kurz verloren", "Weiterbewegen – die Wiederholung bleibt aktiv.");
+    setPositionStatus("warn", "●", "Tracking lost briefly", "Keep moving – the rep is still active.");
     return;
   }
 
-  setPositionStatus("warn", "🟨", "Zurück ins Kamerabild", "Bitte ins Bild zurückkehren oder das Set über Pause beenden.");
+  setPositionStatus("warn", "●", "Return to camera", "Move back into view or finish the set with pause.");
 
   // No auto-end when the face leaves frame: propped-up frontal camera can briefly lose tracking.
   // Users can end sets with the Pause button.
@@ -3057,7 +3315,7 @@ function handleFaceLoss(now) {
     inferredBottomFromLoss = false;
     maxMetricSinceTop = null;
     motionCue.textContent = "RUNTER";
-    setPositionStatus("bad", "🟥", "Gesicht länger nicht erkannt", "Zurück ins Kamerabild bringen.");
+    setPositionStatus("bad", "●", "Tracking lost", "Bring your body back into the frame.");
   }
 }
 
@@ -3065,17 +3323,19 @@ function updateSetupGuidance(face, now) {
   readyForCountdown = false;
   if (trainingPhase !== "pause" || autoCountdownPending) startWorkoutBtn.disabled = true;
 
-  if (face.metric < QUICK_CONFIG.readyMinMetric) {
+  const readyMetric = face.readyMetric ?? face.metric;
+
+  if (readyMetric < QUICK_CONFIG.readyMinMetric) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Etwas näher ans Handy", "Lehn das Handy etwas näher an dich oder gehe ein Stück näher heran.");
-    motionCue.textContent = "Etwas näher";
+    setPositionStatus("warn", "●", "Move a bit closer", "Bring your whole upper body a little closer to the camera.");
+    motionCue.textContent = "Move closer";
     return;
   }
 
-  if (face.metric > QUICK_CONFIG.readyMaxMetric) {
+  if (readyMetric > QUICK_CONFIG.readyMaxMetric) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Etwas weiter weg", "Stell das Handy etwas weiter weg.");
-    motionCue.textContent = "Etwas weiter weg";
+    setPositionStatus("warn", "●", "Move a bit back", "Place the phone a little farther away so your full body fits better.");
+    motionCue.textContent = "Move back";
     return;
   }
 
@@ -3087,8 +3347,8 @@ function updateSetupGuidance(face, now) {
 
   if (!centered) {
     goodPositionSince = 0;
-    setPositionStatus("warn", "🟨", "Kopf etwas mittiger", "Richte die Frontkamera so aus, dass dein Gesicht gut im Bild bleibt.");
-    motionCue.textContent = "Handy etwas verschieben";
+    setPositionStatus("warn", "●", "Center your body", "Shift yourself or the phone so shoulders, hips and hands stay in frame.");
+    motionCue.textContent = "Center body";
     return;
   }
 
@@ -3096,8 +3356,8 @@ function updateSetupGuidance(face, now) {
   const stableFor = now - goodPositionSince;
 
   if (stableFor < 450) {
-    setPositionStatus("good", "🟩", "Gut im Blick", "Kurz so bleiben …");
-    motionCue.textContent = "Position passt";
+    setPositionStatus("good", "●", "Good Position", "Hold still for a moment …");
+    motionCue.textContent = "Hold position";
     return;
   }
 
@@ -3106,20 +3366,21 @@ function updateSetupGuidance(face, now) {
 
   if (autoCountdownPending && !countdownActive) {
     autoCountdownPending = false;
-    setPositionStatus("good", "🟩", "Bereit", "Der Countdown startet automatisch – oben bleiben.");
+    setPositionStatus("good", "●", "Ready", "Starting countdown – hold the top position.");
     if (trainingPhase === "pause") pauseReadyHint.textContent = "Position erkannt · Countdown startet …";
     motionCue.textContent = "COUNTDOWN";
     queueMicrotask(() => startCountdown());
     return;
   }
 
-  setPositionStatus("good", "🟩", "Bereit", "Obere Position erkannt.");
-  motionCue.textContent = "Bereit";
+  setPositionStatus("good", "●", "Good Position", "Top position detected.");
+  motionCue.textContent = "Ready";
 }
 
 function isFaceReady(face) {
   if (!face) return false;
-  if (face.metric < QUICK_CONFIG.readyMinMetric || face.metric > QUICK_CONFIG.readyMaxMetric) return false;
+  const readyMetric = face.readyMetric ?? face.metric;
+  if (readyMetric < QUICK_CONFIG.readyMinMetric || readyMetric > QUICK_CONFIG.readyMaxMetric) return false;
   return (
     face.centerX >= QUICK_CONFIG.readyMinCenterX &&
     face.centerX <= QUICK_CONFIG.readyMaxCenterX &&
@@ -3223,7 +3484,7 @@ function beginWorkout() {
 
   showActiveUI();
   pauseSetBtn.classList.remove("hidden");
-  setPositionStatus("good", "🟩", "Set läuft", "Kurzes Verschwinden unten ist okay. Ganz aus dem Bild gehen beendet das Set automatisch.");
+  setPositionStatus("good", "●", "Workout Running", "Stay in frame while you move through each rep.");
   motionCue.textContent = "RUNTER";
   renderLiveGoals();
 }
@@ -3340,7 +3601,7 @@ function updateRepState(metric, now) {
       downFrames = 0;
       upFrames = 0;
       motionCue.textContent = "HOCH";
-      setPositionStatus("good", "🟩", "Tief erkannt", "Jetzt direkt wieder hoch.");
+      setPositionStatus("good", "●", "Bottom detected", "Drive straight back up.");
     }
 
     lastMetric = metric;
@@ -3389,9 +3650,9 @@ function updateRepState(metric, now) {
     motionCue.textContent = "RUNTER";
     setPositionStatus(
       "good",
-      "🟩",
-      "Gut im Blick",
-      `${repCount} Wiederholung${repCount === 1 ? "" : "en"} erkannt.`
+      "●",
+      "Good Position",
+      `${repCount} rep${repCount === 1 ? "" : "s"} counted.`
     );
   }
 

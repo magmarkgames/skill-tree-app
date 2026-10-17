@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.69</title>
-  <link rel="stylesheet" href="style.css?v=0.11.69" />
+  <title>BodyPath – v0.11.70</title>
+  <link rel="stylesheet" href="style.css?v=0.11.70" />
 </head>
 <body>
   <main class="app-shell">
@@ -417,6 +417,7 @@
               <div class="bp64-camera-top"><span id="bp64FramingTitle">○ CAMERA SETUP</span><span id="bp64FramingDetail">FACE FRAMING</span></div>
               <div class="bp64-camera-window">
                 <video id="cameraVideo" class="bp64-camera-video" autoplay muted playsinline></video>
+                <canvas id="bp64PoseCanvas" class="bp64-pose-canvas" aria-hidden="true"></canvas>
                 <div class="bp64-guide-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
                 <div id="bp64FaceBox" class="bp64-face-box hidden" aria-hidden="true"></div>
                 <div id="bp64CameraPlaceholder" class="bp64-camera-placeholder" aria-hidden="true">
@@ -432,7 +433,7 @@
             <div class="rep-hero" aria-live="polite">
               <div class="bp64-rep-number"><strong id="liveRepCount">0</strong><span>REPS · CURRENT SET</span></div>
               <i aria-hidden="true"></i>
-              <div class="bp64-rep-target"><strong id="bp64Target">—</strong><span>TARGET</span></div>
+              <div class="bp64-rep-target"><strong id="bp64Target">—</strong><span>GOAL</span></div>
             </div>
 
             <div id="motionCue" class="motion-cue">Position einnehmen</div>
@@ -579,6 +580,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.69"></script>
+  <script type="module" src="app.js?v=0.11.70"></script>
 </body>
 </html>

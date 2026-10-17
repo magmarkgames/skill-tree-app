@@ -13989,3 +13989,150 @@ body[data-hero-gender="female"] .home-v17 {
   #trainingModal.quick-theme .quick-workout-actions button{min-height:72px;}
   #trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{min-height:78px;}
 }
+
+/* ======================================================================
+   v0.11.70 — Training screen refinement + pose overlay
+   ====================================================================== */
+#trainingModal.quick-theme .bp64-pose-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:2;
+}
+#trainingModal.quick-theme .bp64-face-box{display:none!important;}
+#trainingModal.quick-theme .bp64-camera-window{
+  height:clamp(360px,52svh,560px);
+  border-radius:34px;
+  background:#090f1a;
+}
+#trainingModal.quick-theme .bp64-camera-video{
+  filter:saturate(1.05) contrast(1.02) brightness(0.98);
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status{
+  border-radius:20px;
+  padding:12px 18px;
+  background:rgba(10,37,30,.78);
+  border:1px solid rgba(44,240,180,.28);
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status strong{
+  color:#34f1b7;
+  font-size:17px;
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status.neutral{
+  background:rgba(15,25,43,.76);
+  border-color:rgba(108,138,186,.28);
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status.neutral strong{color:#e8f0ff;}
+#trainingModal.quick-theme .bp64-camera-card .position-status.warn{
+  background:rgba(35,33,17,.76);
+  border-color:rgba(240,196,95,.32);
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status.warn strong{color:#ffd267;}
+#trainingModal.quick-theme .bp64-camera-card .position-status.bad{
+  background:rgba(40,16,22,.78);
+  border-color:rgba(255,121,132,.3);
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status.bad strong{color:#ff8995;}
+#trainingModal.quick-theme .bp64-camera-card .position-status > span{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+  color:transparent;
+  background:#34f1b7;
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status.warn > span{background:#ffd267;}
+#trainingModal.quick-theme .bp64-camera-card .position-status.bad > span{background:#ff8995;}
+#trainingModal.quick-theme .bp64-camera-card .position-status.neutral > span{background:#dfe8ff;}
+#trainingModal.quick-theme .bp64-camera-card .position-status strong + small{
+  display:none;
+}
+#trainingModal.quick-theme .rep-hero{
+  align-items:flex-end;
+  gap:14px;
+  margin-top:4px;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number::before{
+  width:235px;
+  height:235px;
+  top:14px;
+  border-right-color:rgba(44,240,180,.55);
+  border-top-color:rgba(44,240,180,.55);
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number strong{
+  font-size:clamp(112px,28vw,164px);
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number span{
+  letter-spacing:.24em;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target{
+  align-self:flex-end;
+  min-width:118px;
+  padding:14px 16px;
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(17,28,52,.95),rgba(13,23,41,.98));
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target::before{
+  content:'🏆';
+  display:block;
+  font-size:28px;
+  line-height:1;
+  margin-bottom:4px;
+  opacity:.95;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target strong{
+  font-size:56px;
+  color:#fff2c9;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target span{
+  font-size:12px;
+  letter-spacing:.12em;
+}
+#trainingModal.quick-theme .milestone-rail-panel{
+  border-radius:22px;
+}
+#trainingModal.quick-theme .milestone-rail-head strong{
+  font-size:15px;
+}
+#trainingModal.quick-theme .quick-workout-actions{
+  margin-top:6px;
+  grid-template-columns:86px minmax(0,1fr) 86px;
+}
+#trainingModal.quick-theme .quick-workout-actions #pauseSetBtn,
+#trainingModal.quick-theme .quick-workout-actions #finishWorkoutBtn{
+  font-size:0;
+  position:relative;
+}
+#trainingModal.quick-theme .quick-workout-actions #pauseSetBtn::before,
+#trainingModal.quick-theme .quick-workout-actions #finishWorkoutBtn::before{
+  display:block;
+  font-size:38px;
+  line-height:1;
+  font-weight:700;
+}
+#trainingModal.quick-theme .quick-workout-actions #pauseSetBtn::before{content:'❚❚';}
+#trainingModal.quick-theme .quick-workout-actions #finishWorkoutBtn::before{content:'■';}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{
+  font-size:19px;
+}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn::before{
+  content:'▶';
+  display:inline-block;
+  margin-right:10px;
+  font-size:28px;
+  vertical-align:-2px;
+}
+#trainingModal.quick-theme .quick-workout-actions #manualModeBtn,
+#trainingModal.quick-theme .quick-workout-actions #startCameraBtn{
+  min-height:48px;
+  font-size:14px;
+}
+@media (max-width:390px){
+  #trainingModal.quick-theme .bp64-camera-window{height:min(46svh,430px);}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-number strong{font-size:96px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-number::before{width:208px;height:208px;top:8px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-target{min-width:100px;padding:12px 14px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:46px;}
+}

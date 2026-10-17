@@ -1,3 +1,5 @@
+BodyPath v0.11.70
+
 BodyPath v0.11.69
 
 - Journey expanded from Start to Diamond
@@ -33,3 +35,11 @@ Deploy: copy the contents of this folder to the GitHub Pages site root (not the 
 - Bigger live camera window, cleaner header, large rep counter, compact target card, and simplified bottom controls.
 - Next Goals kept as functional placeholder content for now.
 - Training start is now more explicit: choose a variant, wait for good positioning, then press Start Workout.
+
+
+## v0.11.70
+- Training screen refined to match the approved reference image more closely.
+- Added MediaPipe pose tracking overlay with live body points and connecting lines.
+- Camera positioning now checks the body framing instead of only the face.
+- Rep detection now uses body posture / elbow bend when pose tracking is available.
+- Fallback to face detection remains available if pose tracking cannot be loaded.
