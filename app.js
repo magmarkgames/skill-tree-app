@@ -1097,7 +1097,10 @@ function render() {
   if (!profileView.classList.contains("hidden")) renderProfile();
   if (!skillsView?.classList.contains("hidden")) renderSkills();
   renderLiveGoals();
+  updateRecordBadge();
+  syncQuickPrimaryButton();
 }
+
 
 function renderHomeDashboardLegacy(todayTotal, weekTotal, rankName) {
   if (!homeRankIcon) return;
@@ -2231,9 +2234,9 @@ function renderLiveGoals() {
     const pct=Math.max(0,Math.min(100,Math.round(goal.current/Math.max(1,goal.target)*100)));
     return `<div class="bp64-goal-row ${i===0?'primary':''}"><div class="bp64-goal-copy"><span>${goal.label}</span><strong>${Math.min(goal.target,goal.current)}/${goal.target}</strong></div><div class="bp64-goal-track"><span style="width:${pct}%"></span></div></div>`;
   }).join('');
-  const target=document.getElementById('bp64Target');
-  if(target){const level=BP61_LEVELS[activeJourneyLevelId];const obj=level?.rank?BP66_RANK_CHOICES[level.id][activeRankStar66]:level?.core;target.textContent=obj?.type==='combo'?obj.items.reduce((a,b)=>a+b.reps,0):obj?.reps||activePlacementTarget65||BP66_SHORTCUTS.find(s=>s.id===activeShortcut66)?.objective.reps||'—';}
+  updateRecordBadge();
 }
+
 function renderPauseChallenges() {
   if(!pauseChallengesList)return;
   // Use the same live targets as the camera screen. Do not display old
@@ -2506,6 +2509,23 @@ function updateQuickVariantPill() {
   quickVariantPill.style.setProperty("--variant-color", meta.color);
 }
 
+function updateRecordBadge() {
+  const target = document.getElementById("bp64Target");
+  if (!target) return;
+  const variantMax = Number(getVariantStats(currentTrainingVariant).max || 0);
+  const liveMax = Math.max(variantMax, Number(repCount) || 0, Number(getSessionVariantMax(currentTrainingVariant)) || 0);
+  target.textContent = String(liveMax || 0);
+}
+
+function syncQuickPrimaryButton() {
+  if (!startWorkoutBtn) return;
+  const isPauseState = workoutActive || countdownActive || autoCountdownPending;
+  startWorkoutBtn.classList.remove("hidden");
+  startWorkoutBtn.classList.toggle("pause-state", isPauseState);
+  startWorkoutBtn.textContent = isPauseState ? "Pause Workout" : "Start Workout";
+  startWorkoutBtn.disabled = !cameraStream && !manualMode;
+}
+
 function setSelectedTrainingVariant(variant) {
   if (!isVariantAvailable(variant)) return;
   currentTrainingVariant = VARIANT_META[variant] ? variant : "standard";
@@ -2513,6 +2533,8 @@ function setSelectedTrainingVariant(variant) {
   workoutVariantButtons.forEach(button => button.classList.toggle("selected", button.dataset.workoutVariant === currentTrainingVariant));
   updateQuickVariantPill();
   renderLiveGoals();
+  updateRecordBadge();
+  syncQuickPrimaryButton();
   if (trainingPhase === "pause") {
     pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
     renderPauseChallenges();
@@ -2522,51 +2544,51 @@ function setSelectedTrainingVariant(variant) {
 function showPrepUI() {
   updateBP61TrainingBanner();
   trainingPhase = "prep";
-  setPrepPanel.classList.remove("hidden");
-  activeSetPanel.classList.add("hidden");
+  setPrepPanel.classList.add("hidden");
+  activeSetPanel.classList.remove("hidden");
   pausePanel.classList.add("hidden");
   pauseSetBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0);
-  manualModeBtn.classList.remove("hidden");
+  finishWorkoutBtn.classList.add("hidden");
+  manualModeBtn.classList.add("hidden");
+  motionCue.classList.add("hidden");
   setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
+  syncQuickPrimaryButton();
+  updateRecordBadge();
+  if (!cameraStream && !manualMode) startCamera();
 }
 
 function showActiveUI() {
   setPrepPanel.classList.add("hidden");
   pausePanel.classList.add("hidden");
   activeSetPanel.classList.remove("hidden");
-  manualModeBtn.classList.toggle("hidden", workoutActive || countdownActive || !!cameraStream);
-  finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0 && !workoutActive);
-  pauseSetBtn.classList.toggle("hidden", !workoutActive);
-  startWorkoutBtn.textContent = workoutActive ? "Workout Running" : "Start Workout";
-  startWorkoutBtn.disabled = !readyForCountdown || workoutActive || countdownActive;
-  startWorkoutBtn.classList.toggle("hidden", workoutActive || countdownActive);
+  manualModeBtn.classList.add("hidden");
+  pauseSetBtn.classList.add("hidden");
+  finishWorkoutBtn.classList.add("hidden");
+  motionCue.classList.add("hidden");
   setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
+  syncQuickPrimaryButton();
+  updateRecordBadge();
 }
 
 function showPauseUI() {
-  trainingPhase = "pause";
+  trainingPhase = "prep";
   setPrepPanel.classList.add("hidden");
-  activeSetPanel.classList.add("hidden");
-  pausePanel.classList.remove("hidden");
+  activeSetPanel.classList.remove("hidden");
+  pausePanel.classList.add("hidden");
   pauseSetBtn.classList.add("hidden");
-  finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0);
+  finishWorkoutBtn.classList.add("hidden");
   manualModeBtn.classList.add("hidden");
+  motionCue.classList.add("hidden");
   setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
-  const lastSet = workoutSets[workoutSets.length - 1];
-  if (lastSet) {
-    lastSetSummary.textContent = `${VARIANT_META[lastSet.variant]?.label || "Standard"} · ${lastSet.reps} Push-up${lastSet.reps === 1 ? "" : "s"}`;
-  } else {
-    lastSetSummary.textContent = "Noch kein Set gespeichert";
+  autoCountdownPending = false;
+  if (lastSetSummary) {
+    const lastSet = workoutSets[workoutSets.length - 1];
+    lastSetSummary.textContent = lastSet
+      ? `${VARIANT_META[lastSet.variant]?.label || "Standard"} · ${lastSet.reps} Push-up${lastSet.reps === 1 ? "" : "s"}`
+      : "Noch kein Set gespeichert";
   }
-
-  startWorkoutBtn.textContent = "Continue";
-  startWorkoutBtn.disabled = false;
-  startWorkoutBtn.classList.toggle("hidden", autoCountdownPending);
-  pauseReadyHint.textContent = autoCountdownPending
-    ? "Jetzt in die obere Push-up-Position gehen · der Countdown startet automatisch, sobald du stabil liegst."
-    : `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} gewählt · Training fortsetzen, wenn du bereit bist.`;
-  renderPauseChallenges();
+  syncQuickPrimaryButton();
+  updateRecordBadge();
 }
 
 function resetTrainingSession() {
@@ -2877,8 +2899,8 @@ async function startCamera() {
 
     startCameraBtn.classList.add("hidden");
     startWorkoutBtn.classList.remove("hidden");
-    startWorkoutBtn.disabled = true;
-    cameraStatus.textContent = "Sobald deine obere Position erkannt ist, kannst du direkt auf Start Workout tippen.";
+    syncQuickPrimaryButton();
+    cameraStatus.textContent = "Tap Start Workout. Once Good Position is detected, the 3-second countdown begins.";
     motionCue.textContent = "Obere Position finden";
 
     startDetectionLoop();
@@ -3411,7 +3433,7 @@ async function startCountdown() {
   maxMetricSinceTop = null;
   inferredBottomFromLoss = false;
   lastRepAt = 0;
-  startWorkoutBtn.disabled = true;
+  startWorkoutBtn.disabled = false;
   showActiveUI();
   countdownBox.classList.remove("hidden");
   motionCue.textContent = "Oben bleiben";
@@ -3438,7 +3460,8 @@ async function startCountdown() {
     } else {
       trainingPhase = "prep";
       showActiveUI();
-      setPositionStatus("bad", "🟥", "Noch einmal positionieren", "Sobald du wieder stabil oben bist, startet der Countdown automatisch neu.");
+      setPositionStatus("bad", "●", "Reposition", "Hold the top position again and tap Start Workout when ready.");
+      autoCountdownPending = false;
     }
     motionCue.textContent = "Obere Position finden";
     return;
@@ -3536,8 +3559,7 @@ function endCurrentSetToPause(reason = "manual") {
 
     if (workoutSets.length > 0) {
       showPauseUI();
-      startPauseTimer();
-      pauseReadyHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert. Training fortsetzen, wenn du bereit bist.";
+      pauseReadyHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert.";
     } else {
       showPrepUI();
       prepCameraHint.textContent = "0 Wiederholungen · dieses Set wurde nicht gespeichert. Wähle eine Variante für dein erstes Set.";
@@ -3570,7 +3592,6 @@ function endCurrentSetToPause(reason = "manual") {
     setEnding = false;
     autoCountdownPending = false;
     showPauseUI();
-    startPauseTimer();
     renderLiveGoals();
   }, 900);
 }
@@ -3629,6 +3650,7 @@ function updateRepState(metric, now) {
     liveRepCount.textContent = String(repCount);
     pulseCounter();
     renderLiveGoals();
+    updateRecordBadge();
 
     if (navigator.vibrate) navigator.vibrate(28);
 
@@ -5763,6 +5785,16 @@ backBtn.addEventListener("click", () => {
   showStep("exercise");
 });
 
+function cancelArmedWorkout() {
+  autoCountdownPending = false;
+  countdownActive = false;
+  countdownBox.classList.add("hidden");
+  trainingPhase = "prep";
+  goodPositionSince = 0;
+  showPrepUI();
+  setPositionStatus("neutral", "●", "Waiting for start", "Tap Start Workout, then hold a good top position.");
+}
+
 startCameraBtn.addEventListener("click", () => {
   if (cameraStream && !workoutActive && !countdownActive && readyForCountdown) {
     startCountdown();
@@ -5771,11 +5803,21 @@ startCameraBtn.addEventListener("click", () => {
   startCamera();
 });
 startWorkoutBtn.addEventListener("click", () => {
-  if (trainingPhase === "pause") {
-    armNextSetFromPause();
+  if (workoutActive) {
+    endCurrentSetToPause("manual");
     return;
   }
-  startCountdown();
+  if (countdownActive || autoCountdownPending) {
+    cancelArmedWorkout();
+    return;
+  }
+  autoCountdownPending = true;
+  syncQuickPrimaryButton();
+  if (readyForCountdown) {
+    startCountdown();
+  } else {
+    setPositionStatus("neutral", "●", "Waiting for position", "Get into a good top position to start the countdown.");
+  }
 });
 pauseSetBtn.addEventListener("click", () => endCurrentSetToPause("manual"));
 finishWorkoutBtn.addEventListener("click", finishWorkout);

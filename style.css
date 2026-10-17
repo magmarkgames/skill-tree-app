@@ -14136,3 +14136,226 @@ body[data-hero-gender="female"] .home-v17 {
   #trainingModal.quick-theme .rep-hero .bp64-rep-target{min-width:100px;padding:12px 14px;}
   #trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:46px;}
 }
+
+/* ======================================================================
+   v0.11.71 — Mockup-aligned workout screen
+   ====================================================================== */
+#trainingModal.quick-theme .modal-panel{
+  background:#061022!important;
+  border:none;
+  border-radius:0;
+  min-height:100svh;
+  height:100svh;
+  padding:0!important;
+  max-width:none;
+}
+#trainingModal.quick-theme .modal-head{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  z-index:30;
+  min-height:0;
+  padding:calc(14px + env(safe-area-inset-top)) 18px 0;
+  justify-content:center;
+  align-items:flex-start;
+  background:linear-gradient(180deg, rgba(4,10,20,.68), rgba(4,10,20,0));
+}
+#trainingModal.quick-theme .modal-head > div{ text-align:center; }
+#trainingModal.quick-theme .modal-head h2{
+  font-size:18px!important;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+}
+#trainingModal.quick-theme .training-subtitle{
+  margin-top:3px;
+  font-size:12px!important;
+  color:#8ca6d8;
+}
+#trainingModal.quick-theme #backBtn{
+  top:calc(14px + env(safe-area-inset-top));
+  left:18px;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  background:rgba(13,23,42,.72);
+  border:1px solid rgba(90,113,163,.45);
+  backdrop-filter:blur(8px);
+}
+#trainingModal.quick-theme .quick-stage{
+  position:relative;
+  min-height:100svh;
+  padding:0;
+  background:#061022;
+  overflow:hidden;
+}
+#trainingModal.quick-theme #setPrepPanel,
+#trainingModal.quick-theme #pausePanel,
+#trainingModal.quick-theme #motionCue,
+#trainingModal.quick-theme .milestone-rail-panel,
+#trainingModal.quick-theme .quick-status,
+#trainingModal.quick-theme #manualModeBtn,
+#trainingModal.quick-theme #finishWorkoutBtn,
+#trainingModal.quick-theme #pauseSetBtn,
+#trainingModal.quick-theme #startCameraBtn,
+#trainingModal.quick-theme .bp64-camera-top,
+#trainingModal.quick-theme .bp64-guide-corners,
+#trainingModal.quick-theme #bp64FaceBox,
+#trainingModal.quick-theme #setNumberLabel,
+#trainingModal.quick-theme .quick-meta,
+#trainingModal.quick-theme .quick-variant-pill{
+  display:none!important;
+}
+#trainingModal.quick-theme #activeSetPanel{
+  display:block;
+  position:relative;
+  min-height:100svh;
+}
+#trainingModal.quick-theme .bp64-camera-card{
+  position:absolute;
+  inset:0;
+  padding:0;
+  border:none;
+  border-radius:0;
+  background:transparent;
+}
+#trainingModal.quick-theme .bp64-camera-window{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:none;
+  border-radius:0;
+  background:#050d18;
+  box-shadow:none;
+}
+#trainingModal.quick-theme .bp64-camera-video,
+#trainingModal.quick-theme .bp64-pose-canvas,
+#trainingModal.quick-theme #bp64CameraPlaceholder{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+#trainingModal.quick-theme #bp64CameraPlaceholder{
+  background:radial-gradient(circle at 50% 25%, rgba(28,45,75,.6), rgba(6,16,34,.98));
+}
+#trainingModal.quick-theme #bp64CameraPlaceholder span{
+  margin-top:14px;
+  font-size:13px;
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status{
+  left:18px;
+  top:calc(82px + env(safe-area-inset-top));
+  border-radius:18px;
+  padding:11px 18px;
+}
+#trainingModal.quick-theme .bp64-camera-card .position-status strong{
+  font-size:16px;
+}
+#trainingModal.quick-theme .rep-hero{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:145px;
+  z-index:12;
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  gap:14px;
+  padding:0 22px;
+  pointer-events:none;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number{
+  position:relative;
+  flex:1 1 auto;
+  min-width:0;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number::before{
+  width:220px;
+  height:220px;
+  top:-4px;
+  border-width:7px;
+  border-right-color:rgba(44,240,180,.34);
+  border-top-color:rgba(44,240,180,.34);
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number strong{
+  font-size:clamp(110px,31vw,180px);
+  line-height:.82;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number span{
+  margin-top:4px;
+  font-size:14px;
+  letter-spacing:.35em;
+  color:#dbe8ff;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target{
+  min-width:110px;
+  padding:16px 14px;
+  border-radius:24px;
+  border:1px solid rgba(80,109,164,.46);
+  background:rgba(10,19,37,.72);
+  backdrop-filter:blur(12px);
+  box-shadow:0 14px 34px rgba(0,0,0,.22);
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target::before{
+  margin-bottom:8px;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target strong{
+  font-size:44px;
+  line-height:.95;
+}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target span{
+  font-size:11px;
+  letter-spacing:.18em;
+}
+#trainingModal.quick-theme .quick-workout-actions{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:calc(20px + env(safe-area-inset-bottom));
+  z-index:13;
+  display:block;
+  margin:0;
+}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  min-height:72px;
+  width:100%;
+  border:none;
+  border-radius:28px;
+  background:linear-gradient(90deg,#39c7ff 0%, #2e81ff 38%, #5a37ff 71%, #8d41ff 100%);
+  color:#ffffff;
+  font-size:18px;
+  font-weight:800;
+  box-shadow:0 18px 34px rgba(28,70,255,.3), inset 0 0 0 2px rgba(255,255,255,.22);
+}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn.hidden{display:flex!important;}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn::before{
+  content:'▶';
+  font-size:28px;
+  line-height:1;
+}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn:not(:disabled):is(:where(*)){}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn.pause-state::before{
+  content:'❚❚';
+  font-size:24px;
+}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn:disabled{
+  opacity:.72;
+}
+#trainingModal.quick-theme #countdownBox{
+  z-index:25;
+}
+@media (max-width:390px){
+  #trainingModal.quick-theme .rep-hero{bottom:132px;padding:0 18px;gap:10px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-number::before{width:190px;height:190px;top:8px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-number strong{font-size:96px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-target{min-width:96px;padding:14px 12px;}
+  #trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:38px;}
+  #trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{min-height:68px;font-size:17px;}
+}

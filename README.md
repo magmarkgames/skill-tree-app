@@ -1,3 +1,5 @@
+BodyPath v0.11.71
+
 BodyPath v0.11.70
 
 BodyPath v0.11.69
@@ -43,3 +45,12 @@ Deploy: copy the contents of this folder to the GitHub Pages site root (not the 
 - Camera positioning now checks the body framing instead of only the face.
 - Rep detection now uses body posture / elbow bend when pose tracking is available.
 - Fallback to face detection remains available if pose tracking cannot be loaded.
+
+
+## v0.11.71
+- Training screen simplified and aligned much closer to the approved full-screen mockup.
+- Camera now fills the workout screen.
+- Large rep counter is overlaid on the camera feed, with a smaller record card beside it.
+- Next Goals, extra pause/finish buttons and other non-essential UI are hidden for now.
+- The bottom primary button now toggles between Start Workout and Pause Workout.
+- Countdown starts only after tapping Start Workout and then achieving Good Position.
