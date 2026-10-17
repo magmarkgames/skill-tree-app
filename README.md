@@ -1,4 +1,4 @@
-BodyPath v0.11.68
+BodyPath v0.11.69
 
 - Journey expanded from Start to Diamond
 - Total Journey levels: 52
@@ -26,3 +26,10 @@ BodyPath v0.11.67
 - The existing frontal camera and manual counter are retained. A mixed-variant objective requires switching variants between sets; form cannot be verified by the current face tracker.
 
 Deploy: copy the contents of this folder to the GitHub Pages site root (not the containing folder). Replace `app.js`, `style.css`, `index.html` and the assets as necessary. Version query strings are `?v=0.11.66`.
+
+
+## v0.11.69
+- Training screen redesigned to match the approved camera-first mockup more closely.
+- Bigger live camera window, cleaner header, large rep counter, compact target card, and simplified bottom controls.
+- Next Goals kept as functional placeholder content for now.
+- Training start is now more explicit: choose a variant, wait for good positioning, then press Start Workout.

@@ -550,6 +550,7 @@ const quickStep = document.getElementById("quickStep");
 const resultStep = document.getElementById("resultStep");
 const successStep = document.getElementById("successStep");
 const trainingTitle = document.getElementById("trainingTitle");
+const trainingSubtitle = document.getElementById("trainingSubtitle");
 const backBtn = document.getElementById("backBtn");
 const quickVariantPill = document.getElementById("quickVariantPill");
 const variantCards = Array.from(document.querySelectorAll(".variant-card[data-variant]"));
@@ -2438,21 +2439,25 @@ function showStep(stepName) {
   if (stepName === "exercise") {
     exerciseStep.classList.remove("hidden");
     trainingTitle.textContent = "Training auswählen";
+    if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
     backBtn.classList.add("hidden");
   }
   if (stepName === "quick") {
     quickStep.classList.remove("hidden");
-    trainingTitle.textContent = "Push-up Workout";
+    trainingTitle.textContent = `${VARIANT_META[currentTrainingVariant]?.label || "Standard"} Push-Ups`;
+    if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
     backBtn.classList.remove("hidden");
   }
   if (stepName === "result") {
     resultStep.classList.remove("hidden");
     trainingTitle.textContent = "Workout prüfen";
+    if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
     backBtn.classList.remove("hidden");
   }
   if (stepName === "success") {
     successStep.classList.remove("hidden");
     trainingTitle.textContent = "Fertig";
+    if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
     backBtn.classList.add("hidden");
   }
 }
@@ -2490,6 +2495,7 @@ function closeTraining() {
 function updateQuickVariantPill() {
   const meta = VARIANT_META[currentTrainingVariant] || VARIANT_META.standard;
   quickVariantPill.innerHTML = `${getVariantIconSvg(currentTrainingVariant)}<span>${meta.label.toUpperCase()} PUSH-UP</span>`;
+  if (trainingModal && trainingModal.classList.contains("quick-theme")) trainingTitle.textContent = `${meta.label} Push-Ups`;
   quickVariantPill.style.setProperty("--variant-color", meta.color);
 }
 
@@ -2522,9 +2528,12 @@ function showActiveUI() {
   setPrepPanel.classList.add("hidden");
   pausePanel.classList.add("hidden");
   activeSetPanel.classList.remove("hidden");
-  manualModeBtn.classList.toggle("hidden", workoutActive || countdownActive);
+  manualModeBtn.classList.toggle("hidden", workoutActive || countdownActive || !!cameraStream);
   finishWorkoutBtn.classList.toggle("hidden", workoutSets.length === 0 && !workoutActive);
   pauseSetBtn.classList.toggle("hidden", !workoutActive);
+  startWorkoutBtn.textContent = workoutActive ? "Workout Running" : "Start Workout";
+  startWorkoutBtn.disabled = !readyForCountdown || workoutActive || countdownActive;
+  startWorkoutBtn.classList.toggle("hidden", workoutActive || countdownActive);
   setNumberLabel.textContent = `SET ${workoutSets.length + 1}`;
 }
 
@@ -2544,7 +2553,7 @@ function showPauseUI() {
     lastSetSummary.textContent = "Noch kein Set gespeichert";
   }
 
-  startWorkoutBtn.textContent = "Training fortsetzen";
+  startWorkoutBtn.textContent = "Continue";
   startWorkoutBtn.disabled = false;
   startWorkoutBtn.classList.toggle("hidden", autoCountdownPending);
   pauseReadyHint.textContent = autoCountdownPending
@@ -2611,6 +2620,7 @@ function resetTrainingSession() {
   startCameraBtn.disabled = false;
   startCameraBtn.textContent = "Kamera erneut versuchen";
   startWorkoutBtn.classList.add("hidden");
+  startWorkoutBtn.textContent = "Start Workout";
   startWorkoutBtn.disabled = true;
   finishWorkoutBtn.classList.add("hidden");
   pauseSetBtn.classList.add("hidden");
@@ -2630,7 +2640,10 @@ function selectWorkoutVariant(variant) {
   if (trainingPhase === "prep") {
     showActiveUI();
     prepCameraHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt. Kamera wird gestartet …`;
-    autoCountdownPending = true;
+    autoCountdownPending = false;
+    startWorkoutBtn.textContent = "Start Workout";
+    startWorkoutBtn.disabled = true;
+    startWorkoutBtn.classList.remove("hidden");
     startCamera();
     return;
   }
@@ -2638,7 +2651,7 @@ function selectWorkoutVariant(variant) {
     // Variantenwechsel während der Pause startet bewusst noch kein neues Set.
     autoCountdownPending = false;
     goodPositionSince = 0;
-    startWorkoutBtn.textContent = "Training fortsetzen";
+    startWorkoutBtn.textContent = "Continue";
     startWorkoutBtn.disabled = false;
     startWorkoutBtn.classList.remove("hidden");
     pauseReadyHint.textContent = `${VARIANT_META[currentTrainingVariant].label} gewählt · Training fortsetzen, wenn du bereit bist.`;
@@ -3772,6 +3785,7 @@ function startEntryAssessment() {
   showPrepUI();
   renderStaticIcons();
   trainingTitle.textContent = "Assessment Test";
+  if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
   prepCameraHint.textContent = "Do one strong set of Standard Push-Ups. Only a dedicated Journey checkpoint changes your Journey rank.";
   showAppToast("Assessment started: Standard Push-Ups");
 }
@@ -4889,6 +4903,7 @@ function startChallenge(challengeId) {
   showPrepUI();
   renderStaticIcons();
   trainingTitle.textContent = `Challenge ${challenge.number}`;
+  if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
   prepCameraHint.textContent = challenge.requirements.map(req => req.text).join(" · ");
   showAppToast(`Challenge ${challenge.number}: ${challenge.title}`);
 }
@@ -5235,6 +5250,7 @@ function startBP66Shortcut(id){
  closeBP61Sheet();openTraining();activeShortcut66=id;
  setSelectedTrainingVariant(ladder.variant);showStep('quick');showPrepUI();
  trainingTitle.textContent=`Shortcut · ${ladder.label}`;
+  if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
  prepCameraHint.textContent=bp61ObjectiveLabel(ladder.objective);
  updateBP61TrainingBanner();renderLiveGoals();
 }
@@ -5247,6 +5263,7 @@ function startBP61Challenge(id){
  const variant=objective.variant||objective.items?.[0]?.variant||level.variant;
  setSelectedTrainingVariant(variant);showStep('quick');showPrepUI();
  trainingTitle.textContent=`Journey · Level ${BP65_NUMBERS[id]}`;
+  if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
  prepCameraHint.textContent=bp61ObjectiveLabel(objective,variant);
  updateBP61TrainingBanner();renderLiveGoals();
 }
@@ -5278,6 +5295,7 @@ function openBP65Placement(){
   const target=Number(btn.dataset.bp65Target);close();openTraining();activePlacementTarget65=target;activeJourneyLevelId=null;
   setSelectedTrainingVariant('standard');showStep('quick');showPrepUI();
   trainingTitle.textContent=`${target} Reps · Checkpoint`;
+  if (trainingSubtitle) trainingSubtitle.textContent = "BodyPath";
   prepCameraHint.textContent=`${target} Standard Push-Ups in one set. No stars for skipped levels.`;
   renderLiveGoals();
  }));
@@ -5484,7 +5502,13 @@ backBtn.addEventListener("click", () => {
   showStep("exercise");
 });
 
-startCameraBtn.addEventListener("click", () => startCamera());
+startCameraBtn.addEventListener("click", () => {
+  if (cameraStream && !workoutActive && !countdownActive && readyForCountdown) {
+    startCountdown();
+    return;
+  }
+  startCamera();
+});
 startWorkoutBtn.addEventListener("click", () => {
   if (trainingPhase === "pause") {
     armNextSetFromPause();

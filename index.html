@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.68</title>
-  <link rel="stylesheet" href="style.css?v=0.11.68" />
+  <title>BodyPath – v0.11.69</title>
+  <link rel="stylesheet" href="style.css?v=0.11.69" />
 </head>
 <body>
   <main class="app-shell">
@@ -339,6 +339,7 @@
         <div>
           <p class="eyebrow">TRAINING</p>
           <h2 id="trainingTitle">Übung auswählen</h2>
+          <small id="trainingSubtitle" class="training-subtitle">BodyPath</small>
         </div>
         <button id="closeTrainingBtn" class="icon-btn" type="button" aria-label="Schließen">✕</button>
       </div>
@@ -422,10 +423,10 @@
                   <svg viewBox="0 0 180 110" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round" stroke-width="3"><circle cx="90" cy="26" r="11"/><path d="M66 53 90 46 114 53 133 84 M66 53 47 84 M90 46 90 75 M90 75 72 101 M90 75 108 101"/></svg>
                   <span>Prop your phone up in front of you</span>
                 </div>
-              </div>
-              <div id="positionStatus" class="position-status neutral" aria-live="polite">
-                <span id="positionEmoji">○</span>
-                <div><strong id="positionTitle">Waiting for camera</strong><small id="positionHint">Keep your face in the frame.</small></div>
+                <div id="positionStatus" class="position-status neutral" aria-live="polite">
+                  <span id="positionEmoji">●</span>
+                  <div><strong id="positionTitle">Waiting for camera</strong><small id="positionHint">Keep your face in the frame.</small></div>
+                </div>
               </div>
             </div>
             <div class="rep-hero" aria-live="polite">
@@ -486,14 +487,14 @@
               <button class="workout-variant-btn" data-workout-variant="pseudoPlanche" type="button"><span data-variant-icon="pseudoPlanche"></span><small>Planche</small></button>
             </div>
             <div id="pauseReadyHint" class="pause-ready-hint">Wähle deine Variante und starte das nächste Set, wenn du bereit bist.</div>
-            <button id="startWorkoutBtn" class="primary-btn pause-next-set-btn hidden" type="button" disabled>Training fortsetzen</button>
           </section>
 
           <div class="button-stack quick-workout-actions">
+            <button id="startWorkoutBtn" class="primary-btn pause-next-set-btn hidden" type="button" disabled>Start Workout</button>
             <button id="startCameraBtn" class="primary-btn hidden" type="button">Kamera erneut versuchen</button>
-            <button id="pauseSetBtn" class="secondary-btn hidden" type="button">Set pausieren</button>
-            <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Training beenden</button>
-            <button id="manualModeBtn" class="secondary-btn" type="button">Ohne Kamera trainieren</button>
+            <button id="pauseSetBtn" class="secondary-btn hidden" type="button">Pause</button>
+            <button id="finishWorkoutBtn" class="danger-btn hidden" type="button">Finish</button>
+            <button id="manualModeBtn" class="secondary-btn" type="button">No Camera</button>
           </div>
 
           <p id="cameraStatus" class="status-text quick-status" aria-live="polite">Wähle zuerst eine Variante.</p>
@@ -578,6 +579,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.66"></script>
+  <script type="module" src="app.js?v=0.11.69"></script>
 </body>
 </html>
