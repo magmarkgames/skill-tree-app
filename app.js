@@ -488,6 +488,7 @@ const treeView = document.getElementById("treeView");
 const historyView = document.getElementById("historyView");
 const profileView = document.getElementById("profileView");
 const skillsView = document.getElementById("skillsView");
+const rewardsView = document.getElementById("rewardsView");
 const treeScroll = document.getElementById("treeScroll");
 const skillTree = document.getElementById("skillTree");
 
@@ -527,6 +528,10 @@ const profileGenderMaleBtn = document.getElementById("profileGenderMaleBtn");
 const profileGenderFemaleBtn = document.getElementById("profileGenderFemaleBtn");
 const homeNextRankName = document.getElementById("homeNextRankName");
 const skillsPushupRank = document.getElementById("skillsPushupRank");
+const rewardsStarsTotal = document.getElementById("rewardsStarsTotal");
+const rewardsSummaryText = document.getElementById("rewardsSummaryText");
+const rewardsRail = document.getElementById("rewardsRail");
+const rewardsList = document.getElementById("rewardsList");
 const homeAccountAvatar = document.getElementById("homeAccountAvatar");
 const homeAccountName = document.getElementById("homeAccountName");
 const homeAccountLevelPill = document.getElementById("homeAccountLevelPill");
@@ -1019,8 +1024,9 @@ function showView(name) {
   historyView.classList.toggle("hidden", name !== "history");
   profileView.classList.toggle("hidden", name !== "profile");
   skillsView?.classList.toggle("hidden", name !== "skills");
+  rewardsView?.classList.toggle("hidden", name !== "rewards");
 
-  setBottomNavActive(name === "profile" ? "" : name);
+  setBottomNavActive(name === "profile" || name === "tree" || name === "rewards" ? "" : name);
   window.scrollTo(0, 0);
 
   if (name === "tree") {
@@ -1047,14 +1053,13 @@ function showView(name) {
   if (name === "history") renderHistory();
   if (name === "profile") renderProfile();
   if (name === "skills") renderSkills();
+  if (name === "rewards") renderRewards();
 }
 
 function renderSkills() {
-  if (skillsPushupRank) {
-    const rankName = getV012CurrentRankName();
-    skillsPushupRank.textContent = `${getRankDisplayName(rankName)} · Active push-up skill`;
-  }
+  // Static placeholder view for BodyPath Play.
 }
+
 
 function render() {
   renderStaticIcons();
@@ -1096,6 +1101,7 @@ function render() {
   if (!historyView.classList.contains("hidden")) renderHistory();
   if (!profileView.classList.contains("hidden")) renderProfile();
   if (!skillsView?.classList.contains("hidden")) renderSkills();
+  if (!rewardsView?.classList.contains("hidden")) renderRewards();
   renderLiveGoals();
   updateRecordBadge();
   syncQuickPrimaryButton();
@@ -5411,10 +5417,11 @@ function bp67RankMarkerMarkup(marker,state){
  return `<div class="bp67-rank-separator ${done?'done':''}" style="left:${marker.x/360*100}%;top:${marker.y}px" aria-hidden="true"><span class="bp67-rank-line"></span><div class="bp67-rank-circle bp67-rank-${marker.rank.toLowerCase()}"><strong>${getRankDisplayName(marker.rank)}</strong></div></div>`;
 }
 function bp67StarRailMarkup(earned){
- const top=150,bottom=2980;
  const first=BP67_STAR_REWARDS[0].stars,last=BP67_STAR_REWARDS[BP67_STAR_REWARDS.length-1].stars;
- const calcY=(stars)=>bottom-((stars-first)/(last-first||1))*(bottom-top);
- return `<div class="bp67-star-rail" aria-hidden="true"><span class="bp67-star-line"></span>${BP67_STAR_REWARDS.map(item=>`<div class="bp67-star-stop ${earned>=item.stars?'done':''}" style="top:${calcY(item.stars)}px"><i></i><div><b>${item.stars} 🌟</b><small>${item.label}</small></div></div>`).join('')}</div>`;
+ return `<div class="bp-reward-page-line"></div>${BP67_STAR_REWARDS.map(item=>{
+  const progress=last===first?0:((item.stars-first)/(last-first))*100;
+  return `<div class="bp-reward-page-stop ${earned>=item.stars?'done':''}" style="top:${progress}%"><i></i><div><b>${item.stars} ★</b><small>${item.label}</small></div></div>`;
+ }).join('')}`;
 }
 function bp61NodeMarkup(item,state,focusId){
  const focused=item.id===focusId;
@@ -5469,12 +5476,12 @@ function renderTree(){
  const earned=BP66_ORDER.reduce((a,id)=>a+bp61EarnedStars(id),0);
  const completed=BP66_ORDER.filter(id=>state.finished[id]).length;
  skillTree.className='skill-tree-v1161 bp63-tree bp66-tree bp67-tree';
- skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>Main Path · Shortcuts · Star Rewards</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / ${BP67_TOTAL_STARS}</small></strong><span>STARS</span></div></div>
+ skillTree.innerHTML=`<div class="bp61-header"><div><small>BODY<span>PATH</span> · PUSH-UPS</small><h2>YOUR JOURNEY</h2><p>Main Path · Shortcuts · Rank Progress</p></div><div class="bp61-star-balance"><strong>★ ${earned}<small> / ${BP67_TOTAL_STARS}</small></strong><span>STARS</span></div></div>
  <div class="bp65-placement-bar"><button type="button" id="bp65FindLevel">⚡ FIND YOUR LEVEL</button><span>${getRankDisplayName(state.rank)} · ${completed}/${BP67_TOTAL_LEVELS} complete</span></div>
+ <div class="bp67-tree-actions"><button type="button" id="bp67OpenRewards" class="bp67-tree-secondary">★ Open Star Rewards</button></div>
  <div class="bp61-progress"><span style="width:${(earned/BP67_TOTAL_STARS*100).toFixed(1)}%"></span></div>
  <div class="bp61-legend"><span><i class="bp61-dot done"></i>Completed</span><span><i class="bp61-dot active"></i>Available</span><span><i class="bp61-dot locked"></i>Locked</span></div>
  <div class="bp61-canvas" style="height:${BP61_TREE_HEIGHT}px">${bp61EdgeMarkup(state)}
- ${bp67StarRailMarkup(earned)}
  ${BP67_RANK_MARKERS.map(marker=>bp67RankMarkerMarkup(marker,state)).join('')}
  ${BP61_LAYOUT.map(item=>bp61NodeMarkup(item,state,focusId)).join('')}
  ${BP66_SHORTCUTS.map(s=>bp66ShortcutMarkup(s,state)).join('')}
@@ -5482,7 +5489,17 @@ function renderTree(){
  skillTree.querySelectorAll('[data-bp61-level]').forEach(b=>b.addEventListener('click',()=>openBP61Level(b.dataset.bp61Level)));
  skillTree.querySelectorAll('[data-bp66-shortcut]').forEach(b=>b.addEventListener('click',()=>openBP66Shortcut(b.dataset.bp66Shortcut)));
  document.getElementById('bp65FindLevel')?.addEventListener('click',openBP65Placement);
+ document.getElementById('bp67OpenRewards')?.addEventListener('click',()=>showView('rewards'));
 }
+function renderRewards(){
+ const earned = BP66_ORDER.reduce((sum,id)=>sum + bp61EarnedStars(id), 0);
+ if (rewardsStarsTotal) rewardsStarsTotal.textContent = `${earned} / ${BP67_TOTAL_STARS}`;
+ const nextReward = BP67_STAR_REWARDS.find(item => earned < item.stars);
+ if (rewardsSummaryText) rewardsSummaryText.textContent = nextReward ? `${Math.max(0, nextReward.stars - earned)} more star${nextReward.stars - earned === 1 ? '' : 's'} until ${nextReward.label}.` : 'All star rewards reached. Replay levels for extra mastery.';
+ if (rewardsRail) rewardsRail.innerHTML = `<div class="bp-reward-page-track">${bp67StarRailMarkup(earned)}</div>`;
+ if (rewardsList) rewardsList.innerHTML = BP67_STAR_REWARDS.map((item,index)=>`<article class="reward-card ${earned>=item.stars?'done':'locked'}"><div class="reward-card-badge">★ ${item.stars}</div><div class="reward-card-copy"><strong>${item.label}</strong><p>${item.note}</p></div><span class="reward-card-state">${earned>=item.stars?'Unlocked':'Locked'}</span></article>`).join('');
+}
+
 function ensureBP61Sheet(){
  if(document.getElementById('bp61Sheet'))return;
  const el=document.createElement('div');el.id='bp61Sheet';el.className='bp61-sheet hidden';
@@ -5617,9 +5634,9 @@ function getHomePathProgressState(path) {
 }
 
 function renderHomeRankPaths(chapter) {
- if(!homeRankPaths)return;
- const state=getBP61State();const focus=bp61FocusId(state);const level=BP61_LEVELS[focus];
- homeRankPaths.innerHTML=`<div class="bp65-home-journey"><strong>${getRankDisplayName(state.rank)} · Journey</strong><small>Free Workout is separate from the ${BP67_TOTAL_LEVELS} Journey levels.</small><div>${level?`<span>Next: Level ${BP65_NUMBERS[focus]} · ${level.title}</span>`:'<span>Diamond reached · replay for stars!</span>'}</div></div>`;
+ if(!homeRankPaths) return;
+ homeRankPaths.innerHTML = "";
+ homeRankPaths.classList.add("hidden");
 }
 function buildProgressOrb(label, current, target, type = "side") {
   const safeTarget = Math.max(1, Number(target) || 1);
@@ -5700,6 +5717,8 @@ window.addEventListener("resize", () => {
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeTreeTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
+document.getElementById("rewardsBackBtn")?.addEventListener("click", () => showView("tree"));
+document.getElementById("rewardsOpenTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("openTreeStatsBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("closeTreeStatsBtn")?.addEventListener("click", closeTreeStats);
 treeStatsSheet?.addEventListener("click", (event) => {
@@ -5744,7 +5763,6 @@ document.getElementById("skillsNavHistoryBtn")?.addEventListener("click", () => 
 document.getElementById("skillsNavProfileBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("profileNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("historyNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
-document.getElementById("skillsPushupCard")?.addEventListener("click", () => showView("tree"));
 
 document.getElementById("openTrainingBtn")?.addEventListener("click", openTraining);
 document.getElementById("closeTrainingBtn").addEventListener("click", closeTraining);

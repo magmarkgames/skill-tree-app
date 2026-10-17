@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.71</title>
-  <link rel="stylesheet" href="style.css?v=0.11.71" />
+  <title>BodyPath – v0.11.72</title>
+  <link rel="stylesheet" href="style.css?v=0.11.72" />
 </head>
 <body>
   <main class="app-shell">
@@ -55,7 +55,6 @@
           </div>
         </div>
 
-        <div id="homeRankPaths" class="home-rank-paths home-rank-paths-v1138" aria-label="Progress in current rank"></div>
 
         <div class="home-tree-actions">
           <button id="homeTreeTrainingBtn" class="home-tree-training-btn" type="button">
@@ -77,7 +76,7 @@
 
       <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Main navigation">
         <button id="homeNavHomeBtn" class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="homeNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
+        <button id="homeNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
         <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
         <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
@@ -130,59 +129,146 @@
 
       <nav class="home-bottom-nav history-bottom-nav home-bottom-nav-compact" aria-label="History navigation">
         <button id="historyNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="historyNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
+        <button id="historyNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
         <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>◷</span><small>History</small></button>
         <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
     </section>
 
-    <!-- SKILLS -->
+    <!-- GAMES -->
     <section id="skillsView" class="view skills-view hidden" aria-labelledby="skillsHeading">
       <header class="view-header profile-header profile-header-no-back">
         <div>
           <p class="eyebrow">BODYPATH</p>
-          <h1 id="skillsHeading">Skills</h1>
-          <small>Wähle deine Disziplin</small>
+          <h1 id="skillsHeading">Games</h1>
+          <small>Play with movement</small>
         </div>
-        <span class="profile-version-pill">v0.11.68</span>
+        <span class="profile-version-pill">v0.11.72</span>
       </header>
 
-      <section class="skills-intro-card">
-        <strong>Push-ups are live.</strong>
-        <p>More skills will be added over time. Locked areas unlock as you progress.</p>
+      <section class="skills-intro-card games-intro-card">
+        <strong>BodyPath Play</strong>
+        <p>Arcade meets strategy. These are placeholders for our future movement games.</p>
       </section>
 
-      <section class="skills-grid" aria-label="Skill-Auswahl">
-        <button id="skillsPushupCard" class="skills-card skills-card-active" type="button">
-          <span class="skills-card-icon"><img src="icon-pushup.webp" alt="" /></span>
-          <strong>Push-ups</strong>
-          <small id="skillsPushupRank">Aktiver Skill</small>
-        </button>
-        <article class="skills-card skills-card-locked" aria-label="Pull Ups – noch gesperrt">
-          <span class="skills-card-icon"><img src="icon-pullup.webp" alt="" /></span>
-          <strong>Pull Ups</strong>
-          <small>🔒 Locked</small>
-        </article>
-        <article class="skills-card skills-card-locked" aria-label="Core – noch gesperrt">
-          <span class="skills-card-icon"><img src="icon-core.webp" alt="" /></span>
-          <strong>Core</strong>
-          <small>🔒 Locked</small>
-        </article>
-        <article class="skills-card skills-card-locked" aria-label="Laufen – noch gesperrt">
-          <span class="skills-card-icon"><img src="icon-run.webp" alt="" /></span>
-          <strong>Laufen</strong>
-          <small>🔒 Locked</small>
-        </article>
+      <section class="games-section" aria-labelledby="gamesArcadeHeading">
+        <div class="games-section-head">
+          <div>
+            <p class="eyebrow">ARCADE</p>
+            <h2 id="gamesArcadeHeading">Fast & reactive</h2>
+          </div>
+          <span class="profile-section-count">Placeholders</span>
+        </div>
+        <div class="games-grid" aria-label="Arcade games">
+          <article class="game-card game-card-featured">
+            <span class="game-card-icon">🐦</span>
+            <strong>Flappy Push</strong>
+            <p>Your movement controls the bird through obstacles.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+          <article class="game-card">
+            <span class="game-card-icon">🎵</span>
+            <strong>BeatPush</strong>
+            <p>Hit rhythm notes by moving up and down at the right time.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+          <article class="game-card">
+            <span class="game-card-icon">🛡️</span>
+            <strong>Push Dodge</strong>
+            <p>Dodge incoming obstacles with quick height changes.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+        </div>
       </section>
 
-      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Skills navigation">
+      <section class="games-section" aria-labelledby="gamesChallengeHeading">
+        <div class="games-section-head">
+          <div>
+            <p class="eyebrow">STRATEGY & CHALLENGES</p>
+            <h2 id="gamesChallengeHeading">Think while you train</h2>
+          </div>
+          <span class="profile-section-count">Placeholders</span>
+        </div>
+        <div class="games-grid" aria-label="Challenge games">
+          <article class="game-card">
+            <span class="game-card-icon">❌</span>
+            <strong>Tic Tac Train</strong>
+            <p>Complete small tasks to claim fields and beat the bot.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+          <article class="game-card">
+            <span class="game-card-icon">🟨</span>
+            <strong>Body Bingo</strong>
+            <p>Fill rows with mini challenges and earn rewards.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+          <article class="game-card">
+            <span class="game-card-icon">👾</span>
+            <strong>Boss Battle</strong>
+            <p>Deal damage through workouts and survive special attacks.</p>
+            <small>Placeholder · Coming soon</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="games-coming-soon-note">
+        <strong>Later:</strong> We can add Quick Play, highscores, cosmetic unlocks and game-specific progress here.
+      </section>
+
+      <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Games navigation">
         <button id="skillsNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button"><span>◇</span><small>Skills</small></button>
+        <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button"><span>◇</span><small>Games</small></button>
         <button id="skillsNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="skillsNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
         <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
       </nav>
+    </section>
+
+    <!-- STAR REWARDS -->
+    <section id="rewardsView" class="view rewards-view hidden" aria-labelledby="rewardsHeading">
+      <header class="view-header tree-header rewards-header">
+        <button id="rewardsBackBtn" class="icon-btn" type="button" aria-label="Zur Journey zurück">←</button>
+        <div>
+          <p class="eyebrow">BODYPATH · PUSH-UPS</p>
+          <h1 id="rewardsHeading">Star Rewards</h1>
+          <small>Separate reward road for your Journey stars</small>
+        </div>
+        <div class="tree-header-spacer" aria-hidden="true"></div>
+      </header>
+
+      <section class="rewards-summary-card">
+        <div>
+          <span class="rewards-summary-label">CURRENT STARS</span>
+          <strong id="rewardsStarsTotal">0 / 156</strong>
+          <p id="rewardsSummaryText">Earn Journey stars to unlock future rewards.</p>
+        </div>
+        <button id="rewardsOpenTreeBtn" class="home-open-tree-btn rewards-open-tree-btn" type="button">
+          <span>Back to Journey</span><span>›</span>
+        </button>
+      </section>
+
+      <section class="rewards-road-card" aria-labelledby="rewardsRoadHeading">
+        <div class="games-section-head rewards-road-head">
+          <div>
+            <p class="eyebrow">REWARD ROAD</p>
+            <h2 id="rewardsRoadHeading">Milestone Track</h2>
+          </div>
+          <span class="profile-section-count">Scrollable</span>
+        </div>
+        <div id="rewardsRail" class="rewards-rail"></div>
+      </section>
+
+      <section class="rewards-list-card" aria-labelledby="rewardListHeading">
+        <div class="games-section-head">
+          <div>
+            <p class="eyebrow">PLACEHOLDER REWARDS</p>
+            <h2 id="rewardListHeading">Potential unlocks</h2>
+          </div>
+          <span class="profile-section-count">7 milestones</span>
+        </div>
+        <div id="rewardsList" class="rewards-list"></div>
+      </section>
     </section>
 
     <!-- PROFILE -->
@@ -192,7 +278,7 @@
           <p class="eyebrow">BODYPATH</p>
           <h1 id="profileHeading">Profile</h1>
         </div>
-        <span class="profile-version-pill">v0.11.68</span>
+        <span class="profile-version-pill">v0.11.72</span>
       </header>
 
       <section class="profile-hero-card profile-account-card">
@@ -297,7 +383,7 @@
 
       <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Profile navigation">
         <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="profileNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Skills</small></button>
+        <button id="profileNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
         <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
         <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
         <button id="profileNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>

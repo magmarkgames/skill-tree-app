@@ -14359,3 +14359,60 @@ body[data-hero-gender="female"] .home-v17 {
   #trainingModal.quick-theme .rep-hero .bp64-rep-target strong{font-size:38px;}
   #trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{min-height:68px;font-size:17px;}
 }
+
+
+/* ================================================================
+   v0.11.72 — Games hub + separate Star Rewards page
+   ================================================================ */
+.games-intro-card{margin-bottom:16px;}
+.games-section{display:grid;gap:12px;margin-bottom:16px;}
+.games-section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:4px;}
+.games-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.game-card{display:flex;flex-direction:column;gap:10px;padding:18px 16px;border-radius:24px;background:linear-gradient(180deg,rgba(17,31,84,.86),rgba(11,22,65,.96));border:1px solid rgba(106,129,223,.24);box-shadow:0 16px 34px rgba(0,0,0,.22);min-height:190px;color:#ecf3ff;}
+.game-card-featured{border-color:rgba(108,170,255,.42);box-shadow:0 18px 38px rgba(32,72,160,.18);}
+.game-card-icon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#263f82,#1a2556);font-size:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}
+.game-card strong{font-size:21px;line-height:1.1;}
+.game-card p{margin:0;color:#b5c4e5;font-size:13px;line-height:1.55;flex:1;}
+.game-card small{color:#85a3dd;font-size:11px;font-weight:700;letter-spacing:.03em;}
+.games-coming-soon-note{margin:6px 0 18px;padding:14px 16px;border-radius:18px;border:1px solid rgba(88,110,185,.25);background:rgba(13,26,74,.68);color:#c8d5ef;font-size:13px;line-height:1.6;}
+.rewards-view{padding-bottom:26px;}
+.rewards-header{align-items:flex-start;}
+.rewards-summary-card,.rewards-road-card,.rewards-list-card{margin:0 18px 16px;padding:18px;border-radius:24px;background:linear-gradient(180deg,rgba(14,24,58,.95),rgba(9,18,45,.98));border:1px solid rgba(105,125,180,.22);box-shadow:0 18px 36px rgba(0,0,0,.22);}
+.rewards-summary-card{display:grid;gap:14px;}
+.rewards-summary-label{display:block;font-size:11px;letter-spacing:.14em;color:#8fa3c7;font-weight:800;margin-bottom:8px;}
+.rewards-summary-card strong{font-size:31px;color:#f2c861;line-height:1.1;display:block;}
+.rewards-summary-card p{margin:8px 0 0;color:#bdd0ec;font-size:13px;line-height:1.55;}
+.rewards-open-tree-btn{width:100%;justify-content:center;}
+.rewards-road-head{margin-bottom:14px;}
+.rewards-rail{overflow-y:auto;max-height:460px;padding-right:4px;}
+.rewards-rail::-webkit-scrollbar{width:6px;}
+.rewards-rail::-webkit-scrollbar-thumb{background:#31466f;border-radius:999px;}
+.bp-reward-page-track{position:relative;min-height:620px;padding:22px 0 22px 116px;}
+.bp-reward-page-line{position:absolute;left:36px;top:20px;bottom:20px;width:3px;border-radius:999px;background:linear-gradient(180deg,rgba(239,195,89,.26),rgba(239,195,89,.6),rgba(239,195,89,.26));}
+.bp-reward-page-stop{position:absolute;left:0;display:flex;align-items:center;gap:12px;transform:translateY(-50%);}
+.bp-reward-page-stop i{width:14px;height:14px;border-radius:50%;background:#d8b35d;box-shadow:0 0 0 6px rgba(216,179,93,.12);display:block;}
+.bp-reward-page-stop.done i{background:#33c68c;box-shadow:0 0 0 6px rgba(51,198,140,.12);}
+.bp-reward-page-stop div{display:flex;flex-direction:column;gap:3px;max-width:170px;}
+.bp-reward-page-stop b{font-size:13px;color:#efc25e;line-height:1.1;}
+.bp-reward-page-stop small{font-size:11px;line-height:1.3;color:#aebddb;}
+.bp-reward-page-stop.done b{color:#7be4ba;}
+.bp-reward-page-stop.done small{color:#cae8da;}
+.rewards-list{display:grid;gap:12px;}
+.reward-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px;border-radius:18px;border:1px solid rgba(78,99,145,.32);background:rgba(16,29,70,.76);}
+.reward-card-badge{padding:10px 12px;border-radius:14px;background:#22355f;color:#f1c55d;font-size:13px;font-weight:800;white-space:nowrap;}
+.reward-card-copy strong{display:block;font-size:15px;color:#edf4ff;margin-bottom:4px;}
+.reward-card-copy p{margin:0;color:#9eb4d8;font-size:12px;line-height:1.45;}
+.reward-card-state{font-size:11px;font-weight:800;letter-spacing:.08em;color:#95a9cd;text-transform:uppercase;}
+.reward-card.done{border-color:rgba(61,193,138,.45);background:rgba(24,52,54,.78);}
+.reward-card.done .reward-card-badge{background:#1d4a45;color:#83ebc1;}
+.reward-card.done .reward-card-state{color:#71e0b2;}
+.bp67-tree-actions{padding:0 10px 10px;}
+.bp67-tree-secondary{width:100%;min-height:42px;border-radius:12px;border:1px solid #576f94;background:#1c2940;color:#d8b964;font-size:12px;font-weight:850;letter-spacing:.05em;cursor:pointer;}
+@media(max-width:390px){
+  .games-grid{grid-template-columns:1fr;}
+  .game-card{min-height:172px;}
+  .bp-reward-page-track{padding-left:100px;}
+  .bp-reward-page-stop div{max-width:132px;}
+  .reward-card{grid-template-columns:1fr;align-items:flex-start;}
+  .reward-card-state{justify-self:start;}
+}
