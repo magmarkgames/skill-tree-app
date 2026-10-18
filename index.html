@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0A0C18" />
+  <meta name="theme-color" content="#0F1419" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>BodyPath – v0.11.72</title>
-  <link rel="stylesheet" href="style.css?v=0.11.72" />
+  <title>BodyPath – v0.11.73</title>
+  <link rel="stylesheet" href="style.css?v=0.11.73" />
+  <link rel="stylesheet" href="soft-slate.css?v=0.11.73" />
 </head>
 <body>
   <main class="app-shell">
@@ -43,17 +44,15 @@
 
         <div class="home-focus-divider" aria-hidden="true"></div>
 
-        <div class="home-rank-rail" aria-label="Current and next rank">
-          <div class="home-rank-rail-copy">
-            <span>Current Rank</span>
+        <button id="homeRankJourneyBtn" class="home-journey-rank-card" type="button" data-rank="Starter" aria-label="Open your Journey">
+          <span class="home-journey-badge" aria-hidden="true"><span id="homeRankBadgeName">S</span></span>
+          <span class="home-journey-copy">
+            <small>Your Journey · Current Rank</small>
             <strong id="homeRankName">Starter</strong>
-          </div>
-          <span class="home-rank-rail-arrow" aria-hidden="true">›</span>
-          <div class="home-rank-rail-copy home-rank-rail-copy-next">
-            <span>Next Rank</span>
-            <strong id="homeNextRankName">Holz</strong>
-          </div>
-        </div>
+            <span class="home-journey-next">Next Rank <b id="homeNextRankName">Wood</b></span>
+          </span>
+          <span class="home-journey-arrow" aria-hidden="true">›</span>
+        </button>
 
 
         <div class="home-tree-actions">
@@ -75,11 +74,21 @@
       <button id="resetBtn" class="dev-reset-btn" type="button">Testdaten löschen</button>
 
       <nav class="home-bottom-nav home-bottom-nav-compact" aria-label="Main navigation">
-        <button id="homeNavHomeBtn" class="home-nav-item active" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="homeNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
-        <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="homeNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="homeNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
+        <button id="homeNavHomeBtn" class="home-nav-item active" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><small>Home</small>
+        </button>
+        <button id="homeNavSkillsBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 3.8 3l1.1 5a2.6 2.6 0 0 1-4.1 2.6L16 17H8l-2.8 2.6A2.6 2.6 0 0 1 1.1 17l1.1-5A4 4 0 0 1 6 9Z"/><path d="M7 12v4m-2-2h4"/><circle cx="16" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="18" cy="14" r=".8" fill="currentColor" stroke="none"/></svg></span><small>Games</small>
+        </button>
+        <button id="homeNavTrainingBtn" class="home-nav-item home-nav-training" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><small>Training</small>
+        </button>
+        <button id="homeNavJourneyBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2.5"/><circle cx="5" cy="19.5" r="2.5"/><circle cx="19" cy="19.5" r="2.5"/><path d="M12 6.5v6m0 0-7 4.5m7-4.5 7 4.5"/></svg></span><small>Journey</small>
+        </button>
+        <button id="homeNavProfileBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 18v-6h4v6m3 0V4h4v14m3 0V9h3v9"/></svg></span><small>Stats</small>
+        </button>
       </nav>
     </section>
 
@@ -128,11 +137,21 @@
       </section>
 
       <nav class="home-bottom-nav history-bottom-nav home-bottom-nav-compact" aria-label="History navigation">
-        <button id="historyNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="historyNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
-        <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="historyNavHistoryBtn" class="home-nav-item active" type="button"><span>◷</span><small>History</small></button>
-        <button id="historyNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
+        <button id="historyNavHomeBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><small>Home</small>
+        </button>
+        <button id="historyNavSkillsBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 3.8 3l1.1 5a2.6 2.6 0 0 1-4.1 2.6L16 17H8l-2.8 2.6A2.6 2.6 0 0 1 1.1 17l1.1-5A4 4 0 0 1 6 9Z"/><path d="M7 12v4m-2-2h4"/><circle cx="16" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="18" cy="14" r=".8" fill="currentColor" stroke="none"/></svg></span><small>Games</small>
+        </button>
+        <button id="historyNavTrainingBtn" class="home-nav-item home-nav-training" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><small>Training</small>
+        </button>
+        <button id="historyNavJourneyBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2.5"/><circle cx="5" cy="19.5" r="2.5"/><circle cx="19" cy="19.5" r="2.5"/><path d="M12 6.5v6m0 0-7 4.5m7-4.5 7 4.5"/></svg></span><small>Journey</small>
+        </button>
+        <button id="historyNavProfileBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 18v-6h4v6m3 0V4h4v14m3 0V9h3v9"/></svg></span><small>Stats</small>
+        </button>
       </nav>
     </section>
 
@@ -144,7 +163,7 @@
           <h1 id="skillsHeading">Games</h1>
           <small>Play with movement</small>
         </div>
-        <span class="profile-version-pill">v0.11.72</span>
+        <span class="profile-version-pill">v0.11.73</span>
       </header>
 
       <section class="skills-intro-card games-intro-card">
@@ -217,11 +236,21 @@
       </section>
 
       <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Games navigation">
-        <button id="skillsNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button"><span>◇</span><small>Games</small></button>
-        <button id="skillsNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="skillsNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="skillsNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
+        <button id="skillsNavHomeBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><small>Home</small>
+        </button>
+        <button id="skillsNavSkillsBtn" class="home-nav-item active" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 3.8 3l1.1 5a2.6 2.6 0 0 1-4.1 2.6L16 17H8l-2.8 2.6A2.6 2.6 0 0 1 1.1 17l1.1-5A4 4 0 0 1 6 9Z"/><path d="M7 12v4m-2-2h4"/><circle cx="16" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="18" cy="14" r=".8" fill="currentColor" stroke="none"/></svg></span><small>Games</small>
+        </button>
+        <button id="skillsNavTrainingBtn" class="home-nav-item home-nav-training" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><small>Training</small>
+        </button>
+        <button id="skillsNavJourneyBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2.5"/><circle cx="5" cy="19.5" r="2.5"/><circle cx="19" cy="19.5" r="2.5"/><path d="M12 6.5v6m0 0-7 4.5m7-4.5 7 4.5"/></svg></span><small>Journey</small>
+        </button>
+        <button id="skillsNavProfileBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 18v-6h4v6m3 0V4h4v14m3 0V9h3v9"/></svg></span><small>Stats</small>
+        </button>
       </nav>
     </section>
 
@@ -278,7 +307,7 @@
           <p class="eyebrow">BODYPATH</p>
           <h1 id="profileHeading">Profile</h1>
         </div>
-        <span class="profile-version-pill">v0.11.72</span>
+        <span class="profile-version-pill">v0.11.73</span>
       </header>
 
       <section class="profile-hero-card profile-account-card">
@@ -382,11 +411,21 @@
       </section>
 
       <nav class="home-bottom-nav profile-bottom-nav home-bottom-nav-compact" aria-label="Profile navigation">
-        <button id="profileNavHomeBtn" class="home-nav-item" type="button"><span>⌂</span><small>Home</small></button>
-        <button id="profileNavSkillsBtn" class="home-nav-item" type="button"><span>◇</span><small>Games</small></button>
-        <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button"><span>＋</span><small>Training</small></button>
-        <button id="profileNavHistoryBtn" class="home-nav-item" type="button"><span>◷</span><small>History</small></button>
-        <button id="profileNavProfileBtn" class="home-nav-item" type="button"><span>▥</span><small>Stats</small></button>
+        <button id="profileNavHomeBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><small>Home</small>
+        </button>
+        <button id="profileNavSkillsBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 3.8 3l1.1 5a2.6 2.6 0 0 1-4.1 2.6L16 17H8l-2.8 2.6A2.6 2.6 0 0 1 1.1 17l1.1-5A4 4 0 0 1 6 9Z"/><path d="M7 12v4m-2-2h4"/><circle cx="16" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="18" cy="14" r=".8" fill="currentColor" stroke="none"/></svg></span><small>Games</small>
+        </button>
+        <button id="profileNavTrainingBtn" class="home-nav-item home-nav-training" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><small>Training</small>
+        </button>
+        <button id="profileNavJourneyBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2.5"/><circle cx="5" cy="19.5" r="2.5"/><circle cx="19" cy="19.5" r="2.5"/><path d="M12 6.5v6m0 0-7 4.5m7-4.5 7 4.5"/></svg></span><small>Journey</small>
+        </button>
+        <button id="profileNavProfileBtn" class="home-nav-item" type="button">
+          <span class="home-nav-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 18v-6h4v6m3 0V4h4v14m3 0V9h3v9"/></svg></span><small>Stats</small>
+        </button>
       </nav>
     </section>
   </main>
@@ -414,6 +453,7 @@
         <article class="stat-week"><span class="tree-stat-icon" data-metric-icon="week"></span><span>7 Tage</span><strong id="weekStat">0</strong></article>
         <article class="stat-total"><span class="tree-stat-icon" data-metric-icon="total"></span><span>Gesamt</span><strong id="totalStat">0</strong></article>
       </section>
+      <button id="statsViewHistoryBtn" class="slate-history-link" type="button">View Workout History <span aria-hidden="true">→</span></button>
     </div>
   </div>
 
@@ -666,6 +706,6 @@
 
   <div id="appToast" class="app-toast" role="status" aria-live="polite">Training gespeichert</div>
 
-  <script type="module" src="app.js?v=0.11.71"></script>
+  <script type="module" src="app.js?v=0.11.73"></script>
 </body>
 </html>

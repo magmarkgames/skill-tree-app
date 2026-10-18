@@ -54,3 +54,11 @@ Deploy: copy the contents of this folder to the GitHub Pages site root (not the 
 - Next Goals, extra pause/finish buttons and other non-essential UI are hidden for now.
 - The bottom primary button now toggles between Start Workout and Pause Workout.
 - Countdown starts only after tapping Start Workout and then achieving Good Position.
+
+## v0.11.73 — Soft Slate visual refresh
+- Switched app chrome and screens to the muted Soft Slate colors (charcoal, slate, muted sky blue, off-white). Colors do not change Journey ranks, saved progress, or workout recognition.
+- Home: Today / Best Set / This Week circles now have matching dimensions. The previous rank strip is replaced with a compact Journey rank card (text-first, color coded, opens Journey).
+- Bottom navigation now shows Home, Games, Training, Journey, Stats on all main screens, with a centered round Training icon.
+- The existing profile remains accessible by tapping the home banner. Workout History remains accessible from the Stats panel.
+- Star Rewards remain a separate page as in v0.11.72.
+- Deployment: upload **all files**, including new soft-slate.css, from this folder to the website root. Existing local progress uses the same storage key.

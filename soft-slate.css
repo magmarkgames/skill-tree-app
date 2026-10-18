@@ -1,0 +1,275 @@
+/* BodyPath v0.11.73 — Soft Slate visual theme. No workout / Journey rule changes. */
+:root {
+  color-scheme: dark;
+  --bg:#0F1419;
+  --panel:#202B36;
+  --panel-2:#293644;
+  --panel-3:#18212B;
+  --text:#E8ECF1;
+  --muted:#A4B0BF;
+  --line:#394757;
+  --blue:#7EA7D9;
+  --accent:#7EA7D9;
+  --indigo-bg:#0F1419;
+  --indigo-panel:#202B36;
+  --indigo-accent:#7EA7D9;
+  --indigo-accent-2:#95B7E1;
+  --indigo-text:#E8ECF1;
+  --indigo-muted:#A4B0BF;
+  --slate-base:#0F1419;
+  --slate-surface:#202B36;
+  --slate-surface-raised:#283645;
+  --slate-accent:#7EA7D9;
+  --slate-border:#3B4A5B;
+  --slate-text:#E8ECF1;
+  --slate-muted:#ADB9C6;
+}
+html,body,.app-shell{background:#0F1419!important;color:#E8ECF1;}
+/* Main app surfaces: one restrained palette across all pages. */
+.home-v17,.skills-view,.profile-view,.history-view-light,
+.tree-view,.tree-view-v11,.tree-scroll-v112,.rewards-view{
+  background:#0F1419!important;color:#E8ECF1!important;
+}
+.home-v17{background-image:none!important;}
+.home-v17::before{background:none!important;}
+.home-account-card{
+  border-color:rgba(169,188,207,.22)!important;
+  background-image:linear-gradient(90deg,rgba(15,20,25,.72),rgba(15,20,25,.30) 62%,rgba(15,20,25,.07)),var(--account-hero-image),var(--account-hero-gradient)!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
+}
+.home-account-card::after{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 58%)!important;}
+.home-account-avatar,.profile-avatar-live{
+  background:#263646!important;
+  border-color:rgba(170,199,229,.48)!important;
+  box-shadow:none!important;
+}
+#homeAccountLevelPill{background:rgba(30,43,54,.78)!important;border-color:rgba(181,197,218,.38)!important;}
+.home-account-xp-track{background:rgba(220,232,242,.23)!important;}
+.home-account-xp-track>span{background:#95B7E1!important;box-shadow:none!important;}
+.home-focus-hub,.home-tree-hub{
+  background:#1B2530!important;
+  border:1px solid #334353!important;
+  box-shadow:none!important;
+  border-radius:24px!important;
+}
+.home-record-trio{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:start!important;
+  gap:clamp(8px,2vw,14px)!important;
+  margin:0 0 8px!important;
+}
+.home-progress-orb,.home-progress-orb-small,.home-progress-orb-large{
+  display:block;min-width:0;width:100%;align-self:start;text-align:center;
+}
+.home-progress-orb .orb-ring,
+.home-progress-orb-large .orb-ring{
+  width:100%!important;
+  max-width:150px!important;
+  aspect-ratio:1 / 1!important;
+  margin:0 auto!important;
+  padding:7px!important;
+  background:conic-gradient(from -90deg,#7EA7D9 var(--progress),#3B4A5B 0)!important;
+  box-shadow:none!important;
+  border:none!important;
+}
+.home-progress-orb .orb-ring::before,
+.home-progress-orb-large .orb-ring::before{
+  inset:7px!important;
+  background:#202B36!important;
+  box-shadow:none!important;
+}
+.home-progress-orb .orb-content,
+.home-progress-orb-large .orb-content,
+.home-progress-orb .orb-content.orb-content-side{
+  inset:14px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:0!important;
+}
+.home-progress-orb strong,
+.home-progress-orb-large strong,
+.home-progress-orb-large .orb-content strong,
+.home-progress-orb .orb-content strong{
+  color:#E8ECF1!important;
+  font-size:clamp(23px,6.8vw,38px)!important;
+  font-weight:800!important;
+}
+.home-progress-caption,.home-progress-caption-record{
+  color:#ADB9C6!important;
+  font-size:clamp(10px,2.6vw,13px)!important;
+  font-weight:650!important;
+  letter-spacing:0!important;
+  margin-top:10px!important;
+}
+.home-focus-divider{margin:18px 0 18px!important;background:#334353!important;}
+
+/* Journey rank card: a single, calm block + colored rank medallion. */
+.home-journey-rank-card{
+  width:100%;display:flex;align-items:center;gap:14px;
+  padding:13px 15px; margin:0 0 18px;
+  color:var(--slate-text);text-align:left;font:inherit;cursor:pointer;
+  background:#263341;border:1px solid #3D4B5B;border-radius:17px;
+  box-shadow:none;min-height:90px;
+  --rank-color:#96AEC7;--rank-soft:#2C3B4A;
+}
+.home-journey-rank-card[data-rank="Holz"]{--rank-color:#B98B62;--rank-soft:#382D26;}
+.home-journey-rank-card[data-rank="Stein"]{--rank-color:#B5C0CB;--rank-soft:#353C43;}
+.home-journey-rank-card[data-rank="Bronze"]{--rank-color:#C58A67;--rank-soft:#3D302A;}
+.home-journey-rank-card[data-rank="Silber"]{--rank-color:#D0D7E0;--rank-soft:#414B58;}
+.home-journey-rank-card[data-rank="Gold"]{--rank-color:#D8B966;--rank-soft:#453A2A;}
+.home-journey-rank-card[data-rank="Platin"]{--rank-color:#B1D1D4;--rank-soft:#354A50;}
+.home-journey-rank-card[data-rank="Diamond"]{--rank-color:#8EC4E6;--rank-soft:#2D4656;}
+.home-journey-badge{
+  display:grid;place-items:center;width:60px;height:60px;flex:0 0 60px;
+  border:3px solid var(--rank-color);border-radius:50%;background:var(--rank-soft);
+  color:var(--rank-color);box-shadow:none;
+}
+.home-journey-badge>span{font-size:25px;font-weight:850;line-height:1;}
+.home-journey-copy{min-width:0;display:flex;flex:1;flex-direction:column;gap:3px;}
+.home-journey-copy>small{color:#ADB9C6;font-size:11px;font-weight:650;}
+.home-journey-copy>strong{font-size:21px;font-weight:800;color:#F2F4F7;line-height:1.15;}
+.home-journey-next{font-size:11px;color:#A5B1BE;}
+.home-journey-next b{font-weight:750;color:#C3CEDA;}
+.home-journey-arrow{font-size:29px;font-weight:350;line-height:1;color:#91A7BD;margin-right:1px;}
+.home-journey-rank-card:focus-visible{outline:2px solid #7EA7D9;outline-offset:3px;}
+.home-tree-actions{gap:10px!important;}
+.home-tree-training-btn,.home-focus-hub .home-tree-training-btn{
+  background:#7EA7D9!important;color:#0F1419!important;
+  border:none!important;box-shadow:none!important;
+  border-radius:16px!important;
+}
+.home-tree-training-btn > span:last-child{color:#0F1419!important;}
+.home-tree-training-icon{background:rgba(15,20,25,.10)!important;color:#0F1419!important;}
+.home-open-tree-btn.home-open-tree-secondary,
+.home-focus-hub .home-open-tree-btn.home-open-tree-secondary{
+  background:#222E39!important;color:#D7E1EB!important;
+  border:1px solid #3B4B5A!important;box-shadow:none!important;
+}
+/* Keep the existing banner-to-profile behavior unchanged. */
+.home-profile-banner{cursor:pointer;}
+
+/* Five-item nav: Home / Games / Training / Journey / Stats. */
+.home-bottom-nav,.home-bottom-nav-compact{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  align-items:center!important;justify-items:stretch!important;
+  gap:0!important;padding:10px 8px max(10px,env(safe-area-inset-bottom))!important;
+  background:#141D26!important;border-top:1px solid #334353!important;
+  box-shadow:none!important;backdrop-filter:none!important;
+  min-height:calc(72px + env(safe-area-inset-bottom))!important;
+}
+.home-bottom-nav .home-nav-item{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  align-items:center!important;gap:5px!important;
+  min-width:0!important;min-height:58px!important;padding:0 2px!important;
+  margin:0!important;background:none!important;border:0!important;border-radius:0!important;
+  color:#93A3B7!important;box-shadow:none!important;
+}
+.home-bottom-nav .home-nav-item.active{color:#94BAE8!important;}
+.home-bottom-nav .home-nav-item.active::after{
+  content:""!important;position:absolute;left:30%!important;right:30%!important;
+  width:auto!important;bottom:0!important;height:2px!important;
+  border-radius:3px!important;background:#7EA7D9!important;box-shadow:none!important;
+}
+.home-bottom-nav .home-nav-item small{
+  color:inherit!important;letter-spacing:0!important;font-size:10px!important;
+  line-height:1.1!important;font-weight:650!important;
+}
+.home-bottom-nav .home-nav-symbol{
+  display:grid!important;place-items:center!important;
+  width:24px!important;height:24px!important;line-height:1!important;
+  background:none!important;border:none!important;border-radius:0!important;
+  box-shadow:none!important;transform:none!important;margin:0!important;
+}
+.home-bottom-nav .home-nav-symbol svg{display:block;width:21px;height:21px;}
+.home-bottom-nav .home-nav-training{
+  overflow:visible!important;position:relative!important;
+  color:#CBD7E2!important;transform:none!important;
+}
+.home-bottom-nav .home-nav-training .home-nav-symbol{
+  width:45px!important;height:45px!important;margin:-18px 0 0!important;
+  border-radius:50%!important;border:1px solid #9BBBE2!important;
+  background:#7EA7D9!important;color:#162430!important;box-shadow:none!important;
+}
+.home-bottom-nav .home-nav-training .home-nav-symbol svg{width:25px;height:25px;}
+.home-bottom-nav .home-nav-training small{margin-top:0!important;}
+.home-bottom-nav .home-nav-item:focus-visible{outline:2px solid #95B7E1;outline-offset:-1px;}
+
+/* Neutral cards on Games, Profile, History, and Rewards. */
+.skills-intro-card,.games-intro-card,.game-card,
+.games-coming-soon-note,.profile-section,.profile-hero-card,
+.profile-rank-card,.profile-backup-card,.history-summary article,
+.history-content-card,.history-entry,.history-empty,
+.rewards-summary-card,.rewards-road-card,.rewards-list-card,.reward-card,
+.tree-stats-panel,.tree-stats-sheet .sheet-panel,.sheet-panel{
+  background:#202B36!important;border-color:#3B4A5B!important;
+  box-shadow:none!important;
+}
+.game-card-featured{border-color:#6C8DB5!important;}
+.game-card-icon{background:#334155!important;box-shadow:none!important;}
+.skills-intro-card strong,.game-card strong,.games-section h2,
+.profile-section-head h2,.history-section-head h2{color:#E8ECF1!important;}
+.skills-intro-card p,.game-card p,.games-coming-soon-note,
+.history-entry-main span,.profile-section-count,
+.profile-section small{color:#ACB9C6!important;}
+.game-card small,.profile-header .eyebrow,.history-header .eyebrow,
+.games-section .eyebrow,.rewards-view .eyebrow{color:#91B4DB!important;}
+.profile-header,.history-header,.tree-header{
+  background:#0F1419!important;border-color:#334353!important;
+  box-shadow:none!important;backdrop-filter:none!important;
+}
+.profile-version-pill,.history-count,.profile-section-count{
+  background:#263644!important;color:#BDCCE0!important;border-color:#3B4A5B!important;
+}
+.customize-group,.customize-choice{background:#222E39!important;border-color:#3B4A5B!important;}
+.customize-choice.selected{border-color:#7EA7D9!important;box-shadow:none!important;}
+.slate-history-link{
+  width:100%;min-height:44px;margin-top:15px;padding:11px 14px;
+  border:1px solid #496079;border-radius:13px;background:#263644;
+  color:#D9E4F0;font-weight:700;font-size:13px;
+  display:flex;justify-content:space-between;align-items:center;cursor:pointer;
+}
+
+/* Muted tree chrome; completion and rank colors remain meaningful statuses. */
+.tree-view .tree-header h1,.bp61-header h2{color:#E8ECF1!important;}
+.tree-view .icon-btn,.tree-stats-btn{background:#263644!important;border-color:#445668!important;color:#D4E1EF!important;box-shadow:none!important;}
+.skill-tree-v1161,.bp61-header,.bp65-placement-bar{background:#0F1419!important;}
+.bp67-tree .bp61-canvas,.bp66-tree .bp61-canvas{background:#16202A!important;}
+.bp61-line{stroke:#66788D!important;filter:none!important;}
+.bp61-line.done{stroke:#45B58C!important;}
+.bp65-placement-bar button,.bp67-tree-secondary{
+  background:#283645!important;border:1px solid #57708B!important;
+  color:#C0D6EF!important;box-shadow:none!important;
+}
+.bp61-star-balance{background:#263644!important;border-color:#45596D!important;}
+.bp61-progress{background:#2C3947!important;}
+.bp61-progress>span{background:#7EA7D9!important;}
+.bp61-legend{color:#B1BDCA!important;}
+.bp61-dot.active{background:#7EA7D9!important;}
+.bp61-goal.active .bp61-orb{border-color:#7EA7D9!important;background:#263341!important;}
+.bp66-tree .bp66-goal.bp66-focused .bp61-orb{box-shadow:none!important;}
+.bp61-sheet-card,.bp61-result-card{background:#202B36!important;border-color:#45596D!important;}
+.rewards-summary-card strong,.rewards-summary-label{color:#B6CBE5!important;}
+.rewards-list .reward-card-badge{background:#334155!important;color:#B5CBE4!important;}
+.reward-card-copy strong{color:#E8ECF1!important;}
+.reward-card-copy p,.rewards-summary-card p{color:#ACB9C6!important;}
+/* Existing star gold and green completion states intentionally preserved. */
+
+/* Training is the same interaction, using the calm Soft Slate accent. */
+#trainingModal.quick-theme{--bp69-bg:#0F1419;--bp69-panel:#202B36;--bp69-line:#3B4A5B;--bp69-soft:#ACB9C6;--bp69-text:#E8ECF1;--bp69-blue:#7EA7D9;}
+#trainingModal.quick-theme .quick-workout-actions #startWorkoutBtn{
+  background:#7EA7D9!important;color:#0F1419!important;
+  box-shadow:none!important;border:1px solid #91B5E0!important;
+}
+#trainingModal.quick-theme .bp64-camera-window{background:#0F1419!important;}
+#trainingModal.quick-theme .bp64-camera-placeholder{background:#202B36!important;}
+#trainingModal.quick-theme .rep-hero .bp64-rep-number::before{border-color:rgba(126,167,217,.55)!important;}
+#trainingModal.quick-theme .rep-hero .bp64-rep-target{background:rgba(22,32,42,.78)!important;border-color:#3B4A5B!important;}
+@media(max-width:390px){
+  .home-progress-orb strong,.home-progress-orb-large strong{font-size:clamp(20px,7vw,30px)!important;}
+  .home-journey-rank-card{padding:12px;gap:11px;}
+  .home-journey-badge{width:52px;height:52px;flex-basis:52px;}
+  .home-journey-copy>strong{font-size:19px;}
+  .home-bottom-nav .home-nav-item small{font-size:9px!important;}
+}

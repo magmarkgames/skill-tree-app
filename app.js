@@ -118,7 +118,7 @@ const ACCOUNT_AVATARS = [
 ];
 
 const ACCOUNT_ACCENTS = [
-  { id: "blue", label: "BodyPath Blue", color: "#4DA3FF", level: 1 },
+  { id: "blue", label: "Soft Slate Blue", color: "#7EA7D9", level: 1 },
   { id: "violet", label: "Violet", color: "#9B6CFF", level: 1 },
   { id: "emerald", label: "Emerald", color: "#43C889", level: 1 },
   { id: "crimson", label: "Crimson", color: "#FF5D6C", level: 1 }
@@ -527,6 +527,8 @@ const profileHistorySummary = document.getElementById("profileHistorySummary");
 const profileGenderMaleBtn = document.getElementById("profileGenderMaleBtn");
 const profileGenderFemaleBtn = document.getElementById("profileGenderFemaleBtn");
 const homeNextRankName = document.getElementById("homeNextRankName");
+const homeRankJourneyBtn = document.getElementById("homeRankJourneyBtn");
+const homeRankBadgeName = document.getElementById("homeRankBadgeName");
 const skillsPushupRank = document.getElementById("skillsPushupRank");
 const rewardsStarsTotal = document.getElementById("rewardsStarsTotal");
 const rewardsSummaryText = document.getElementById("rewardsSummaryText");
@@ -1011,7 +1013,7 @@ function setBottomNavActive(name) {
   const groups = {
     home: [document.getElementById("homeNavHomeBtn"), document.getElementById("skillsNavHomeBtn"), document.getElementById("profileNavHomeBtn"), document.getElementById("historyNavHomeBtn")],
     skills: [document.getElementById("homeNavSkillsBtn"), document.getElementById("skillsNavSkillsBtn"), document.getElementById("profileNavSkillsBtn"), document.getElementById("historyNavSkillsBtn")],
-    history: [document.getElementById("homeNavHistoryBtn"), document.getElementById("skillsNavHistoryBtn"), document.getElementById("profileNavHistoryBtn"), document.getElementById("historyNavHistoryBtn")],
+    tree: [document.getElementById("homeNavJourneyBtn"), document.getElementById("skillsNavJourneyBtn"), document.getElementById("profileNavJourneyBtn"), document.getElementById("historyNavJourneyBtn")],
     profile: [document.getElementById("homeNavProfileBtn"), document.getElementById("skillsNavProfileBtn"), document.getElementById("profileNavProfileBtn"), document.getElementById("historyNavProfileBtn")]
   };
   Object.values(groups).flat().forEach(btn => btn?.classList.remove("active"));
@@ -5690,6 +5692,8 @@ function renderHomeDashboard(todayTotal, weekTotal, rankName) {
 
   homeRankName.textContent = getRankDisplayName(displayRank);
   if (homeNextRankName) homeNextRankName.textContent = nextRank === "Max" ? "Max" : getRankDisplayName(nextRank);
+  if (homeRankJourneyBtn) homeRankJourneyBtn.dataset.rank = displayRank;
+  if (homeRankBadgeName) homeRankBadgeName.textContent = getRankDisplayName(displayRank).slice(0, 1).toUpperCase();
   homeRankIcon.innerHTML = displayRank === "Starter"
     ? getVariantIconSvg("standard", "home-starter-icon")
     : getRankIconSvg(displayRank, "home-rank-asset");
@@ -5716,11 +5720,13 @@ window.addEventListener("resize", () => {
 
 document.getElementById("openPushTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("homeTreeTrainingBtn")?.addEventListener("click", openTraining);
+document.getElementById("homeRankJourneyBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("treeBackBtn").addEventListener("click", () => showView("home"));
 document.getElementById("rewardsBackBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("rewardsOpenTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("openTreeStatsBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("closeTreeStatsBtn")?.addEventListener("click", closeTreeStats);
+document.getElementById("statsViewHistoryBtn")?.addEventListener("click", () => { closeTreeStats(); showView("history"); });
 treeStatsSheet?.addEventListener("click", (event) => {
   if (event.target === treeStatsSheet) closeTreeStats();
 });
@@ -5730,14 +5736,14 @@ document.getElementById("homeProfileBanner")?.addEventListener("click", () => sh
 document.getElementById("homeNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("homeNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavTrainingBtn").addEventListener("click", openTraining);
-document.getElementById("homeNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("homeNavJourneyBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("homeNavProfileBtn").addEventListener("click", openTreeStats);
 document.getElementById("profileOpenTreeBtn").addEventListener("click", () => showView("tree"));
 document.getElementById("profileHistoryBtn")?.addEventListener("click", () => showView("history"));
 document.getElementById("profileNavHomeBtn").addEventListener("click", () => showView("home"));
 document.getElementById("profileNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavTrainingBtn").addEventListener("click", openTraining);
-document.getElementById("profileNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("profileNavJourneyBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("profileNavProfileBtn").addEventListener("click", openTreeStats);
 profileGenderMaleBtn?.addEventListener("click", () => setHeroGender("male"));
 profileGenderFemaleBtn?.addEventListener("click", () => setHeroGender("female"));
@@ -5752,14 +5758,14 @@ profileNameInput?.addEventListener("change", () => {
 document.getElementById("historyNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("historyNavTreeBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("historyNavTrainingBtn")?.addEventListener("click", openTraining);
-document.getElementById("historyNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("historyNavJourneyBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("historyNavProfileBtn")?.addEventListener("click", openTreeStats);
 
 document.getElementById("homeNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("skillsNavHomeBtn")?.addEventListener("click", () => showView("home"));
 document.getElementById("skillsNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("skillsNavTrainingBtn")?.addEventListener("click", openTraining);
-document.getElementById("skillsNavHistoryBtn")?.addEventListener("click", () => showView("history"));
+document.getElementById("skillsNavJourneyBtn")?.addEventListener("click", () => showView("tree"));
 document.getElementById("skillsNavProfileBtn")?.addEventListener("click", openTreeStats);
 document.getElementById("profileNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
 document.getElementById("historyNavSkillsBtn")?.addEventListener("click", () => showView("skills"));
